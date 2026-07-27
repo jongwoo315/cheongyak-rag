@@ -1,0 +1,36 @@
+# 주택청약 RAG
+
+주택청약 공고별 **자격 요건을 요건 단위로 판정**하고 근거 조문을 인용하는 RAG 서비스.
+
+설계 문서: [`docs/plans/0727-design-cheongyak-rag.md`](docs/plans/0727-design-cheongyak-rag.md)
+
+## 로컬 실행
+
+```bash
+uv sync
+cp .env.example .env          # 키 채우기
+docker compose up -d          # Postgres + pgvector (호스트 5433)
+uv run alembic upgrade head
+uv run uvicorn cheongyak_rag.main:app --reload
+```
+
+`http://127.0.0.1:8000/health` 가 아래를 반환하면 정상:
+
+```json
+{ "status": "ok", "db": "ok", "pgvector": "ok" }
+```
+
+`pgvector: "missing"` 이면 마이그레이션이 안 돈 것.
+
+## 검증
+
+```bash
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+```
+
+## 메모
+
+- **DB 포트는 5433.** 호스트에 이미 Postgres 가 5432 를 점유 중이라 컨테이너를 5433 으로 매핑했다.
+- Alembic 은 `alembic.ini` 대신 `.env` 의 `DATABASE_URL` 을 단일 출처로 쓴다 (`alembic/env.py` 에서 주입).

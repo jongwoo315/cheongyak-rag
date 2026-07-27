@@ -1,0 +1,21 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: cheongyak-db
+    environment:
+      POSTGRES_USER: cheongyak
+      POSTGRES_PASSWORD: cheongyak
+      POSTGRES_DB: cheongyak
+    # 호스트에 이미 Postgres 가 5432 를 점유 중이라 5433 으로 매핑한다.
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cheongyak -d cheongyak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
