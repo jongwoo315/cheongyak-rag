@@ -213,7 +213,7 @@ POST /ai/aia/selectSpsplyReqstStusPopup.do            (특별공급 접수현황
    │
    ├─ B2 L4 필터 ─▶ 아는 필드로만 필터 (지역 모르면 전국)              [SQL]
    ├─ B3 as-of ───▶ 공고.모집공고일 → valid_from ≤ 공고일 ≤ valid_to 인 법령 버전
-   ├─ B4 요건분해 ▶ 7축 sub-query (공고 유형 따라 축 on/off)
+   ├─ B4 요건 쪼개기 ▶ 7축 sub-query (공고 유형 따라 축 on/off)
    │
    ├─ B5 축별 병렬검색 ─┬─ metadata pre-filter (layer, 유효구간, 지역, 공고ID)
    │                    ├─ hybrid: dense + BM25 → RRF
@@ -355,7 +355,7 @@ Cached input = 정가의 0.1배(90% 할인).
 | #76 | Eval 하네스 — recall@k / citation precision / 치명오답률 / 기권 분리 | #74 #75 |
 | #77 | 프로필 정규화 + 가점 계산(B1) — 부분 프로필, 가점 범위 | #68 |
 | #78 | as-of 해소(B3) — 모집공고일 → 유효 법령 버전 | #69 #71 |
-| #79 | 요건 분해 + 축별 병렬검색(B4/B5) — pre-filter → hybrid → RRF → rerank | #74 #77 #78 |
+| #79 | 요건 쪼개기 + 축별 병렬검색(B4/B5) — pre-filter → hybrid → RRF → rerank | #74 #77 #78 |
 | #80 | 축별 판정 + guardrail(B6/B7) — 구조화 출력 5값, 인용 실재 대조 | #79 |
 | #81 | 집계 + 응답 조립(B8/B9) — 우선순위 집계, 체크리스트 | #80 |
 | #82 | 결손 분석 + 질문 랭킹(B1b/B9b) — NEED_INFO 페이로드 | #77 #81 |
