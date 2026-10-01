@@ -143,3 +143,25 @@ def test_out_of_order_question_number_raises(faq_doc, monkeypatch):
     monkeypatch.setattr(faq, "_is_digits", skip_q2)
     with pytest.raises(ValueError, match="Q1 다음에 Q3"):
         faq.parse_body(faq_doc)
+
+
+def test_join_wrapped_joins_without_space_and_collapses_whitespace():
+    from cheongyak_rag.ingest.faq import join_wrapped
+
+    assert join_wrapped(["청년", "주택드림"]) == "청년주택드림"
+    assert join_wrapped(["입주자 ", "모집   공고"]) == "입주자 모집 공고"
+    assert join_wrapped(["  앞뒤 공백  "]) == "앞뒤 공백"
+
+
+def test_is_noise_drops_page_number_and_header_only():
+    from cheongyak_rag.ingest.faq import Line, _is_noise
+
+    def ln(text, font, size, y0=300.0):
+        return Line(text, font, size, frozenset({0}), 50.0, y0, y0 + 10)
+
+    assert _is_noise(ln("123", "KoPubDotumBold", 11.0))  # 쪽 번호
+    assert _is_noise(ln("Ⅱ. 일반공급", "KoPubDotumMedium", 8.5, y0=40.0))  # 쪽 머리말
+    assert not _is_noise(ln("300", "KoPubDotumBold", 9.0))  # 표 칸의 숫자
+    assert not _is_noise(
+        ln("본문", "KoPubDotumMedium", 8.5, y0=300.0)
+    )  # 8.5pt라도 머리말 자리가 아니다
