@@ -30,6 +30,14 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+## 데이터 수집
+
+```bash
+uv run python -m cheongyak_rag.ingest.faq   # 국토부 주택청약 FAQ(2024-05) → data/processed/faq-20240529.jsonl
+```
+
+PDF는 `data/raw/faq-20240529.pdf`에 캐시된다. 실행 끝에 섹션 대조 리포트가 나온다.
+
 ## 메모
 
 - **DB 포트는 5433.** 호스트에 이미 Postgres 가 5432 를 점유 중이라 컨테이너를 5433 으로 매핑했다.

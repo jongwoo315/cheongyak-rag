@@ -79,3 +79,7 @@ def test_cite_articles_dedupes_and_keeps_order():
 def test_mid_word_line_break_gets_no_space(pairs):
     # 본문에서 `청년` / `주택드림청약통장에`로 단어 중간에서 접힌다
     assert "청년주택드림청약통장에" in pairs[25].question
+
+
+def test_every_question_and_answer_is_non_empty(pairs):
+    assert [p.q_no for p in pairs if not p.question.strip() or not p.answer.strip()] == []
