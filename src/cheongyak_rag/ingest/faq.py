@@ -20,6 +20,10 @@ USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 def fetch_pdf(dest: Path, client: httpx.Client | None = None) -> Path:
     """dest에 PDF가 있으면 그대로 돌려주고, 없으면 받는다."""
     if dest.exists():
+        if not dest.read_bytes().startswith(
+            b"%PDF"
+        ):  # 이전에 HTML이 캐시된 파일이 남아 있을 수 있다
+            raise ValueError(f"캐시된 파일이 PDF가 아니다. 지우고 다시 받는다: {dest}")
         return dest
     dest.parent.mkdir(parents=True, exist_ok=True)
     # httpx.Client는 쿠키를 유지한다. molit.go.kr은 쿠키 없이 리다이렉트를 무한 반복한다

@@ -52,3 +52,11 @@ def test_non_pdf_200_response_is_not_cached(tmp_path):
     with pytest.raises(ValueError, match="PDF가 아닌"):
         faq.fetch_pdf(dest, client=client)
     assert not dest.exists()
+
+
+def test_cached_non_pdf_file_is_rejected(tmp_path):
+    dest = tmp_path / "faq.pdf"
+    dest.write_bytes(b"<html>x</html>")
+
+    with pytest.raises(ValueError, match="PDF가 아니다"):
+        faq.fetch_pdf(dest)
