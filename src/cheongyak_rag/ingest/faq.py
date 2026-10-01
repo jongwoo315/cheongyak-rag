@@ -1,7 +1,9 @@
 """국토교통부 「주택청약 FAQ」 PDF를 Q&A 쌍으로 파싱한다 (#70)."""
 
+import json
 import re
-from dataclasses import dataclass, field
+import sys
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import httpx
@@ -284,3 +286,47 @@ def parse_body(doc: pymupdf.Document, stats: BodyStats | None = None) -> list[Fa
         commit_middle()
     close()
     return pairs
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+ROOT = Path(__file__).resolve().parents[3]
+PDF_PATH = ROOT / "data" / "raw" / "faq-20240529.pdf"
+JSONL_PATH = ROOT / "data" / "processed" / "faq-20240529.jsonl"
+
+
+def write_jsonl(pairs: list[FaqPair], dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with dest.open("w", encoding="utf-8") as f:
+        for p in pairs:
+            f.write(json.dumps(asdict(p), ensure_ascii=False) + "\n")
+
+
+def count_warnings(text: str) -> int:
+    """MuPDF 경고 문자열의 건수. `... repeated N times...` 줄은 N건으로 센다."""
+    total = 0
+    for line in text.splitlines():
+        m = re.match(r"\.\.\. repeated (\d+) times", line)
+        total += int(m[1]) if m else 1 if line.strip() else 0
+    return total
+
+
+def main() -> int:
+    from .faq_report import build_report, format_report
+
+    print(f"PDF: {'캐시 사용' if PDF_PATH.exists() else '다운로드'} {PDF_PATH}")
+    pymupdf.TOOLS.mupdf_warnings()  # 이전 경고를 비운다
+    with pymupdf.open(fetch_pdf(PDF_PATH)) as doc:
+        toc = parse_toc(doc)
+        stats = BodyStats()
+        pairs = parse_body(doc, stats)
+    warnings = count_warnings(pymupdf.TOOLS.mupdf_warnings())
+    write_jsonl(pairs, JSONL_PATH)
+    print(f"JSONL: {len(pairs)}쌍 → {JSONL_PATH}")
+    print()
+    print(format_report(build_report(toc, pairs, stats, warnings)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
