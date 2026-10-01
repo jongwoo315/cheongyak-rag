@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "openai>=1.55",
     "httpx>=0.28",
+    "pymupdf>=1.28.2",
 ]
 
 [dependency-groups]
