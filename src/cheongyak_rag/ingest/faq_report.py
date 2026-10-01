@@ -2,7 +2,7 @@
 
 import re
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -51,7 +51,6 @@ class Report:
     skipped_pages: int
     skipped_chars: int
     warnings: int
-    extra: dict = field(default_factory=dict)
 
 
 def _compare(
@@ -126,14 +125,16 @@ def format_report(r: Report) -> str:
         "== FAQ 파싱 리포트 ==",
         f"쌍 수: {r.pair_count} (q_no 1..N 연속·중복 없음: {'예' if r.q_no_ok else '아니오'})",
         "",
-        f"섹션 불일치 (목차 대조, 공백 전부 제거 후 비교): {len(r.mismatches)}건",
+        "섹션 불일치 (목차 대조, 공백 전부 제거 후 비교): "
+        f"{len({m.q_no for m in r.mismatches})}쌍 (필드 {len(r.mismatches)}개)",
     ]
     out += [
         f"  Q{m.q_no} p{m.page} {m.field}: 목차={m.toc!r} 본문={m.body!r}" for m in r.mismatches
     ]
     spacing_qs = sorted({m.q_no for m in r.spacing_diffs})
     out += [
-        f"  (참고) 공백 연속만 합친 엄격 비교에서만 다른 쌍: {len(spacing_qs)}건 — 전부 공백 차이",
+        f"  (참고) 공백 연속만 합친 엄격 비교에서만 다른 쌍: {len(spacing_qs)}건",
+        "    전부 공백 차이다. 줄바꿈 지점에서 빠진 공백과 PDF 인쇄 차이가 섞여 있다",
     ]
     out += [f"    Q{m.q_no} p{m.page}: 목차={m.toc!r} 본문={m.body!r}" for m in r.spacing_diffs]
     leak_qs = sorted({leak.q_no for leak in r.leaks})

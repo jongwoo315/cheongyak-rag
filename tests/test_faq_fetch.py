@@ -42,3 +42,13 @@ def test_failed_download_leaves_no_file(tmp_path):
     with pytest.raises(httpx.HTTPStatusError):
         faq.fetch_pdf(dest, client=client)
     assert not dest.exists()
+
+
+def test_non_pdf_200_response_is_not_cached(tmp_path):
+    html = httpx.Response(200, content=b"<html>x</html>", headers={"content-type": "text/html"})
+    client = httpx.Client(transport=httpx.MockTransport(lambda r: html))
+    dest = tmp_path / "faq.pdf"
+
+    with pytest.raises(ValueError, match="PDF가 아닌"):
+        faq.fetch_pdf(dest, client=client)
+    assert not dest.exists()

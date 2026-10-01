@@ -83,3 +83,14 @@ def test_mid_word_line_break_gets_no_space(pairs):
 
 def test_every_question_and_answer_is_non_empty(pairs):
     assert [p.q_no for p in pairs if not p.question.strip() or not p.answer.strip()] == []
+
+
+def test_sections_match_toc_and_answers_do_not_leak(toc, pairs):
+    # jw 기준(섹션에 맞게 분리)과 실패 징후 3을 실제 PDF로 지킨다. 값이 아니라 0이어야 통과다
+    from cheongyak_rag.ingest.faq import BodyStats
+    from cheongyak_rag.ingest.faq_report import build_report
+
+    r = build_report(toc, pairs, BodyStats(), warnings=0)
+    assert len(toc) == len(pairs) == 480
+    assert r.mismatches == []
+    assert r.leaks == []

@@ -29,6 +29,8 @@ def fetch_pdf(dest: Path, client: httpx.Client | None = None) -> Path:
     try:
         resp = client.get(PDF_URL, params=PDF_PARAMS, headers={"User-Agent": USER_AGENT})
         resp.raise_for_status()
+        if not resp.content.startswith(b"%PDF"):  # 쿠키 실패·공지 페이지는 200 HTML로 온다
+            raise ValueError(f"PDF가 아닌 응답을 받았다: {resp.headers.get('content-type')}")
         tmp.write_bytes(resp.content)
         tmp.replace(dest)
     finally:
@@ -82,7 +84,8 @@ def is_divider(lines: list[Line]) -> bool:
 def join_wrapped(parts: list[str]) -> str:
     """줄바꿈으로 접힌 제목을 잇는다. 줄 끝 공백은 그대로 둔다.
 
-    단어 중간에서 접힌 줄(청년 / 주택드림)이 있어 공백을 끼우지 않는다.
+    단어 중간에서 접힌 줄(청년 / 주택드림)이 있어 공백을 끼우지 않는다. 단어 경계에서 접히고
+    공백이 빠진 줄은 붙어 버린다(질문 15건 안팎) — 텍스트만으로는 둘을 가를 수 없다.
     """
     return re.sub(r"\s+", " ", "".join(parts)).strip()
 
