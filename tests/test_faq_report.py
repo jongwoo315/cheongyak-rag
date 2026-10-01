@@ -105,3 +105,9 @@ def test_count_warnings_expands_repeat_lines():
 
     assert count_warnings("") == 0
     assert count_warnings("freetype could not find any cmaps\n... repeated 2 times...") == 3
+
+
+def test_empty_pairs_are_not_reported_as_contiguous():
+    # 파싱이 0쌍이면 `[] == list(range(1, 1))`이 참이라 연속으로 보고되던 것을 막는다
+    r = report([toc_entry(1)], [])
+    assert (r.pair_count, r.q_no_ok) == (0, False)

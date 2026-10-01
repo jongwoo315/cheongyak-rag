@@ -101,7 +101,7 @@ def build_report(
     mismatches, spacing = _compare(toc, pairs)
     return Report(
         pair_count=len(pairs),
-        q_no_ok=q_nos == list(range(1, len(pairs) + 1)),
+        q_no_ok=bool(q_nos) and q_nos == list(range(1, len(pairs) + 1)),
         mismatches=mismatches,
         spacing_diffs=spacing,
         leaks=_leaks(toc, pairs),
