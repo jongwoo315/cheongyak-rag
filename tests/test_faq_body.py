@@ -94,3 +94,26 @@ def test_sections_match_toc_and_answers_do_not_leak(toc, pairs):
     assert len(toc) == len(pairs) == 480
     assert r.mismatches == []
     assert r.leaks == []
+
+
+def test_main_writes_jsonl_and_exits_zero(tmp_path, capsys):
+    from cheongyak_rag.ingest import faq
+    from tests.conftest import PDF_PATH
+
+    out = tmp_path / "faq.jsonl"
+    assert faq.main(PDF_PATH, out) == 0
+    assert len(out.read_text(encoding="utf-8").splitlines()) == 480
+    assert "== FAQ 파싱 리포트 ==" in capsys.readouterr().out
+
+
+def test_main_exits_nonzero_and_keeps_old_file_when_validation_fails(tmp_path, monkeypatch, capsys):
+    from cheongyak_rag.ingest import faq
+    from tests.conftest import PDF_PATH
+
+    out = tmp_path / "faq.jsonl"
+    out.write_text("이전 결과\n", encoding="utf-8")
+    monkeypatch.setattr(faq, "parse_body", lambda doc, stats=None: [])
+
+    assert faq.main(PDF_PATH, out) == 1
+    assert out.read_text(encoding="utf-8") == "이전 결과\n"
+    assert "쓰지 않았다" in capsys.readouterr().err

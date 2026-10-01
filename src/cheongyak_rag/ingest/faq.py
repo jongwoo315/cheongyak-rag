@@ -314,21 +314,27 @@ def count_warnings(text: str) -> int:
     return total
 
 
-def main() -> int:
+def main(pdf: Path = PDF_PATH, out: Path = JSONL_PATH) -> int:
     from .faq_report import build_report, format_report
 
-    print(f"PDF: {'캐시 사용' if PDF_PATH.exists() else '다운로드'} {PDF_PATH}")
+    print(f"PDF: {'캐시 사용' if pdf.exists() else '다운로드'} {pdf}")
     pymupdf.TOOLS.mupdf_warnings()  # 이전 경고를 비운다
-    with pymupdf.open(fetch_pdf(PDF_PATH)) as doc:
+    with pymupdf.open(fetch_pdf(pdf)) as doc:
         toc = parse_toc(doc)
         stats = BodyStats()
         pairs = parse_body(doc, stats)
     warnings = count_warnings(pymupdf.TOOLS.mupdf_warnings())
-    write_jsonl(pairs, JSONL_PATH)
-    print(f"JSONL: {len(pairs)}쌍 → {JSONL_PATH}")
+    report = build_report(toc, pairs, stats, warnings)
+    # 검증에 걸리면 이전 JSONL을 덮어쓰지 않는다. 다음 단계(#73)가 깨진 파일을 읽게 된다
+    ok = report.q_no_ok and report.pair_count == len(toc) and not report.mismatches
+    if ok:
+        write_jsonl(pairs, out)
+        print(f"JSONL: {len(pairs)}쌍 → {out}")
+    else:
+        print(f"JSONL: 검증 실패라 쓰지 않았다 ({out})", file=sys.stderr)
     print()
-    print(format_report(build_report(toc, pairs, stats, warnings)))
-    return 0
+    print(format_report(report))
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
