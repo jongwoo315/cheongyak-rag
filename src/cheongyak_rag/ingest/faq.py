@@ -1,7 +1,7 @@
 """국토교통부 「주택청약 FAQ」 PDF를 Q&A 쌍으로 파싱한다 (#70)."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
@@ -78,11 +78,11 @@ def is_divider(lines: list[Line]) -> bool:
 
 
 def join_wrapped(parts: list[str]) -> str:
-    """줄바꿈으로 접힌 제목을 잇는다. 앞 줄 끝에 공백이 없으면 한 칸 넣는다."""
-    out = ""
-    for part in parts:
-        out += part if not out or out.endswith(" ") else " " + part
-    return re.sub(r"\s+", " ", out).strip()
+    """줄바꿈으로 접힌 제목을 잇는다. 줄 끝 공백은 그대로 둔다.
+
+    단어 중간에서 접힌 줄(청년 / 주택드림)이 있어 공백을 끼우지 않는다.
+    """
+    return re.sub(r"\s+", " ", "".join(parts)).strip()
 
 
 # ── 목차 ─────────────────────────────────────────────────────────────────
@@ -131,13 +131,13 @@ def parse_toc(doc: pymupdf.Document) -> list[TocEntry]:
             elif ln.font == "KoPubDotumMedium" and ln.size == 10.5:  # 소분류
                 flush()
                 minor = text.strip()
+            elif text.lstrip().startswith(("∙", "•")):  # `∙ 참고 …` 항목은 질문이 아니다
+                flush()
             elif m := Q_START.match(text):
                 flush()
                 q_no, q_parts = int(m[1]), [m[2]]
             elif q_no is not None and ln.font != "KoPubDotumBold":  # 접힌 질문의 다음 줄
                 q_parts.append(text)
-            elif text.lstrip().startswith(("∙", "•")):  # `∙ 참고 …` 항목은 질문이 아니다
-                flush()
             else:
                 continue
             if roman and title:
@@ -147,3 +147,140 @@ def parse_toc(doc: pymupdf.Document) -> list[TocEntry]:
         raise ValueError("대분류 표지 쪽을 못 찾았다")
     flush()
     return entries
+
+
+# ── 본문 ─────────────────────────────────────────────────────────────────
+
+AS_OF = "2024-05-29"
+WHITE, QUESTION_BLUE, MIDDLE_GRAY = 0xFFFFFF, 0x0F70B7, 0x262626
+ARTICLE = re.compile(r"제\d+조(?:의\d+)?(?:제\d+항)?(?:제\d+호)?")
+
+
+@dataclass
+class FaqPair:
+    q_no: int
+    major: str
+    middle: str
+    minor: str
+    question: str
+    answer: str
+    page_start: int  # 1-base 물리 쪽
+    as_of: str
+    cited_articles: list[str]
+
+
+@dataclass
+class BodyStats:
+    """파싱하면서 같이 센 값. 대조 리포트가 쓴다."""
+
+    skipped_pages: set[int] = field(
+        default_factory=set
+    )  # `가. 주요내용` 등 질문 없는 본문이 있는 쪽
+    skipped_chars: int = 0
+    table_q_nos: set[int] = field(default_factory=set)  # 9pt 미만 글자(표 칸)가 섞인 답변
+
+
+def cite_articles(text: str) -> list[str]:
+    """`제4조제1항` 꼴 인용을 등장 순서대로, 중복 없이 뽑는다. 줄바꿈으로 갈린 인용도 잇는다."""
+    return list(dict.fromkeys(ARTICLE.findall(text.replace("\n", ""))))
+
+
+def _is_digits(ln: Line, size: float, color: int) -> bool:
+    return (
+        ln.font == "KoPubDotumBold"
+        and ln.size == size
+        and ln.colors == {color}
+        and ln.text.strip().isdigit()
+    )
+
+
+def _is_noise(ln: Line) -> bool:
+    """쪽 머리말(대분류 제목 반복)과 쪽 번호."""
+    header = ln.size == 8.5 and ln.y0 < 80
+    page_no = ln.font == "KoPubDotumBold" and ln.size == 11.0 and ln.text.strip().isdigit()
+    return header or page_no
+
+
+def parse_body(doc: pymupdf.Document, stats: BodyStats | None = None) -> list[FaqPair]:
+    """본문에서 Q&A 쌍을 읽는다. 섹션은 본문 제목에서 읽고 목차는 보지 않는다."""
+    stats = stats if stats is not None else BodyStats()
+    pairs: list[FaqPair] = []
+    major = middle = minor = ""
+    started = False
+    cur: dict | None = None  # 지금 읽고 있는 쌍
+    mid_num, mid_parts = "", []
+
+    def close() -> None:
+        nonlocal cur
+        if cur:
+            answer = "\n".join(cur["answer"])
+            pairs.append(
+                FaqPair(
+                    q_no=cur["q_no"],
+                    major=cur["major"],
+                    middle=cur["middle"],
+                    minor=cur["minor"],
+                    question=join_wrapped(cur["question"]),
+                    answer=answer,
+                    page_start=cur["page"],
+                    as_of=AS_OF,
+                    cited_articles=cite_articles(answer),
+                )
+            )
+        cur = None
+
+    def commit_middle() -> None:
+        nonlocal middle, minor, mid_num, mid_parts
+        if mid_num and mid_parts:
+            close()
+            middle, minor = f"{mid_num}. {join_wrapped(mid_parts)}", ""
+        mid_num, mid_parts = "", []
+
+    for pno, page in enumerate(doc, start=1):
+        lines = page_lines(page)
+        if is_divider(lines):
+            started = True
+            close()
+            roman = next(ln.text for ln in lines if ln.font == "KoPubBatangBold").strip()
+            title = join_wrapped([ln.text for ln in lines if ln.size == 34.0])
+            major, middle, minor = f"{roman.rstrip('.')}. {title}", "", ""
+            continue
+        if not started:
+            continue
+        # 질문 번호 칸은 질문 텍스트와 같은 줄이지만 y가 1~2pt 아래라 먼저 오게 당긴다
+        lines.sort(key=lambda ln: (ln.y0 - (5 if _is_digits(ln, 10.0, WHITE) else 0), ln.x0))
+        for ln in lines:
+            if _is_noise(ln):
+                continue
+            if _is_digits(ln, 19.0, WHITE):
+                mid_num = ln.text.strip()
+            elif ln.colors == {MIDDLE_GRAY}:
+                mid_parts.append(ln.text)
+            else:
+                commit_middle()
+                if _is_digits(ln, 10.0, WHITE):
+                    close()
+                    cur = {
+                        "q_no": int(ln.text),
+                        "page": pno,
+                        "major": major,
+                        "middle": middle,
+                        "minor": minor,
+                        "question": [],
+                        "answer": [],
+                    }
+                elif ln.font == "NanumSquareB" and ln.size == 13.0 and ln.colors == {WHITE}:
+                    close()
+                    minor = join_wrapped([ln.text])
+                elif cur is not None and ln.colors == {QUESTION_BLUE} and not cur["answer"]:
+                    cur["question"].append(ln.text)
+                elif cur is not None:
+                    cur["answer"].append(ln.text.rstrip())
+                    if ln.size < 9.0:
+                        stats.table_q_nos.add(cur["q_no"])
+                else:  # 질문이 없는 설명 본문
+                    stats.skipped_pages.add(pno)
+                    stats.skipped_chars += len(ln.text.strip())
+        commit_middle()
+    close()
+    return pairs

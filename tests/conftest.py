@@ -20,3 +20,10 @@ def toc(faq_doc):
     from cheongyak_rag.ingest.faq import parse_toc
 
     return parse_toc(faq_doc)
+
+
+@pytest.fixture(scope="session")
+def pairs(faq_doc):
+    from cheongyak_rag.ingest.faq import parse_body
+
+    return parse_body(faq_doc)

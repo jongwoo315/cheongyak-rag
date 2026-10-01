@@ -43,3 +43,8 @@ def test_major_without_dot_is_normalized(toc):
 
 def test_no_leader_dots_left(toc):
     assert all("···" not in e.question for e in toc)
+
+
+def test_reference_items_do_not_leak_into_question(toc):
+    # 목차의 `∙ 참고 …` 항목(Q221·Q325 등 뒤)은 질문이 아니다
+    assert all("참고" not in e.question for e in toc)
