@@ -212,6 +212,7 @@ def parse_body(doc: pymupdf.Document, stats: BodyStats | None = None) -> list[Fa
     pairs: list[FaqPair] = []
     major = middle = minor = ""
     started = False
+    last_q = 0
     cur: dict | None = None  # 지금 읽고 있는 쌍
     mid_num, mid_parts = "", []
 
@@ -265,8 +266,12 @@ def parse_body(doc: pymupdf.Document, stats: BodyStats | None = None) -> list[Fa
                 commit_middle()
                 if _is_digits(ln, 10.0, WHITE):
                     close()
+                    q_no = int(ln.text)
+                    if q_no != last_q + 1:  # 번호 칸 모양의 다른 글자가 쌍을 쪼개는 것을 막는다
+                        raise ValueError(f"{pno}쪽: Q{last_q} 다음에 Q{q_no}가 나왔다")
+                    last_q = q_no
                     cur = {
-                        "q_no": int(ln.text),
+                        "q_no": q_no,
                         "page": pno,
                         "major": major,
                         "middle": middle,

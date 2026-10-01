@@ -117,3 +117,20 @@ def test_main_exits_nonzero_and_keeps_old_file_when_validation_fails(tmp_path, m
     assert faq.main(PDF_PATH, out) == 1
     assert out.read_text(encoding="utf-8") == "이전 결과\n"
     assert "쓰지 않았다" in capsys.readouterr().err
+
+
+def test_out_of_order_question_number_raises(faq_doc, monkeypatch):
+    # 번호 칸 모양의 글자가 답변 안에 있으면 쌍이 쪼개진다 — 조용히 넘기지 않고 실패한다
+    from cheongyak_rag.ingest import faq
+
+    real = faq._is_digits
+
+    def skip_q2(ln, size, color):
+        hit = real(ln, size, color)
+        if hit and size == 10.0 and ln.text.strip() == "2":
+            return False  # Q2 번호 칸을 놓친 것처럼 만든다 → Q1 다음에 Q3
+        return hit
+
+    monkeypatch.setattr(faq, "_is_digits", skip_q2)
+    with pytest.raises(ValueError, match="Q1 다음에 Q3"):
+        faq.parse_body(faq_doc)
