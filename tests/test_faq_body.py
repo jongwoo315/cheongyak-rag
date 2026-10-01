@@ -100,6 +100,9 @@ def test_sections_match_toc_and_answers_do_not_leak(toc, pairs):
     assert len(toc) == len(pairs) == 480
     assert r.mismatches == []
     assert r.leaks == []
+    # 공백 연속만 합친 비교로는 32쌍이 다르다(전부 question). 줄어들면 파서가 나아진 것이고
+    # 늘면 띄어쓰기가 더 붙어 버린 것이라 조용히 지나가지 않게 값을 고정한다
+    assert len({m.q_no for m in r.spacing_diffs}) == 32
 
 
 def test_main_writes_jsonl_and_exits_zero(tmp_path, capsys):
