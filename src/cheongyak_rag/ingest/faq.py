@@ -158,7 +158,7 @@ def parse_toc(doc: pymupdf.Document) -> list[TocEntry]:
 
 AS_OF = "2024-05-29"
 WHITE, QUESTION_BLUE, MIDDLE_GRAY = 0xFFFFFF, 0x0F70B7, 0x262626
-ARTICLE = re.compile(r"제\d+조(?:의\d+)?(?:제\d+항)?(?:제\d+호)?")
+ARTICLE = re.compile(r"제\d+조(?:의\d+)?(?: ?제\d+항)?(?: ?제\d+호(?:의\d+)?)?")
 
 
 @dataclass
@@ -187,7 +187,7 @@ class BodyStats:
 
 def cite_articles(text: str) -> list[str]:
     """`제4조제1항` 꼴 인용을 등장 순서대로, 중복 없이 뽑는다. 줄바꿈으로 갈린 인용도 잇는다."""
-    return list(dict.fromkeys(ARTICLE.findall(text.replace("\n", ""))))
+    return list(dict.fromkeys(m.replace(" ", "") for m in ARTICLE.findall(text.replace("\n", ""))))
 
 
 def _is_digits(ln: Line, size: float, color: int) -> bool:

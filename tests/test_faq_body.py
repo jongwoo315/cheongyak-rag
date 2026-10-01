@@ -76,6 +76,12 @@ def test_cite_articles_dedupes_and_keeps_order():
     assert cite_articles(text) == ["제4조제1항", "제25조제3항제2호", "제53조의2"]
 
 
+def test_cite_articles_keeps_item_suffix_and_joins_spaced_parts():
+    # `제2조제2호의3`이 `제2조제2호`로 잘리던 것, `제23조 제4항`이 `제23조`로 잘리던 것
+    text = "제2조제2호의3에 따른 경우와 제23조 제4항, 제58조의5 제1항에 따라"
+    assert cite_articles(text) == ["제2조제2호의3", "제23조제4항", "제58조의5제1항"]
+
+
 def test_mid_word_line_break_gets_no_space(pairs):
     # 본문에서 `청년` / `주택드림청약통장에`로 단어 중간에서 접힌다
     assert "청년주택드림청약통장에" in pairs[25].question
