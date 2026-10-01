@@ -23,7 +23,7 @@ def fetch_pdf(dest: Path, client: httpx.Client | None = None) -> Path:
         if not dest.read_bytes().startswith(
             b"%PDF"
         ):  # 이전에 HTML이 캐시된 파일이 남아 있을 수 있다
-            raise ValueError(f"캐시된 파일이 PDF가 아니다. 지우고 다시 받는다: {dest}")
+            raise ValueError(f"캐시된 파일이 PDF가 아니다. 지우고 다시 실행할 것: {dest}")
         return dest
     dest.parent.mkdir(parents=True, exist_ok=True)
     # httpx.Client는 쿠키를 유지한다. molit.go.kr은 쿠키 없이 리다이렉트를 무한 반복한다
@@ -89,7 +89,8 @@ def join_wrapped(parts: list[str]) -> str:
     """줄바꿈으로 접힌 제목을 잇는다. 줄 끝 공백은 그대로 둔다.
 
     단어 중간에서 접힌 줄(청년 / 주택드림)이 있어 공백을 끼우지 않는다. 단어 경계에서 접히고
-    공백이 빠진 줄은 붙어 버린다(질문 15건 안팎) — 텍스트만으로는 둘을 가를 수 없다.
+    공백이 빠진 줄은 붙어 버린다 — 텍스트만으로는 둘을 가를 수 없다. 이 PDF에서 몇 건인지는
+    리포트의 공백 차이 목록에 나온다.
     """
     return re.sub(r"\s+", " ", "".join(parts)).strip()
 
