@@ -433,3 +433,17 @@ def test_appendix_counts_tables_and_forms_separately():
     s = law_report.appendix_summary(law)
 
     assert (s.table_count, s.form_count) == (3, 1)  # 서로 다른 값이라 둘이 바뀌면 잡힌다
+
+
+def test_whole_article_dropped_or_inserted_twice_is_reported(law_json, rows):
+    # 파서가 가지 조문이나 삭제 조문을 통째로 건너뛰는 것이 가장 있을 법한 실패다
+    dropped = [r for r in rows if r["label"] != "제7조의2"]
+    twice = rows + [copy.deepcopy(_row(rows, "제29조"))]
+
+    gone = law_report.check(law_json, dropped)
+    dup = law_report.check(law_json, twice)
+
+    # 제7조의2만 달고 있던 장·절 제목도 같이 사라져 `장절`이 함께 잡힌다
+    assert not gone.ok and {f.where for f in gone.missing} == {"제7조의2", "장절"}
+    assert gone.source_counts["조문"] == gone.output_counts["조문"] + 1
+    assert not dup.ok and {f.where for f in dup.duplicated} == {"제29조"}
