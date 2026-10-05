@@ -254,3 +254,18 @@ def test_success_overwrites_previous_jsonl_with_new_content(dirs):
     text = out.read_text(encoding="utf-8")
     assert "이전 판본" not in text
     assert len(text.splitlines()) == 5  # 픽스처의 조문 5개
+
+
+def test_empty_settings_law_oc_exits_1_instead_of_falling_back_to_a_shared_value(
+    dirs, monkeypatch, capsys
+):
+    from cheongyak_rag.config import settings
+
+    monkeypatch.setattr(settings, "law_oc", "")  # .env에 LAW_OC가 없는 실사용 경로
+    fake = Fake()
+
+    code = law.main(client=fake.client(), faq_path=dirs["out_dir"] / "x", **dirs)  # oc 인자 없음
+
+    assert code == 1
+    assert fake.calls == {"search": 0, "service": 0}
+    assert "LAW_OC" in capsys.readouterr().err
