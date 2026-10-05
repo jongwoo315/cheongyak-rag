@@ -199,3 +199,35 @@ def test_refetched_stale_cache_is_reported_as_download_not_cache(dirs, capsys):
     out = capsys.readouterr().out
     assert fake.calls["service"] == 2
     assert "본문: 다운로드" in out and "캐시 사용" not in out
+
+
+def test_blank_lines_in_faq_jsonl_do_not_skip_the_whole_file(dirs, tmp_path, capsys):
+    faq = tmp_path / "faq.jsonl"
+    pair = {"q_no": 1, "as_of": "2024-05-29", "cited_articles": ["제3조제1항"]}
+    faq.write_text(json.dumps(pair, ensure_ascii=False) + "\n\n", encoding="utf-8")
+
+    assert run(Fake(), dirs, faq=faq) == 0
+
+    assert "FAQ 1쌍" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        '{"q_no": 1}',  # as_of·cited_articles 없음 → KeyError
+        '{"q_no": 1, "as_of": "2024-05-29", "cited_articles": null}',  # TypeError
+        '["x"]',  # 객체가 아닌 줄 → TypeError
+        "not json",  # ValueError
+    ],
+)
+def test_unreadable_faq_row_skips_only_that_item_and_says_why(dirs, tmp_path, capsys, line):
+    faq = tmp_path / "faq.jsonl"
+    faq.write_text(line + "\n", encoding="utf-8")
+
+    assert run(Fake(), dirs, faq=faq) == 0  # 법령 출력과 exit code는 막지 않는다
+
+    captured = capsys.readouterr()
+    assert (dirs["out_dir"] / "law-008243-20260615.jsonl").exists()
+    assert "읽지 못해" in captured.err
+    assert "이 항목은 건너뛴다" in captured.out
+    assert "FAQ JSONL이 없어" not in captured.out  # 파일은 있다. 없다고 말하면 원인이 틀린다

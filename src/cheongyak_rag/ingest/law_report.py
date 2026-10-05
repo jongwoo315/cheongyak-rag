@@ -366,7 +366,8 @@ def faq_cross(rows: list[dict], faq_rows: list[dict]) -> FaqCross:
 REFERENCE_COUNTS = {"조문": 90, "장절": 20, "항": 304, "호": 504, "목": 169}
 REFERENCE_EFFECTIVE = "2026-06-15"
 FAQ_HINT = (
-    "FAQ JSONL이 없어 이 항목은 건너뛴다. 먼저 `python -m cheongyak_rag.ingest.faq`를 돌릴 것"
+    "이 항목은 건너뛴다. FAQ JSONL이 없으면 먼저 `python -m cheongyak_rag.ingest.faq`를 돌릴 것."
+    " 파일이 있는데도 이 문구가 나오면 stderr의 오류를 볼 것"
 )
 SHOW = 5  # 목록은 앞 몇 개만 보인다. 전체 수는 따로 적는다
 

@@ -361,8 +361,9 @@ def main(
     if Path(faq_path).exists():
         try:
             lines = Path(faq_path).read_text(encoding="utf-8").splitlines()
-            cross = law_report.faq_cross(rows, [json.loads(ln) for ln in lines])
-        except (ValueError, KeyError) as e:
+            faq_rows = [json.loads(ln) for ln in lines if ln.strip()]
+            cross = law_report.faq_cross(rows, faq_rows)
+        except (ValueError, KeyError, TypeError) as e:
             print(f"FAQ JSONL을 읽지 못해 FAQ 인용 대조를 건너뛴다: {e!r}", file=sys.stderr)
     print()
     print(law_report.format_report(current, result, law_report.appendix_summary(law_json), cross))
