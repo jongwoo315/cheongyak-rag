@@ -303,6 +303,15 @@ def write_jsonl(rows: list[dict], dest: Path) -> None:
         tmp.unlink(missing_ok=True)
 
 
+def _stamp(path: Path) -> tuple[int, int] | None:
+    """파일이 교체됐는지 보는 값. 없으면 None."""
+    try:
+        st = path.stat()
+    except FileNotFoundError:
+        return None
+    return st.st_ino, st.st_mtime_ns
+
+
 def main(
     oc: str | None = None,
     raw_dir: Path = RAW_DIR,
@@ -320,7 +329,7 @@ def main(
         current = search_current(oc, client)  # 매번 한다. 현행 MST가 바뀌었는지 보는 호출이다
         stem = f"law-{current['law_id']}-{current['effective_date'].replace('-', '')}"
         raw = Path(raw_dir) / f"{stem}.json"
-        cached = raw.exists()
+        before = _stamp(raw)
         key = None
         if current["promulgation_no"]:
             key = (
@@ -329,6 +338,9 @@ def main(
                 + current["promulgation_no"]
             )
         law_json = fetch_law(oc, current["mst"], raw, client, version_key=key)
+        cached = (
+            before is not None and _stamp(raw) == before
+        )  # 판본이 달라 다시 받았으면 캐시가 아니다
     except LawApiError as e:
         print(f"API 오류: {e}", file=sys.stderr)
         return 1

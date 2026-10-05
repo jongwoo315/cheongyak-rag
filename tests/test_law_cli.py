@@ -181,3 +181,21 @@ def test_cache_with_matching_law_key_is_reused_and_stale_one_is_refetched(dirs):
     raw.write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
     run(fake, dirs)
     assert fake.calls["service"] == 2  # 법령키가 다르면 다시 받는다
+
+
+def test_refetched_stale_cache_is_reported_as_download_not_cache(dirs, capsys):
+    body = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    body["법령"]["법령키"] = "0082432026061501592"
+    fake = Fake(service_body=body, search_body=_with_promulgation(SEARCH_BODY))
+    run(fake, dirs)
+    raw = dirs["raw_dir"] / "law-008243-20260615.json"
+    stale = json.loads(raw.read_text(encoding="utf-8"))
+    stale["법령"]["법령키"] = "0082432026061500001"
+    raw.write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
+    capsys.readouterr()
+
+    run(fake, dirs)
+
+    out = capsys.readouterr().out
+    assert fake.calls["service"] == 2
+    assert "본문: 다운로드" in out and "캐시 사용" not in out
