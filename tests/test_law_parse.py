@@ -170,6 +170,24 @@ def test_text_given_as_string_list_or_nested_list_gives_same_text():
 # ── 장·절 ─────────────────────────────────────────────────────────────────
 
 
+def test_item_and_subitem_amendment_dates_roll_up_to_article_amendments():
+    # FAQ (b)가 이 값에 기댄다. 호·목에만 붙은 개정 날짜가 빠지면 개정된 조를 못 센다
+    hang = {
+        "항번호": "①",
+        "항내용": "① 본문",
+        "호": {
+            "호번호": "1.",
+            "호내용": "1. 호 <개정 2030.1.1>",
+            "목": {"목번호": "가.", "목내용": ["가. 목 <신설 2031.2.3>"]},
+        },
+    }
+
+    art = parse_articles(_law(_article("1", 항=hang)))[0]
+
+    assert art.amendments == ["2030-01-01", "2031-02-03"]
+    assert art.paragraphs[0].amendments == []  # 항 자체에는 개정 날짜가 없다
+
+
 def test_new_chapter_resets_section():
     law = _law(
         _heading("            제1장 총칙"),
