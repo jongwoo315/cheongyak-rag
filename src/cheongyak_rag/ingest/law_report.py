@@ -4,6 +4,7 @@
 원본 쪽은 JSON을 재귀로 훑고, 출력 쪽은 JSONL 줄(dict)만 읽는다.
 """
 
+import html
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -176,7 +177,11 @@ def check(law_json: dict, rows: list[dict]) -> Check:
 
 @dataclass
 class Appendix:
-    table_titles: list[str]  # `별표 1 가점제 적용기준(제2조제8호 관련)`
+    table_titles: list[
+        str
+    ]  # `별표 1 가점제 적용기준(제2조제8호 관련)`, `서식 3의2 주택청약 접수증`
+    table_count: int  # 별표구분이 `별표`인 것
+    form_count: int  # 별표구분이 `서식`인 것. 같은 `별표단위`로 오고 번호가 별표와 겹친다
     supplement_count: int
 
 
@@ -188,12 +193,16 @@ def _as_list(node) -> list:
 
 def appendix_summary(law_json: dict) -> Appendix:
     law = law_json["법령"]
+    units = _as_list(law.get("별표", {}).get("별표단위"))
     titles = []
-    for t in _as_list(law.get("별표", {}).get("별표단위")):
+    for t in units:
         branch = int(t.get("별표가지번호") or 0)
         no = f"{int(t['별표번호'])}" + (f"의{branch}" if branch else "")
-        titles.append(f"별표 {no} {t['별표제목']}")
-    return Appendix(titles, len(_as_list(law.get("부칙", {}).get("부칙단위"))))
+        titles.append(f"{t['별표구분']} {no} {html.unescape(t['별표제목'])}")
+    kinds = Counter(t["별표구분"] for t in units)
+    return Appendix(
+        titles, kinds["별표"], kinds["서식"], len(_as_list(law.get("부칙", {}).get("부칙단위")))
+    )
 
 
 # ── 실패 징후 3: #70 FAQ 인용과 현행 법령 대조 ────────────────────────────
@@ -299,7 +308,8 @@ def format_report(
         out += [f"  [{label}] {f.where}: {f.text[:80]!r}" for f in fields]
     out += [
         "",
-        f"별표 {len(appendix.table_titles)}개 · 부칙 {appendix.supplement_count}개"
+        f"별표·서식 {len(appendix.table_titles)}개 (별표 {appendix.table_count}"
+        f" · 서식 {appendix.form_count}) · 부칙 {appendix.supplement_count}개"
         " (본문은 이번 범위 밖)",
     ]
     out += [f"  {t}" for t in appendix.table_titles]
