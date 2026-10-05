@@ -22,6 +22,7 @@ CURRENT = {
     "법령명한글": NAME,
     "법령ID": "008243",
     "시행일자": "20260615",
+    "공포번호": "01592",
 }
 
 
@@ -34,6 +35,7 @@ def test_search_current_picks_current_version_from_list():
         "mst": "286965",
         "law_id": "008243",
         "effective_date": "2026-06-15",
+        "promulgation_no": "01592",
     }
 
 
@@ -166,3 +168,43 @@ def test_corrupt_cache_is_rejected(tmp_path):
 
     with pytest.raises(law.LawApiError, match="캐시"):
         law.fetch_law("key", "286965", dest, _client(lambda r: httpx.Response(200)))
+
+
+def test_transport_error_becomes_law_api_error_without_oc():
+    def handler(request):
+        raise httpx.ConnectError("connect failed for secretkey")
+
+    with pytest.raises(law.LawApiError) as exc:
+        law.search_current("secretkey", _client(handler))
+    assert "ConnectError" in str(exc.value)
+    assert "secretkey" not in str(exc.value)
+
+
+def test_cache_with_non_dict_json_is_rejected(tmp_path):
+    dest = tmp_path / "law.json"
+    dest.write_text("[1, 2]", encoding="utf-8")
+
+    with pytest.raises(law.LawApiError):
+        law.fetch_law("key", "286965", dest, _client(lambda r: httpx.Response(200)))
+
+
+def test_cache_for_a_different_version_is_refetched(tmp_path):
+    stale = _law_body()
+    stale["법령"]["법령키"] = "0082432026061500001"
+    dest = tmp_path / "law.json"
+    dest.write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
+    fresh = _law_body()
+    fresh["법령"]["법령키"] = "0082432026061501592"
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(200, json=fresh)
+
+    result = law.fetch_law(
+        "key", "286965", dest, _client(handler), version_key="0082432026061501592"
+    )
+
+    assert calls == [1]
+    assert result["법령"]["법령키"] == "0082432026061501592"
+    assert json.loads(dest.read_text(encoding="utf-8")) == fresh

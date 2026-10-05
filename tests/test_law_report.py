@@ -219,3 +219,74 @@ def test_faq_cross_amended_means_strictly_after_the_faq_date(rows):
 
     assert cross.pairs_citing_amended == 0
     assert cross.amended_labels == []
+
+
+# ── 위치 검증 (리뷰 지적: 텍스트만 맞고 자리가 틀린 경우) ────────────────────
+
+
+def test_item_moved_to_another_article_is_reported(law_json, rows):
+    item = _row(rows, "제3조")["paragraphs"][1]["items"].pop(1)  # 6의2 호
+    _row(rows, "제7조의2")["paragraphs"][0]["items"].append(item)
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert [f.where for f in check.missing] == ["제3조"]
+    assert [f.where for f in check.extra + check.duplicated] == ["제7조의2"]
+
+
+def test_wrong_chapter_or_section_attribution_is_reported(law_json, rows):
+    _row(rows, "제7조의2")["chapter"] = "제1장 총칙"
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert [f.where for f in check.misplaced] == ["제7조의2"]
+
+
+def test_expected_chapter_section_follows_source_order(law_json):
+    assert law_report.source_headings(law_json)["제7조의2"] == (
+        "제2장 입주자저축",
+        "제1절 입주자저축의 가입 및 사용",
+    )
+    assert law_report.source_headings(law_json)["제1조"] == ("제1장 총칙", None)
+    assert law_report.source_headings(law_json)["제29조"] == (
+        "제4장 주택공급 방법",
+        "제2절 일반공급",
+    )
+
+
+# ── amendments·삭제 검증 (리뷰 지적: FAQ (b)가 amendments에 전적으로 기대는데 검증이 없었다) ──
+
+
+def test_lost_amendments_are_reported(law_json, rows):
+    _row(rows, "제3조")["amendments"] = []
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert [f.where for f in check.bad_meta] == ["제3조"]
+    assert "amendments" in check.bad_meta[0].text
+
+
+def test_wrong_deleted_flag_is_reported(law_json, rows):
+    _row(rows, "제29조")["deleted"] = False
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert "deleted" in check.bad_meta[0].text
+
+
+def test_clean_rows_have_no_misplaced_or_bad_meta(law_json, rows):
+    check = law_report.check(law_json, rows)
+
+    assert check.misplaced == [] and check.bad_meta == []
+
+
+def test_faq_cross_counts_deleted_article_as_not_current(rows):
+    # 제29조는 삭제됐다. 행은 남아 있지만 현행 조문이 아니다
+    cross = law_report.faq_cross(rows, [_faq(1, "제29조제1항"), _faq(2, "제1조")])
+
+    assert cross.pairs_citing_missing == 1
+    assert cross.missing_labels == ["제29조"]

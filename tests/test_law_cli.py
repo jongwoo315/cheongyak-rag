@@ -138,3 +138,46 @@ def test_faq_cross_is_in_report_when_faq_jsonl_exists(dirs, tmp_path, capsys):
     assert "FAQ 2쌍" in out
     assert "현행에 없는 조를 인용한 쌍: 1" in out
     assert "다른 법령" in out
+
+
+def test_broken_faq_jsonl_does_not_block_main_output(dirs, tmp_path, capsys):
+    faq = tmp_path / "faq.jsonl"
+    faq.write_text('{"q_no": 1}\n\nnot json\n', encoding="utf-8")
+
+    assert run(Fake(), dirs, faq=faq) == 0
+
+    assert (dirs["out_dir"] / "law-008243-20260615.jsonl").exists()
+    assert "FAQ" in capsys.readouterr().out
+
+
+def test_connection_failure_exits_1_with_message(dirs, capsys):
+    def boom(request):
+        raise httpx.ConnectError("down")
+
+    client = httpx.Client(transport=httpx.MockTransport(boom))
+
+    assert law.main(oc="key", client=client, faq_path=dirs["out_dir"] / "x", **dirs) == 1
+    assert "ConnectError" in capsys.readouterr().err
+
+
+def _with_promulgation(search_body):
+    entry = {**search_body["LawSearch"]["law"], "공포번호": "01592"}
+    return {"LawSearch": {"law": entry}}
+
+
+def test_cache_with_matching_law_key_is_reused_and_stale_one_is_refetched(dirs):
+    body = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    body["법령"]["법령키"] = "0082432026061501592"
+    fake = Fake(service_body=body, search_body=_with_promulgation(SEARCH_BODY))
+
+    run(fake, dirs)
+    run(fake, dirs)
+    assert fake.calls == {"search": 2, "service": 1}  # 법령키가 같으면 캐시
+
+    fake.service_body = {**body, "법령": {**body["법령"], "법령키": "0082432026061501592"}}
+    raw = dirs["raw_dir"] / "law-008243-20260615.json"
+    stale = json.loads(raw.read_text(encoding="utf-8"))
+    stale["법령"]["법령키"] = "0082432026061500001"
+    raw.write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
+    run(fake, dirs)
+    assert fake.calls["service"] == 2  # 법령키가 다르면 다시 받는다

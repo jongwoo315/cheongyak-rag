@@ -31,7 +31,10 @@ def _snippet(text: str, oc: str) -> str:
 
 def _get_json(client: httpx.Client, url: str, params: dict, oc: str) -> dict:
     """호출 → 상태 코드 + JSON 파싱 + 오류 본문 검사. 실패면 응답 앞 200자를 붙여 예외."""
-    resp = client.get(url, params=params)
+    try:
+        resp = client.get(url, params=params)
+    except httpx.HTTPError as e:  # 연결 실패·시간 초과. httpx 로그에는 URL(OC 포함)이 찍힐 수 있다
+        raise LawApiError(f"{type(e).__name__}: {_snippet(str(e), oc)}") from None
     if resp.status_code != 200:
         raise LawApiError(f"HTTP {resp.status_code}: {_snippet(resp.text, oc)}")
     try:
@@ -63,6 +66,7 @@ def search_current(oc: str, client: httpx.Client | None = None) -> dict[str, str
                 "mst": entry["법령일련번호"],
                 "law_id": entry["법령ID"],
                 "effective_date": f"{d[:4]}-{d[4:6]}-{d[6:]}",
+                "promulgation_no": entry.get("공포번호", ""),
             }
     raise LawApiError(f"검색 결과에 현행 「{LAW_NAME}」이 없다: {_snippet(json.dumps(body), oc)}")
 
@@ -74,15 +78,33 @@ def _check_name(body: dict, oc: str) -> dict:
     return body
 
 
-def fetch_law(oc: str, mst: str, dest: Path, client: httpx.Client | None = None) -> dict:
-    """dest에 캐시가 있으면 다시 받지 않는다. 검증을 통과한 응답만 캐시한다."""
+def _law_key(body: dict) -> str | None:
+    return body.get("법령", {}).get("법령키")
+
+
+def fetch_law(
+    oc: str,
+    mst: str,
+    dest: Path,
+    client: httpx.Client | None = None,
+    version_key: str | None = None,
+) -> dict:
+    """dest에 캐시가 있으면 다시 받지 않는다. 검증을 통과한 응답만 캐시한다.
+
+    version_key(`법령키` = 법령ID + 시행일 + 공포번호)가 주어지고 캐시의 값과 다르면 같은 시행일에
+    다시 공포된 판본이라 캐시를 버리고 다시 받는다.
+    """
     oc = _require_oc(oc)
     dest = Path(dest)
     if dest.exists():
         try:
-            return _check_name(json.loads(dest.read_text(encoding="utf-8")), oc)
+            cached = json.loads(dest.read_text(encoding="utf-8"))
         except ValueError as e:
             raise LawApiError(f"캐시가 깨졌다. 지우고 다시 실행할 것: {dest} ({e})") from None
+        if not isinstance(cached, dict):
+            raise LawApiError(f"캐시가 법령 응답이 아니다. 지우고 다시 실행할 것: {dest}")
+        if version_key is None or _law_key(cached) == version_key:
+            return _check_name(cached, oc)
     own = client is None
     client = client or httpx.Client(timeout=60)
     try:
@@ -143,10 +165,9 @@ class Article:
     amendments: list[str]  # 조문 전체(조문내용·항·호·목)의 `<개정·신설 …>` 날짜, ISO 오름차순
 
 
-AMENDMENT_TAG = re.compile(
-    r"<(?:(?:개정|신설)\s+)?(\d{4}\.\d{1,2}\.\d{1,2}(?:\s*,\s*\d{4}\.\d{1,2}\.\d{1,2})*)>"
-)
-DATE = re.compile(r"(\d{4})\.(\d{1,2})\.(\d{1,2})")
+_D = r"\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.?"  # 조문은 `2016.5.19`, 별표·부칙은 `2024. 12. 18.`
+AMENDMENT_TAG = re.compile(rf"(?:<|&lt;)(?:(?:개정|신설)\s+)?({_D}(?:\s*,\s*{_D})*)(?:>|&gt;)")
+DATE = re.compile(r"(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})")
 CHAPTER = re.compile(r"^제\d+장(?:\s|$)")
 SECTION = re.compile(r"^제\d+절(?:의\d+)?(?:\s|$)")
 DELETED = re.compile(r"^제\d+조(?:의\d+)?\s*삭제")
@@ -300,7 +321,14 @@ def main(
         stem = f"law-{current['law_id']}-{current['effective_date'].replace('-', '')}"
         raw = Path(raw_dir) / f"{stem}.json"
         cached = raw.exists()
-        law_json = fetch_law(oc, current["mst"], raw, client)
+        key = None
+        if current["promulgation_no"]:
+            key = (
+                current["law_id"]
+                + current["effective_date"].replace("-", "")
+                + current["promulgation_no"]
+            )
+        law_json = fetch_law(oc, current["mst"], raw, client, version_key=key)
     except LawApiError as e:
         print(f"API 오류: {e}", file=sys.stderr)
         return 1
@@ -309,12 +337,6 @@ def main(
 
     rows = [asdict(a) for a in parse_articles(law_json, current["mst"])]
     result = law_report.check(law_json, rows)
-    cross = None
-    if Path(faq_path).exists():
-        faq_rows = [
-            json.loads(ln) for ln in Path(faq_path).read_text(encoding="utf-8").splitlines()
-        ]
-        cross = law_report.faq_cross(rows, faq_rows)
     out = Path(out_dir) / f"{stem}.jsonl"
     # 검증에 걸리면 이전 JSONL을 덮어쓰지 않는다. 다음 단계(#73)가 깨진 파일을 읽게 된다
     if result.ok:
@@ -322,6 +344,14 @@ def main(
         print(f"JSONL: {len(rows)}조문 → {out}")
     else:
         print(f"JSONL: 검증 실패라 쓰지 않았다 ({out})", file=sys.stderr)
+    # FAQ 대조는 보조 항목이다. FAQ 파일이 깨져도 위 출력과 리포트는 막지 않는다
+    cross = None
+    if Path(faq_path).exists():
+        try:
+            lines = Path(faq_path).read_text(encoding="utf-8").splitlines()
+            cross = law_report.faq_cross(rows, [json.loads(ln) for ln in lines])
+        except (ValueError, KeyError) as e:
+            print(f"FAQ JSONL을 읽지 못해 FAQ 인용 대조를 건너뛴다: {e!r}", file=sys.stderr)
     print()
     print(law_report.format_report(current, result, law_report.appendix_summary(law_json), cross))
     return 0 if result.ok else 1

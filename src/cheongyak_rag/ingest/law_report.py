@@ -21,9 +21,11 @@ class Field:
 
 @dataclass
 class Check:
-    missing: list[Field]  # 원본에 있는데 출력에 없다
-    duplicated: list[Field]  # 출력에 원본보다 더 많이 들어갔다
-    extra: list[Field]  # 원본에 없는 내용이 출력에 있다 (내용이 바뀐 경우)
+    missing: list[Field]  # 원본에 있는데 출력에 없다 (조문 번호까지 맞아야 있는 것으로 센다)
+    duplicated: list[Field]  # 같은 조문에 원본보다 더 많이 들어갔다
+    extra: list[Field]  # 원본에 없는 내용이 출력에 있다 (내용이 바뀌었거나 다른 조문으로 옮겨졌다)
+    misplaced: list[Field] = field(default_factory=list)  # 장·절 소속이 원본 순서와 다르다
+    bad_meta: list[Field] = field(default_factory=list)  # 개정 날짜·삭제 여부·제목·번호가 다르다
     source_counts: dict[str, int] = field(default_factory=dict)
     output_counts: dict[str, int] = field(default_factory=dict)
     source_field_count: int = 0
@@ -31,8 +33,8 @@ class Check:
 
     @property
     def ok(self) -> bool:
-        clean = not (self.missing or self.duplicated or self.extra)
-        return clean and self.source_counts == self.output_counts
+        problems = (self.missing, self.duplicated, self.extra, self.misplaced, self.bad_meta)
+        return not any(problems) and self.source_counts == self.output_counts
 
 
 def _norm(s: str) -> str:
@@ -144,27 +146,121 @@ def output_counts(rows: list[dict]) -> dict[str, int]:
     }
 
 
+# ── 소속·속성 (원본에서 따로 읽는다) ─────────────────────────────────────
+
+DATE_IN_TAG = re.compile(r"(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})")
+TAG = re.compile(r"(?:<|&lt;)([^<>&]*)(?:>|&gt;)")
+DELETED_HEAD = re.compile(r"^제\d+조(?:의\d+)?\s*삭제")
+
+
+def source_headings(law_json: dict) -> dict[str, tuple[str | None, str | None]]:
+    """조문 라벨 → 그 조문이 속한 (장, 절). 원본을 순서대로 읽어 장·절 제목을 따라간다."""
+    chapter = section = None
+    found = {}
+    for unit in _units(law_json):
+        text = _norm(" ".join(_strings(unit["조문내용"])))
+        if unit["조문여부"] == "전문":
+            if re.match(r"제\d+장", text):
+                chapter, section = text, None
+            else:
+                section = text
+        else:
+            found[_label(unit)] = (chapter, section)
+    return found
+
+
+def _source_numbers(unit: dict) -> dict[str, list[str]]:
+    """조문 하나의 항·호·목 번호를 문서 순서대로. 하나면 dict로 와서 목록으로 맞춘다."""
+    nums: dict[str, list[str]] = {"항": [], "호": [], "목": []}
+
+    def listed(node) -> list:
+        return [] if node is None else [node] if isinstance(node, dict) else node
+
+    for hang in listed(unit.get("항")):
+        nums["항"].append(hang.get("항번호", "").strip())
+        for ho in listed(hang.get("호")):
+            branch = ho.get("호가지번호")
+            nums["호"].append(ho["호번호"].strip().rstrip(".") + (f"의{branch}" if branch else ""))
+            nums["목"].extend(m["목번호"].strip().rstrip(".") for m in listed(ho.get("목")))
+    return nums
+
+
+def _output_numbers(row: dict) -> dict[str, list[str]]:
+    paragraphs = row["paragraphs"]
+    items = [i for p in paragraphs for i in p["items"]]
+    return {
+        "항": [p["no"] for p in paragraphs],
+        "호": [i["no"] for i in items],
+        "목": [s["no"] for i in items for s in i["subitems"]],
+    }
+
+
+def _dates(text: str) -> set[str]:
+    return {
+        f"{y}-{int(m):02d}-{int(d):02d}"
+        for tag in TAG.findall(text)
+        for y, m, d in DATE_IN_TAG.findall(tag)
+    }
+
+
+def _meta_problems(law_json: dict, rows: list[dict], texts: dict[str, list[str]]) -> list[Field]:
+    by_label = {r["label"]: r for r in rows}
+    problems = []
+    for unit in _units(law_json):
+        if unit["조문여부"] != "조문":
+            continue
+        label, row = _label(unit), by_label.get(_label(unit))
+        if row is None:
+            continue  # 없는 조문은 텍스트 대조가 이미 누락으로 센다
+        head = _norm(" ".join(_strings(unit["조문내용"])))
+        expected = {
+            "amendments": sorted(_dates("\n".join(texts[label]))),
+            "deleted": bool(DELETED_HEAD.match(head)),
+            "title": unit.get("조문제목"),
+            **{f"{lv}번호": nums for lv, nums in _source_numbers(unit).items()},
+        }
+        got = {"amendments": row["amendments"], "deleted": row["deleted"], "title": row["title"]}
+        got.update({f"{lv}번호": nums for lv, nums in _output_numbers(row).items()})
+        for key, want in expected.items():
+            if got[key] != want:
+                problems.append(Field(label, f"{key}: 원본 {want!r} / 출력 {got[key]!r}"))
+    return problems
+
+
 # ── 대조 ─────────────────────────────────────────────────────────────────
 
 
 def check(law_json: dict, rows: list[dict]) -> Check:
     src, out = source_fields(law_json), output_fields(rows)
-    src_n, out_n = Counter(f.text for f in src), Counter(f.text for f in out)
-    missing_n, surplus_n = src_n - out_n, out_n - src_n
+    # 조문 번호까지 묶어서 센다. 텍스트만 세면 다른 조문으로 옮겨진 것을 못 잡는다
+    src_n = Counter((f.where, f.text) for f in src)
+    out_n = Counter((f.where, f.text) for f in out)
 
     def pick(fields: list[Field], budget: Counter) -> list[Field]:
         budget, picked = Counter(budget), []
         for f in fields:
-            if budget[f.text] > 0:
-                budget[f.text] -= 1
+            if budget[(f.where, f.text)] > 0:
+                budget[(f.where, f.text)] -= 1
                 picked.append(f)
         return picked
 
-    surplus = pick(out, surplus_n)
+    surplus = pick(out, out_n - src_n)
+    texts: dict[str, list[str]] = {}
+    for f in src:
+        texts.setdefault(f.where, []).append(f.text)
+    expected_headings = source_headings(law_json)
+    misplaced = []
+    for r in rows:
+        want = expected_headings.get(r["label"])
+        got = (_norm(r["chapter"] or "") or None, _norm(r["section"] or "") or None)
+        if want is not None and got != want:
+            misplaced.append(Field(r["label"], f"원본 {want} / 출력 {got}"))
     return Check(
-        missing=pick(src, missing_n),
-        duplicated=[f for f in surplus if f.text in src_n],
-        extra=[f for f in surplus if f.text not in src_n],
+        missing=pick(src, src_n - out_n),
+        duplicated=[f for f in surplus if (f.where, f.text) in src_n],
+        extra=[f for f in surplus if (f.where, f.text) not in src_n],
+        misplaced=misplaced,
+        bad_meta=_meta_problems(law_json, rows, texts),
         source_counts=source_counts(law_json),
         output_counts=output_counts(rows),
         source_field_count=len(src),
@@ -177,9 +273,7 @@ def check(law_json: dict, rows: list[dict]) -> Check:
 
 @dataclass
 class Appendix:
-    table_titles: list[
-        str
-    ]  # `별표 1 가점제 적용기준(제2조제8호 관련)`, `서식 3의2 주택청약 접수증`
+    table_titles: list[str]  # `별표 1 가점제 …(제2조제8호 관련)`, `서식 3의2 주택청약 접수증`
     table_count: int  # 별표구분이 `별표`인 것
     form_count: int  # 별표구분이 `서식`인 것. 같은 `별표단위`로 오고 번호가 별표와 겹친다
     supplement_count: int
@@ -234,7 +328,8 @@ def _cited_labels(pair: dict) -> list[str]:
 
 
 def faq_cross(rows: list[dict], faq_rows: list[dict]) -> FaqCross:
-    amendments = {r["label"]: r["amendments"] for r in rows}
+    # 삭제된 조문은 행이 남아 있어도 현행 조문이 아니다
+    amendments = {r["label"]: r["amendments"] for r in rows if not r["deleted"]}
     cutoff = max((p["as_of"] for p in faq_rows), default="")
     cited, missing, amended = set(), set(), set()
     citing_missing = citing_amended = 0
@@ -303,9 +398,17 @@ def format_report(
         f"텍스트 필드 대조 (원본 {c.source_field_count}개 → 출력 {c.output_field_count}개,"
         " 공백은 하나로 접어 비교): "
         f"누락 {len(c.missing)} · 중복 {len(c.duplicated)} · 내용이 바뀐 것 {len(c.extra)}",
+        f"소속·속성 대조 (장·절 소속, 개정 날짜, 삭제 여부, 제목, 항·호·목 번호): "
+        f"소속 어긋남 {len(c.misplaced)} · 속성 어긋남 {len(c.bad_meta)}",
     ]
-    for label, fields in (("누락", c.missing), ("중복", c.duplicated), ("바뀜", c.extra)):
-        out += [f"  [{label}] {f.where}: {f.text[:80]!r}" for f in fields]
+    for label, fields in (
+        ("누락", c.missing),
+        ("중복", c.duplicated),
+        ("바뀜", c.extra),
+        ("소속", c.misplaced),
+        ("속성", c.bad_meta),
+    ):
+        out += [f"  [{label}] {f.where}: {f.text[:120]!r}" for f in fields]
     out += [
         "",
         f"별표·서식 {len(appendix.table_titles)}개 (별표 {appendix.table_count}"
