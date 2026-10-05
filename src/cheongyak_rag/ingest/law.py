@@ -160,7 +160,9 @@ class Article:
     section: str | None
     article_effective_date: str
     deleted: bool
-    text: str  # 조문내용 그대로. 항이 있는 조문은 `제3조(적용대상)` 머리만 든다
+    # 조문내용의 줄 앞뒤 공백만 뗀 것. 항이 있으면 `제3조(적용대상)` 머리만 들고,
+    # 호만 든 항이면 도입 문장까지 든다
+    text: str
     paragraphs: list[Paragraph]
     amendments: list[str]  # 조문 전체(조문내용·항·호·목)의 `<개정·신설 …>` 날짜, ISO 오름차순
 
