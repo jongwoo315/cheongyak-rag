@@ -1,6 +1,8 @@
 """법제처 국가법령정보 OPEN API에서 「주택공급에 관한 규칙」 현행 조문을 받는다 (#69)."""
 
 import json
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
@@ -96,3 +98,164 @@ def fetch_law(oc: str, mst: str, dest: Path, client: httpx.Client | None = None)
     finally:
         tmp.unlink(missing_ok=True)
     return body
+
+
+# ── 조문 파싱 ────────────────────────────────────────────────────────────
+
+
+@dataclass
+class Subitem:
+    no: str  # 목 `가`
+    text: str
+
+
+@dataclass
+class Item:
+    no: str  # 호 `1`, 가지면 `2의2`
+    text: str
+    subitems: list[Subitem] = field(default_factory=list)
+
+
+@dataclass
+class Paragraph:
+    no: str  # 항 `①`. 번호·본문 없이 호만 든 항(항이 dict로 오는 조문)은 ""
+    text: str
+    amendments: list[str] = field(default_factory=list)
+    items: list[Item] = field(default_factory=list)
+
+
+@dataclass
+class Article:
+    law_id: str
+    mst: str
+    effective_date: str
+    article_no: int
+    branch_no: int  # 가지번호. 없으면 0
+    label: str  # `제4조`, 가지면 `제4조의2`
+    title: str | None
+    chapter: str | None
+    section: str | None
+    article_effective_date: str
+    deleted: bool
+    text: str  # 조문내용 그대로. 항이 있는 조문은 `제3조(적용대상)` 머리만 든다
+    paragraphs: list[Paragraph]
+    amendments: list[str]  # 조문 전체(조문내용·항·호·목)의 `<개정·신설 …>` 날짜, ISO 오름차순
+
+
+AMENDMENT_TAG = re.compile(
+    r"<(?:(?:개정|신설)\s+)?(\d{4}\.\d{1,2}\.\d{1,2}(?:\s*,\s*\d{4}\.\d{1,2}\.\d{1,2})*)>"
+)
+DATE = re.compile(r"(\d{4})\.(\d{1,2})\.(\d{1,2})")
+CHAPTER = re.compile(r"^제\d+장(?:\s|$)")
+SECTION = re.compile(r"^제\d+절(?:의\d+)?(?:\s|$)")
+DELETED = re.compile(r"^제\d+조(?:의\d+)?\s*삭제")
+
+
+def extract_amendments(text: str) -> list[str]:
+    """`<개정 2016.5.19, …>` · `<신설 …>` · `삭제 <2016.12.30>`의 날짜를 ISO 오름차순으로 뽑는다."""
+    dates = {
+        f"{y}-{int(m):02d}-{int(d):02d}"
+        for tag in AMENDMENT_TAG.finditer(text)
+        for y, m, d in DATE.findall(tag[1])
+    }
+    return sorted(dates)
+
+
+def _as_list(node) -> list:
+    """항·호·목은 하나면 dict로, 없으면 키 자체가 빠져서 온다. 셋을 하나로 맞춘다."""
+    if node is None:
+        return []
+    return [node] if isinstance(node, dict) else node
+
+
+def _lines(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, list):
+        for n in node:
+            yield from _lines(n)
+
+
+def _text(node) -> str:
+    """내용 필드는 문자열이거나, 줄 목록, 줄 목록의 목록(`목내용`)으로 온다."""
+    return "\n".join(ln.strip() for ln in _lines(node) if ln.strip())
+
+
+def _no(num: str, branch: str | None) -> str:
+    base = num.strip().rstrip(".")
+    return f"{base}의{branch}" if branch else base
+
+
+def _iso(yyyymmdd: str) -> str:
+    return f"{yyyymmdd[:4]}-{yyyymmdd[4:6]}-{yyyymmdd[6:]}"
+
+
+def _parse_subitem(node: dict) -> Subitem:
+    return Subitem(no=_no(node["목번호"], None), text=_text(node["목내용"]))
+
+
+def _parse_item(node: dict) -> Item:
+    return Item(
+        no=_no(node["호번호"], node.get("호가지번호")),
+        text=_text(node["호내용"]),
+        subitems=[_parse_subitem(m) for m in _as_list(node.get("목"))],
+    )
+
+
+def _parse_paragraph(node: dict) -> Paragraph:
+    text = _text(node.get("항내용", ""))
+    return Paragraph(
+        no=node.get("항번호", "").strip(),
+        text=text,
+        amendments=extract_amendments(text),
+        items=[_parse_item(h) for h in _as_list(node.get("호"))],
+    )
+
+
+def _all_text(art: Article) -> str:
+    parts = [art.text]
+    for p in art.paragraphs:
+        parts.append(p.text)
+        for i in p.items:
+            parts.append(i.text)
+            parts.extend(s.text for s in i.subitems)
+    return "\n".join(parts)
+
+
+def parse_articles(law_json: dict, mst: str = "") -> list[Article]:
+    """`법령.조문.조문단위`를 조문 하나당 `Article` 하나로 바꾼다. 계층(항·호·목)은 그대로 둔다."""
+    law = law_json["법령"]
+    info = law["기본정보"]
+    law_id, effective = info["법령ID"], _iso(info["시행일자"])
+    chapter = section = None
+    articles = []
+    for unit in _as_list(law["조문"]["조문단위"]):
+        text = _text(unit["조문내용"])
+        if unit["조문여부"] == "전문":  # 장·절 제목. 뒤따르는 조문들의 소속이다
+            if CHAPTER.match(text):
+                chapter, section = text, None
+            elif SECTION.match(text):
+                section = text
+            else:
+                raise ValueError(f"알 수 없는 전문(장·절이 아니다): {text!r}")
+            continue
+        no, branch = int(unit["조문번호"]), int(unit.get("조문가지번호") or 0)
+        art = Article(
+            law_id=law_id,
+            mst=mst,
+            effective_date=effective,
+            article_no=no,
+            branch_no=branch,
+            label=f"제{no}조" + (f"의{branch}" if branch else ""),
+            title=unit.get("조문제목"),
+            chapter=chapter,
+            section=section,
+            article_effective_date=_iso(unit["조문시행일자"]),
+            deleted=bool(DELETED.match(text)),
+            text=text,
+            paragraphs=[_parse_paragraph(h) for h in _as_list(unit.get("항"))],
+            amendments=[],
+        )
+        art.amendments = extract_amendments(_all_text(art))
+        articles.append(art)
+    return articles
