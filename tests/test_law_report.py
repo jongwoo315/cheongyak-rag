@@ -312,3 +312,30 @@ def test_response_with_no_articles_is_not_ok(law_json):
 
     assert check.source_counts["조문"] == 0
     assert not check.ok  # 0 == 0이라 개수가 일치해도 빈 응답은 통과가 아니다
+
+
+# ── 식별 필드·항 단위 개정 날짜 (리뷰 지적: 파서가 낸 값인데 원본과 안 맞댔다) ──
+
+
+def _para_with_amendment(rows):
+    return next(p for r in rows for p in r["paragraphs"] if p["amendments"])
+
+
+@pytest.mark.parametrize(
+    "tamper, key",
+    [
+        (lambda rows: _row(rows, "제3조").update(article_no=9), "article_no"),
+        (lambda rows: _row(rows, "제7조의2").update(branch_no=0), "branch_no"),
+        (lambda rows: _row(rows, "제3조").update(article_effective_date="1999-01-01"), "시행일"),
+        (lambda rows: _row(rows, "제3조").update(law_id="ZZ"), "law_id"),
+        (lambda rows: _row(rows, "제3조").update(effective_date="1999-01-01"), "effective_date"),
+        (lambda rows: _para_with_amendment(rows).update(amendments=["1999-01-01"]), "항 개정"),
+    ],
+)
+def test_identity_and_paragraph_amendment_mismatch_is_reported(law_json, rows, tamper, key):
+    tamper(rows)
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert any(key in f.text for f in check.bad_meta)

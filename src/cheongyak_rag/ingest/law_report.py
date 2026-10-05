@@ -210,8 +210,13 @@ def _dates(text: str) -> set[str]:
     }
 
 
+def _iso(yyyymmdd: str) -> str:
+    return f"{yyyymmdd[:4]}-{yyyymmdd[4:6]}-{yyyymmdd[6:]}"
+
+
 def _meta_problems(law_json: dict, rows: list[dict], texts: dict[str, list[str]]) -> list[Field]:
     by_label = {r["label"]: r for r in rows}
+    info = law_json["법령"]["기본정보"]
     problems = []
     for unit in _units(law_json):
         if unit["조문여부"] != "조문":
@@ -224,9 +229,29 @@ def _meta_problems(law_json: dict, rows: list[dict], texts: dict[str, list[str]]
             "amendments": sorted(_dates("\n".join(texts[label]))),
             "deleted": bool(DELETED_HEAD.match(head)),
             "title": unit.get("조문제목"),
+            "article_no": int(unit["조문번호"]),
+            "branch_no": int(unit.get("조문가지번호") or 0),
+            "시행일": _iso(unit["조문시행일자"]),
+            "law_id": info["법령ID"],
+            "effective_date": _iso(info["시행일자"]),
+            # 항 단위 개정 날짜는 조문 전체 합집합에 묻혀 위 amendments로는 안 보인다
+            "항 개정": [
+                sorted(_dates(" ".join(_strings(h.get("항내용")))))
+                for h in _as_list(unit.get("항"))
+            ],
             **{f"{lv}번호": nums for lv, nums in _source_numbers(unit).items()},
         }
-        got = {"amendments": row["amendments"], "deleted": row["deleted"], "title": row["title"]}
+        got = {
+            "amendments": row["amendments"],
+            "deleted": row["deleted"],
+            "title": row["title"],
+            "article_no": row["article_no"],
+            "branch_no": row["branch_no"],
+            "시행일": row["article_effective_date"],
+            "law_id": row["law_id"],
+            "effective_date": row["effective_date"],
+            "항 개정": [p["amendments"] for p in row["paragraphs"]],
+        }
         got.update({f"{lv}번호": nums for lv, nums in _output_numbers(row).items()})
         for key, want in expected.items():
             if got[key] != want:
