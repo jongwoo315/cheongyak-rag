@@ -242,3 +242,15 @@ def test_missing_promulgation_no_warns_that_cache_version_is_unchecked(dirs, cap
 
     assert "판본을 확인하지 못" in capsys.readouterr().err
     assert fake.calls["service"] == 1
+
+
+def test_success_overwrites_previous_jsonl_with_new_content(dirs):
+    out = dirs["out_dir"] / "law-008243-20260615.jsonl"
+    out.parent.mkdir(parents=True)
+    out.write_text("이전 판본\n", encoding="utf-8")
+
+    assert run(Fake(), dirs) == 0
+
+    text = out.read_text(encoding="utf-8")
+    assert "이전 판본" not in text
+    assert len(text.splitlines()) == 5  # 픽스처의 조문 5개
