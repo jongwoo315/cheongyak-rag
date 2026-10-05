@@ -169,30 +169,35 @@ def source_headings(law_json: dict) -> dict[str, tuple[str | None, str | None]]:
     return found
 
 
-def _source_numbers(unit: dict) -> dict[str, list[str]]:
-    """조문 하나의 항·호·목 번호를 문서 순서대로. 하나면 dict로 와서 목록으로 맞춘다."""
-    nums: dict[str, list[str]] = {"항": [], "호": [], "목": []}
+def _source_numbers(unit: dict) -> dict[str, list[tuple[str, ...]]]:
+    """조문 하나의 항·호·목 번호를 문서 순서대로, 윗 단계 번호까지 붙인 경로로.
+
+    호가 어느 항 아래인지까지 맞아야 같다. 하나면 dict로 와서 목록으로 맞춘다.
+    """
+    nums: dict[str, list[tuple[str, ...]]] = {"항": [], "호": [], "목": []}
 
     def listed(node) -> list:
         return [] if node is None else [node] if isinstance(node, dict) else node
 
     for hang in listed(unit.get("항")):
-        nums["항"].append(hang.get("항번호", "").strip())
+        h = hang.get("항번호", "").strip()
+        nums["항"].append((h,))
         for ho in listed(hang.get("호")):
             branch = ho.get("호가지번호")
-            nums["호"].append(ho["호번호"].strip().rstrip(".") + (f"의{branch}" if branch else ""))
-            nums["목"].extend(m["목번호"].strip().rstrip(".") for m in listed(ho.get("목")))
+            o = ho["호번호"].strip().rstrip(".") + (f"의{branch}" if branch else "")
+            nums["호"].append((h, o))
+            nums["목"].extend((h, o, m["목번호"].strip().rstrip(".")) for m in listed(ho.get("목")))
     return nums
 
 
-def _output_numbers(row: dict) -> dict[str, list[str]]:
-    paragraphs = row["paragraphs"]
-    items = [i for p in paragraphs for i in p["items"]]
-    return {
-        "항": [p["no"] for p in paragraphs],
-        "호": [i["no"] for i in items],
-        "목": [s["no"] for i in items for s in i["subitems"]],
-    }
+def _output_numbers(row: dict) -> dict[str, list[tuple[str, ...]]]:
+    nums: dict[str, list[tuple[str, ...]]] = {"항": [], "호": [], "목": []}
+    for p in row["paragraphs"]:
+        nums["항"].append((p["no"],))
+        for i in p["items"]:
+            nums["호"].append((p["no"], i["no"]))
+            nums["목"].extend((p["no"], i["no"], s["no"]) for s in i["subitems"])
+    return nums
 
 
 def _dates(text: str) -> set[str]:

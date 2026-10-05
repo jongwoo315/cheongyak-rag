@@ -235,6 +235,18 @@ def test_item_moved_to_another_article_is_reported(law_json, rows):
     assert [f.where for f in check.extra + check.duplicated] == ["제7조의2"]
 
 
+def test_item_moved_to_another_paragraph_of_same_article_is_reported(law_json, rows):
+    # 텍스트는 조문 단위로 세므로 같은 조문 안의 항 사이 이동은 텍스트 대조로는 안 보인다
+    paragraphs = _row(rows, "제3조")["paragraphs"]
+    paragraphs[0]["items"].append(paragraphs[1]["items"].pop(0))
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert {f.where for f in check.bad_meta} == {"제3조"}
+    assert any("호번호" in f.text for f in check.bad_meta)
+
+
 def test_wrong_chapter_or_section_attribution_is_reported(law_json, rows):
     _row(rows, "제7조의2")["chapter"] = "제1장 총칙"
 
