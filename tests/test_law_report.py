@@ -302,3 +302,13 @@ def test_faq_cross_counts_deleted_article_as_not_current(rows):
 
     assert cross.pairs_citing_missing == 1
     assert cross.missing_labels == ["제29조"]
+
+
+def test_response_with_no_articles_is_not_ok(law_json):
+    empty = copy.deepcopy(law_json)
+    empty["법령"]["조문"]["조문단위"] = []
+
+    check = law_report.check(empty, [])
+
+    assert check.source_counts["조문"] == 0
+    assert not check.ok  # 0 == 0이라 개수가 일치해도 빈 응답은 통과가 아니다

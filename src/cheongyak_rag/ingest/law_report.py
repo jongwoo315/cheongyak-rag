@@ -34,7 +34,9 @@ class Check:
     @property
     def ok(self) -> bool:
         problems = (self.missing, self.duplicated, self.extra, self.misplaced, self.bad_meta)
-        return not any(problems) and self.source_counts == self.output_counts
+        # 조문이 하나도 없으면 개수가 0 == 0으로 맞아도 통과가 아니다. 빈 응답이 빈 JSONL이 된다
+        has_articles = self.source_counts.get("조문", 0) > 0
+        return has_articles and not any(problems) and self.source_counts == self.output_counts
 
 
 def _norm(s: str) -> str:
