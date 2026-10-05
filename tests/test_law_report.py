@@ -371,3 +371,65 @@ def test_wrong_section_alone_is_reported(law_json, rows):
 
     assert not check.ok
     assert [f.where for f in check.misplaced] == ["제29조"]
+
+
+# ── 리포트 본문 (PR 게이트가 읽는 줄) ─────────────────────────────────────
+
+
+def _report(law_json, rows, cross=None):
+    current = {"mst": "286965", "law_id": "008243", "effective_date": "2026-06-15"}
+    return law_report.format_report(
+        current, law_report.check(law_json, rows), law_report.appendix_summary(law_json), cross
+    )
+
+
+def test_report_shows_each_level_count_and_marks_mismatch(law_json, rows):
+    _row(rows, "제3조")["paragraphs"].pop(0)  # 항 5 → 4
+
+    out = _report(law_json, rows)
+
+    assert "항 5 → 4 불일치" in out
+    assert "조문 5 → 5 일치" in out
+    assert "누락 1" in out
+
+
+def test_report_says_when_counts_differ_from_the_reference_values(law_json, rows):
+    out = _report(law_json, rows)  # 픽스처는 5개짜리라 현행 기준값(90·20·…)과 다르다
+
+    assert "기준값(시행 2026-06-15)과 다르다" in out
+    assert "과 같다" not in out
+
+
+def test_report_says_when_counts_equal_the_reference_values(law_json, rows, monkeypatch):
+    monkeypatch.setattr(law_report, "REFERENCE_COUNTS", law_report.source_counts(law_json))
+
+    assert "기준값(시행 2026-06-15)과 같다" in _report(law_json, rows)
+
+
+def test_report_shows_faq_cross_values(law_json, rows):
+    cross = law_report.faq_cross(rows, [_faq(1, "제3조제1항"), _faq(2, "제999조")])
+
+    out = _report(law_json, rows, cross)
+
+    assert "현행에 없는 조를 인용한 쌍: 1" in out
+    assert "2024-05-29 뒤에 개정 날짜가 붙은 조를 인용한 쌍: 1" in out
+
+
+def test_appendix_counts_tables_and_forms_separately():
+    unit = {"별표번호": "0001", "별표제목": "t"}
+    law = {
+        "법령": {
+            "별표": {
+                "별표단위": [
+                    {**unit, "별표구분": "별표"},
+                    {**unit, "별표구분": "별표"},
+                    {**unit, "별표구분": "별표"},
+                    {**unit, "별표구분": "서식"},
+                ]
+            }
+        }
+    }
+
+    s = law_report.appendix_summary(law)
+
+    assert (s.table_count, s.form_count) == (3, 1)  # 서로 다른 값이라 둘이 바뀌면 잡힌다
