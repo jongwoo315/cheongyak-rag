@@ -2,7 +2,8 @@
 
 import json
 import re
-from dataclasses import dataclass, field
+import sys
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import httpx
@@ -259,3 +260,72 @@ def parse_articles(law_json: dict, mst: str = "") -> list[Article]:
         art.amendments = extract_amendments(_all_text(art))
         articles.append(art)
     return articles
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+ROOT = Path(__file__).resolve().parents[3]
+RAW_DIR = ROOT / "data" / "raw"
+OUT_DIR = ROOT / "data" / "processed"
+FAQ_JSONL = OUT_DIR / "faq-20240529.jsonl"
+
+
+def write_jsonl(rows: list[dict], dest: Path) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    try:
+        with tmp.open("w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        tmp.replace(dest)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def main(
+    oc: str | None = None,
+    raw_dir: Path = RAW_DIR,
+    out_dir: Path = OUT_DIR,
+    faq_path: Path = FAQ_JSONL,
+    client: httpx.Client | None = None,
+) -> int:
+    from . import law_report
+
+    if oc is None:
+        from ..config import settings
+
+        oc = settings.law_oc
+    try:
+        current = search_current(oc, client)  # 매번 한다. 현행 MST가 바뀌었는지 보는 호출이다
+        stem = f"law-{current['law_id']}-{current['effective_date'].replace('-', '')}"
+        raw = Path(raw_dir) / f"{stem}.json"
+        cached = raw.exists()
+        law_json = fetch_law(oc, current["mst"], raw, client)
+    except LawApiError as e:
+        print(f"API 오류: {e}", file=sys.stderr)
+        return 1
+    print(f"검색: 현행 MST {current['mst']} (시행 {current['effective_date']})")
+    print(f"본문: {'캐시 사용' if cached else '다운로드'} {raw}")
+
+    rows = [asdict(a) for a in parse_articles(law_json, current["mst"])]
+    result = law_report.check(law_json, rows)
+    cross = None
+    if Path(faq_path).exists():
+        faq_rows = [
+            json.loads(ln) for ln in Path(faq_path).read_text(encoding="utf-8").splitlines()
+        ]
+        cross = law_report.faq_cross(rows, faq_rows)
+    out = Path(out_dir) / f"{stem}.jsonl"
+    # 검증에 걸리면 이전 JSONL을 덮어쓰지 않는다. 다음 단계(#73)가 깨진 파일을 읽게 된다
+    if result.ok:
+        write_jsonl(rows, out)
+        print(f"JSONL: {len(rows)}조문 → {out}")
+    else:
+        print(f"JSONL: 검증 실패라 쓰지 않았다 ({out})", file=sys.stderr)
+    print()
+    print(law_report.format_report(current, result, law_report.appendix_summary(law_json), cross))
+    return 0 if result.ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

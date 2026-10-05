@@ -120,3 +120,70 @@ def test_source_fields_flatten_nested_list_text(law_json):
     assert "1) 공공사업의 시행자가 직접 건설하는 주택" in sub.text
     assert "\n" not in sub.text
     assert sub.where == "제3조"
+
+
+# ── 별표·부칙 요약 ────────────────────────────────────────────────────────
+
+
+def test_appendix_summary_counts_and_titles():
+    law = {
+        "법령": {
+            "별표": {
+                "별표단위": [
+                    {"별표번호": "0001", "별표가지번호": "00", "별표제목": "가점제 적용기준"},
+                    {"별표번호": "0001", "별표가지번호": "02", "별표제목": "추가 기준"},
+                ]
+            },
+            "부칙": {"부칙단위": [{"부칙키": "a"}, {"부칙키": "b"}, {"부칙키": "c"}]},
+        }
+    }
+
+    s = law_report.appendix_summary(law)
+
+    assert s.table_titles == ["별표 1 가점제 적용기준", "별표 1의2 추가 기준"]
+    assert s.supplement_count == 3
+
+
+def test_appendix_summary_accepts_single_dict_and_missing_keys():
+    law = {"법령": {"별표": {"별표단위": {"별표번호": "0003", "별표제목": "하나뿐"}}}}
+
+    s = law_report.appendix_summary(law)
+
+    assert s.table_titles == ["별표 3 하나뿐"]
+    assert s.supplement_count == 0
+
+
+# ── 실패 징후 3: FAQ 인용과 현행 법령 대조 ────────────────────────────────
+
+
+def _faq(q_no, *cited):
+    return {"q_no": q_no, "as_of": "2024-05-29", "cited_articles": list(cited)}
+
+
+def test_faq_cross_counts_pairs_citing_missing_and_amended_articles(rows):
+    faq = [
+        _faq(1, "제1조제1항"),  # 현행에 있고 2021년까지만 개정
+        _faq(2, "제3조제1항", "제3조제2항"),  # 같은 조를 두 번 인용해도 쌍은 한 번, 개정 2026
+        _faq(3, "제999조"),  # 현행에 없다
+        _faq(4, "제7조의2제1항", "제999조의2"),  # 가지 조문 + 현행에 없는 가지 조문
+        _faq(5),  # 인용 없음
+    ]
+
+    cross = law_report.faq_cross(rows, faq)
+
+    assert cross.pair_count == 5
+    assert cross.cutoff == "2024-05-29"
+    assert cross.pairs_citing_missing == 2
+    assert cross.missing_labels == ["제999조", "제999조의2"]
+    assert cross.pairs_citing_amended == 2  # Q2(제3조 2026-06-15), Q4(제7조의2 2024-09-30)
+    assert "제3조" in cross.amended_labels
+
+
+def test_faq_cross_amended_means_strictly_after_the_faq_date(rows):
+    for r in rows:
+        r["amendments"] = ["2024-05-29"]  # 같은 날은 FAQ에 이미 반영된 것이다
+
+    cross = law_report.faq_cross(rows, [_faq(1, "제1조")])
+
+    assert cross.pairs_citing_amended == 0
+    assert cross.amended_labels == []
