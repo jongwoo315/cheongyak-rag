@@ -231,3 +231,14 @@ def test_unreadable_faq_row_skips_only_that_item_and_says_why(dirs, tmp_path, ca
     assert "읽지 못해" in captured.err
     assert "이 항목은 건너뛴다" in captured.out
     assert "FAQ JSONL이 없어" not in captured.out  # 파일은 있다. 없다고 말하면 원인이 틀린다
+
+
+def test_missing_promulgation_no_warns_that_cache_version_is_unchecked(dirs, capsys):
+    fake = Fake()  # SEARCH_BODY에는 공포번호가 없다
+    run(fake, dirs)
+    capsys.readouterr()
+
+    assert run(fake, dirs) == 0
+
+    assert "판본을 확인하지 못" in capsys.readouterr().err
+    assert fake.calls["service"] == 1

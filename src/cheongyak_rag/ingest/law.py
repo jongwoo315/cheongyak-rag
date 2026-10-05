@@ -333,6 +333,11 @@ def main(
         raw = Path(raw_dir) / f"{stem}.json"
         before = _stamp(raw)
         key = None
+        if before is not None and not current["promulgation_no"]:
+            # 공포번호가 없으면 같은 시행일에 다시 공포된 판본을 못 알아본다. 조용히 넘기지 않는다
+            print(
+                "경고: 검색 응답에 공포번호가 없어 캐시의 판본을 확인하지 못했다", file=sys.stderr
+            )
         if current["promulgation_no"]:
             key = (
                 current["law_id"]
