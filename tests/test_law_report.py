@@ -339,3 +339,35 @@ def test_identity_and_paragraph_amendment_mismatch_is_reported(law_json, rows, t
 
     assert not check.ok
     assert any(key in f.text for f in check.bad_meta)
+
+
+@pytest.mark.parametrize(
+    "tamper, key",
+    [
+        (lambda rows: _row(rows, "제3조").update(title="다른 제목"), "title"),
+        (lambda rows: _row(rows, "제3조")["paragraphs"][1].update(no="③"), "항번호"),
+        (lambda rows: _row(rows, "제3조")["paragraphs"][1]["items"][1].update(no="6"), "호번호"),
+        (
+            lambda rows: _row(rows, "제3조")["paragraphs"][1]["items"][2]["subitems"][0].update(
+                no="하"
+            ),
+            "목번호",
+        ),
+    ],
+)
+def test_wrong_title_or_number_is_reported_even_when_text_is_the_same(law_json, rows, tamper, key):
+    tamper(rows)
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert any(key in f.text for f in check.bad_meta)
+
+
+def test_wrong_section_alone_is_reported(law_json, rows):
+    _row(rows, "제29조")["section"] = "제1절 다른 절"  # 장은 맞고 절만 틀리다
+
+    check = law_report.check(law_json, rows)
+
+    assert not check.ok
+    assert [f.where for f in check.misplaced] == ["제29조"]
