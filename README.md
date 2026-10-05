@@ -47,6 +47,12 @@ uv run python -m cheongyak_rag.ingest.faq   # 국토부 주택청약 FAQ(2024-05
 
 PDF는 `data/raw/faq-20240529.pdf`에 캐시된다. 실행 끝에 섹션 대조 리포트가 나온다.
 
+```bash
+uv run python -m cheongyak_rag.ingest.law   # 법제처 「주택공급에 관한 규칙」 현행 → data/processed/law-008243-<시행일>.jsonl
+```
+
+`.env`의 `LAW_OC`(법제처 OPEN API 인증값)가 필요하다. 비어 있으면 exit 1로 멈춘다. 본문은 `data/raw/`에 캐시되고 검색은 매번 한다. 실행 끝에 원본 JSON 대조 리포트(누락·중복, 조문·항·호·목 개수)가 나오고, 대조에 걸리면 이전 JSONL을 덮어쓰지 않는다. FAQ JSONL이 있으면 FAQ 인용과 현행 법령 대조도 같이 나온다.
+
 ## 메모
 
 - **DB 포트는 5433.** 호스트에 이미 Postgres 가 5432 를 점유 중이라 컨테이너를 5433 으로 매핑했다.
