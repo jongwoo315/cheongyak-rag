@@ -4,6 +4,15 @@
 
 설계 문서: [`docs/plans/0727-design-cheongyak-rag.md`](docs/plans/0727-design-cheongyak-rag.md)
 
+## 판단 기록
+
+구현은 AI 에이전트가 했다. 각 티켓의 통과 기준은 착수 전에 사람이 한 줄로 먼저 썼고,
+PR마다 그 기준과 결과를 나란히 놓고 사람이 판정했다. 2026-10-01부터 기록한다.
+
+티켓 1개 · 자동 기준 통과 1 · 착수 전 기준으로 반려 0 · 유보 0
+
+기준과 결과가 갈린 티켓은 아직 없다. 전체 기록: [`docs/decisions.md`](docs/decisions.md)
+
 ## 로컬 실행
 
 ```bash
@@ -29,6 +38,14 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 ```
+
+## 데이터 수집
+
+```bash
+uv run python -m cheongyak_rag.ingest.faq   # 국토부 주택청약 FAQ(2024-05) → data/processed/faq-20240529.jsonl
+```
+
+PDF는 `data/raw/faq-20240529.pdf`에 캐시된다. 실행 끝에 섹션 대조 리포트가 나온다.
 
 ## 메모
 
