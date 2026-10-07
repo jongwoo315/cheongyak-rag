@@ -267,6 +267,16 @@ def test_faq_cross_context_does_not_match_inside_a_longer_article_number(rows):
     assert cross.uncovered[0].before.endswith("「C법」")
 
 
+def test_faq_cross_context_falls_back_to_the_question_when_the_answer_lacks_the_article(rows):
+    # 답변에는 제17조만 있어 제7조에 안 걸린다 → 질문에서 찾는다
+    pair = _faq(1, "제7조", answer="제17조만 나온다")
+    pair["question"] = "「Z법」 제7조는 무엇인가"
+
+    cross = law_report.faq_cross(rows, [pair])
+
+    assert cross.uncovered[0].before.endswith("「Z법」")
+
+
 def test_faq_cross_context_is_empty_when_the_text_does_not_contain_the_article(rows):
     cross = law_report.faq_cross(rows, [_faq(1, "제999조", answer="본문에 없다")])
 
