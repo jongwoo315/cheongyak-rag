@@ -135,8 +135,10 @@ def test_faq_cross_is_in_report_when_faq_jsonl_exists(dirs, tmp_path, capsys):
     assert run(Fake(), dirs, faq=faq) == 0
 
     out = capsys.readouterr().out
-    assert "FAQ 2쌍" in out
-    assert "현행에 없는 조를 인용한 쌍: 1" in out
+    assert "인용 있는 쌍 2" in out
+    assert "커버 1 (50%)" in out
+    assert "커버 안 됨 1" in out
+    assert "Q2 제999조" in out
     assert "다른 법령" in out
 
 
@@ -208,7 +210,7 @@ def test_blank_lines_in_faq_jsonl_do_not_skip_the_whole_file(dirs, tmp_path, cap
 
     assert run(Fake(), dirs, faq=faq) == 0
 
-    assert "FAQ 1쌍" in capsys.readouterr().out
+    assert "인용 있는 쌍 1" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(

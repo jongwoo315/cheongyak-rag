@@ -185,30 +185,45 @@ def test_appendix_summary_accepts_single_dict_and_missing_keys():
     assert s.supplement_count == 0
 
 
-# ── 실패 징후 3: FAQ 인용과 현행 법령 대조 ────────────────────────────────
+# ── 실패 징후 4: FAQ 인용 커버 ────────────────────────────────────────────
 
 
-def _faq(q_no, *cited):
-    return {"q_no": q_no, "as_of": "2024-05-29", "cited_articles": list(cited)}
+def _faq(q_no, *cited, answer=""):
+    return {
+        "q_no": q_no,
+        "as_of": "2024-05-29",
+        "cited_articles": list(cited),
+        "question": "",
+        "answer": answer,
+    }
 
 
-def test_faq_cross_counts_pairs_citing_missing_and_amended_articles(rows):
+def test_faq_cross_covers_a_pair_only_when_every_cited_article_exists(rows):
     faq = [
-        _faq(1, "제1조제1항"),  # 현행에 있고 2021년까지만 개정
-        _faq(2, "제3조제1항", "제3조제2항"),  # 같은 조를 두 번 인용해도 쌍은 한 번, 개정 2026
-        _faq(3, "제999조"),  # 현행에 없다
-        _faq(4, "제7조의2제1항", "제999조의2"),  # 가지 조문 + 현행에 없는 가지 조문
-        _faq(5),  # 인용 없음
+        _faq(1, "제1조"),  # 있다 → 커버
+        _faq(2, "제1조", "제999조"),  # 하나라도 없으면 커버 안 됨
+        _faq(3, "제999조"),  # 없다
+        _faq(4),  # 인용 없음 → 분모에 안 넣는다
     ]
 
     cross = law_report.faq_cross(rows, faq)
 
-    assert cross.pair_count == 5
-    assert cross.cutoff == "2024-05-29"
-    assert cross.pairs_citing_missing == 2
-    assert cross.missing_labels == ["제999조", "제999조의2"]
-    assert cross.pairs_citing_amended == 2  # Q2(제3조 2026-06-15), Q4(제7조의2 2024-09-30)
-    assert "제3조" in cross.amended_labels
+    assert cross.pair_count == 4
+    assert cross.cited_pairs == 3
+    assert cross.covered_pairs == 1
+    assert cross.uncovered_pairs == 2
+    assert [(u.q_no, u.label) for u in cross.uncovered] == [(2, "제999조"), (3, "제999조")]
+
+
+def test_faq_cross_amendment_date_does_not_decide_coverage(rows):
+    # 제3조는 FAQ 기준일(2024-05-29) 뒤인 2026-06-15에 개정됐지만 현행에 있다 → 커버
+    cross = law_report.faq_cross(rows, [_faq(1, "제3조")])
+
+    assert cross.covered_pairs == 1
+    assert cross.uncovered == []
+    # 개정은 참고 줄로만 남는다
+    assert cross.covered_pairs_amended == 1
+    assert cross.latest_amendment["제3조"] == "2026-06-15"
 
 
 def test_faq_cross_amended_means_strictly_after_the_faq_date(rows):
@@ -217,8 +232,50 @@ def test_faq_cross_amended_means_strictly_after_the_faq_date(rows):
 
     cross = law_report.faq_cross(rows, [_faq(1, "제1조")])
 
-    assert cross.pairs_citing_amended == 0
-    assert cross.amended_labels == []
+    assert cross.covered_pairs == 1
+    assert cross.covered_pairs_amended == 0
+
+
+def test_faq_cross_folds_clause_and_item_citations_into_the_article(rows):
+    faq = [
+        _faq(1, "제3조제1항제2호나목"),  # 조 단위로 접어 제3조로 판정
+        _faq(2, "제7조의2제1항", "제3조제2항"),  # 가지 조문은 따로 센다
+        _faq(3, "제7조제1항"),  # 제7조는 없다 (제7조의2는 다른 조)
+    ]
+
+    cross = law_report.faq_cross(rows, faq)
+
+    assert cross.covered_pairs == 2
+    assert [(u.q_no, u.label) for u in cross.uncovered] == [(3, "제7조")]
+    assert cross.cited_labels == 3  # 제3조 · 제7조의2 · 제7조
+
+
+def test_faq_cross_keeps_the_text_before_the_missing_article_to_show_the_law_name(rows):
+    answer = "참고로 조세특례제한법 제87조에 따르면 …"
+    faq = [_faq(1, "제87조", answer=answer)]
+
+    cross = law_report.faq_cross(rows, faq)
+
+    assert cross.uncovered[0].before == "참고로 조세특례제한법"  # 20자 이내, 조 바로 앞까지
+
+
+def test_faq_cross_context_does_not_match_inside_a_longer_article_number(rows):
+    # 제7조를 찾을 때 제7조의2나 제17조에 걸리면 엉뚱한 법령 이름이 붙는다
+    answer = "「A법」 제7조의2와 「B법」 제17조 그리고 「C법」 제7조"
+    cross = law_report.faq_cross(rows, [_faq(1, "제7조", answer=answer)])
+
+    assert cross.uncovered[0].before.endswith("「C법」")
+
+
+def test_faq_cross_context_is_empty_when_the_text_does_not_contain_the_article(rows):
+    cross = law_report.faq_cross(rows, [_faq(1, "제999조", answer="본문에 없다")])
+
+    assert cross.uncovered[0].before == ""
+
+
+def test_faq_cross_cutoff_is_the_latest_faq_date(rows):
+    assert law_report.faq_cross(rows, [_faq(1, "제1조")]).cutoff == "2024-05-29"
+    assert law_report.faq_cross(rows, []).cutoff == ""
 
 
 # ── 위치 검증 (리뷰 지적: 텍스트만 맞고 자리가 틀린 경우) ────────────────────
@@ -300,8 +357,9 @@ def test_faq_cross_counts_deleted_article_as_not_current(rows):
     # 제29조는 삭제됐다. 행은 남아 있지만 현행 조문이 아니다
     cross = law_report.faq_cross(rows, [_faq(1, "제29조제1항"), _faq(2, "제1조")])
 
-    assert cross.pairs_citing_missing == 1
-    assert cross.missing_labels == ["제29조"]
+    assert cross.covered_pairs == 1
+    assert [(u.q_no, u.label) for u in cross.uncovered] == [(1, "제29조")]
+    assert cross.current_labels == 1  # 제1조만. 삭제된 제29조는 인용돼도 현행에 없다
 
 
 def test_response_with_no_articles_is_not_ok(law_json):
@@ -407,12 +465,18 @@ def test_report_says_when_counts_equal_the_reference_values(law_json, rows, monk
 
 
 def test_report_shows_faq_cross_values(law_json, rows):
-    cross = law_report.faq_cross(rows, [_faq(1, "제3조제1항"), _faq(2, "제999조")])
+    cross = law_report.faq_cross(
+        rows, [_faq(1, "제3조제1항"), _faq(2, "제999조", answer="「다른법」 제999조")]
+    )
 
     out = _report(law_json, rows, cross)
 
-    assert "현행에 없는 조를 인용한 쌍: 1" in out
-    assert "2024-05-29 뒤에 개정 날짜가 붙은 조를 인용한 쌍: 1" in out
+    assert "인용 있는 쌍 2 · 커버 1 (50%) · 커버 안 됨 1" in out
+    assert "인용된 조 2종 중 현행에 있는 것 1종" in out
+    assert "Q2 제999조: '「다른법」'" in out
+    assert "참고 (커버 판정에 안 씀)" in out
+    assert "인용한 쌍 1 (조 1종: 제3조(2026-06-15))" in out
+    assert "다른 법령 인용도 분모에서 빼지 않았다" in out
 
 
 def test_appendix_counts_tables_and_forms_separately():
