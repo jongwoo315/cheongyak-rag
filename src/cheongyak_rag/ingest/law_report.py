@@ -341,7 +341,7 @@ CONTEXT_CHARS = 20  # 커버 안 된 조 앞에서 가져오는 글자 수. 법�
 class Uncovered:
     q_no: int
     label: str  # 현행에 없는 조
-    before: str  # FAQ 본문에서 그 조 바로 앞 20자. 본문에 없으면 빈 문자열
+    before: str  # 답변(없으면 질문)에서 그 조 앞 CONTEXT_CHARS자. 없거나 조가 맨 앞이면 빈 문자열
 
 
 @dataclass
@@ -501,7 +501,7 @@ def format_report(
             " 번호가 우연히 같으면 커버로 센다",
         ]
         if cross.uncovered:
-            out.append("  커버 안 된 쌍 (Q번호 · 현행에 없는 조: 그 조 앞 20자):")
+            out.append(f"  커버 안 된 쌍 (Q번호 · 현행에 없는 조: 그 조 앞 {CONTEXT_CHARS}자):")
         out += [f"    Q{u.q_no} {u.label}: {u.before!r}" for u in cross.uncovered]
         recent = [f"{lb}({cross.latest_amendment[lb]})" for lb in cross.amended_labels]
         out.append(
