@@ -6,6 +6,7 @@
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -39,12 +40,19 @@ class Embedder:
         self.api_calls = 0
         self.cache: dict[str, list[float]] = {}
         if self.cache_path.exists():
+            good, bad = [], 0
             for line in self.cache_path.read_text(encoding="utf-8").splitlines():
                 try:
                     row = json.loads(line)
-                except json.JSONDecodeError:  # 추가 도중 끊긴 마지막 줄. 그 텍스트는 다시 보낸다
+                    self.cache[row["sha256"]] = row["vec"]
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    bad += 1  # 추가 도중 끊긴 줄. 그 텍스트는 다시 보낸다
                     continue
-                self.cache[row["sha256"]] = row["vec"]
+                good.append(line)
+            if bad:
+                # 끊긴 줄을 둔 채 이어 쓰면 다음 행이 그 줄에 붙어 같이 못 읽게 된다
+                print(f"임베딩 캐시 {self.cache_path}: 깨진 줄 {bad}개를 지운다", file=sys.stderr)
+                self.cache_path.write_text("".join(g + "\n" for g in good), encoding="utf-8")
 
     def _get_client(self):
         if self._client is None:

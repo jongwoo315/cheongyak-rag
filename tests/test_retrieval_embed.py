@@ -50,7 +50,11 @@ def test_only_missing_texts_are_sent(tmp_path):
     Embedder("m", path, client=FakeClient()).embed(["가"])
     client = FakeClient()
     Embedder("m", path, client=client).embed(["가", "나", "나"])
-    assert client.calls == [["나"]]  # 캐시에 있는 것·중복은 안 보낸다
+    assert client.calls == [["나"]]
+    # 이어 쓴 행이 끊긴 줄에 붙지 않아야 세 번째 실행이 API를 안 부른다
+    third = FakeClient()
+    Embedder("m", path, client=third).embed(["가", "나"])
+    assert third.calls == []  # 캐시에 있는 것·중복은 안 보낸다
 
 
 def test_cache_key_is_sha256_of_text(tmp_path):
@@ -82,3 +86,7 @@ def test_torn_last_cache_line_is_ignored_and_refetched(tmp_path):
     client = FakeClient()
     Embedder("m", path, client=client).embed(["가", "나"])
     assert client.calls == [["나"]]
+    # 이어 쓴 행이 끊긴 줄에 붙지 않아야 세 번째 실행이 API를 안 부른다
+    third = FakeClient()
+    Embedder("m", path, client=third).embed(["가", "나"])
+    assert third.calls == []
