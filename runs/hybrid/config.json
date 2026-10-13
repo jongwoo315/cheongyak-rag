@@ -1,0 +1,22 @@
+{
+  "run": "hybrid",
+  "model": "text-embedding-3-small",
+  "k1": 1.2,
+  "b": 0.75,
+  "rrf_k": 60,
+  "bm25_tags": [
+    "NNG",
+    "NNP",
+    "SH",
+    "SL",
+    "SN",
+    "VA",
+    "VV",
+    "XR"
+  ],
+  "doc_count": 88,
+  "question_count": 124,
+  "embedding_api_calls": 0,
+  "run_at": "2026-10-13T23:01:00+09:00",
+  "commit": "ad85a94095a97a20a257d584cb9830bb041efa8b"
+}
