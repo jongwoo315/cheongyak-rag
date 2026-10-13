@@ -128,7 +128,11 @@ def test_question_without_citation_is_not_a_candidate():
 
 def test_citation_counts_and_none_samples():
     rows = [
-        _faq(1, "「주택법」 제2조를 본다. 제4조에 따른다. 「주택공급에 관한 규칙」 제53조를 본다.")
+        _faq(
+            1,
+            "「주택법」 제2조를 본다. 사업주체는 입주자모집공고에 따라 접수하며 제4조에 따른다. "
+            "「주택공급에 관한 규칙」 제53조를 본다.",
+        )
     ]
     res = build_golden(rows, LABELS)
     assert res.counts == {"rule": 1, "other": 1, "none": 1}

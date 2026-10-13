@@ -22,6 +22,11 @@ def test_tokenize_keeps_foreign_word():
     assert "SNS" in tokenize("SNS 계정")
 
 
+def test_variant_verb_tags_are_kept():
+    # `받다`는 Kiwi가 VV-R로 낸다
+    assert "받" in tokenize("보조금을 받는다")
+
+
 WS = str.split  # 손계산용 공백 토크나이저
 DOCS = [
     Article("A", "a", "x x y"),  # 길이 3

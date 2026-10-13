@@ -72,3 +72,13 @@ def test_missing_key_stops_when_api_is_needed(tmp_path):
     emb = Embedder("m", tmp_path / "c.jsonl", client=None, api_key="")
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
         emb.embed(["가"])
+
+
+def test_torn_last_cache_line_is_ignored_and_refetched(tmp_path):
+    path = tmp_path / "c.jsonl"
+    Embedder("m", path, client=FakeClient()).embed(["가"])
+    with path.open("a", encoding="utf-8") as f:
+        f.write('{"sha256": "abc", "vec": [1.0,')  # 쓰다 끊긴 줄
+    client = FakeClient()
+    Embedder("m", path, client=client).embed(["가", "나"])
+    assert client.calls == [["나"]]

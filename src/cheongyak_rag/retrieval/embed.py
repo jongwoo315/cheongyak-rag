@@ -40,9 +40,11 @@ class Embedder:
         self.cache: dict[str, list[float]] = {}
         if self.cache_path.exists():
             for line in self.cache_path.read_text(encoding="utf-8").splitlines():
-                if line:
+                try:
                     row = json.loads(line)
-                    self.cache[row["sha256"]] = row["vec"]
+                except json.JSONDecodeError:  # 추가 도중 끊긴 마지막 줄. 그 텍스트는 다시 보낸다
+                    continue
+                self.cache[row["sha256"]] = row["vec"]
 
     def _get_client(self):
         if self._client is None:

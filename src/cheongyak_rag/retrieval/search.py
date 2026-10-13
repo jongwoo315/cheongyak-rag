@@ -22,7 +22,8 @@ def _kiwi() -> Kiwi:
 
 
 def tokenize(text: str) -> list[str]:
-    return [t.form for t in _kiwi().tokenize(text) if t.tag in KEEP_TAGS]
+    # Kiwi는 `VV-R` `VA-I` 같은 변이 태그도 낸다. `-` 앞 기본 태그로 본다
+    return [t.form for t in _kiwi().tokenize(text) if t.tag.split("-")[0] in KEEP_TAGS]
 
 
 class HasText(Protocol):

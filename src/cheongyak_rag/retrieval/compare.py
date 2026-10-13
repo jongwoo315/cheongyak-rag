@@ -140,13 +140,17 @@ def _title(titles: dict[str, str], label: str) -> str:
     return f"{label}({titles[label]})"
 
 
+def _p(p: float) -> str:
+    return f"{p:.4f}"
+
+
 def _stat_row(name: str, diffs: np.ndarray) -> str:
     v = verdict(diffs)
-    return f"| {name} | {_sgn(v.mean)} | {_ci(v)} | {v.p:.4f} | {v.kind} |"
+    return f"| {name} | {_sgn(v.mean)} | {_ci(v)} | {_p(v.p)} | {v.kind} |"
 
 
 def _conclusion(v: Verdict) -> str:
-    head = f"hybrid가 dense보다 {PRIMARY}가 {_sgn(v.mean)} (95% CI {_ci(v)}, p={v.p:.4f})"
+    head = f"hybrid가 dense보다 {PRIMARY}가 {_sgn(v.mean)} (95% CI {_ci(v)}, p={_p(v.p)})"
     if v.kind == "차이 있음":
         return f"{head} — 신뢰구간이 0을 포함하지 않아 차이 있음."
     if v.kind == "차이 없음":
@@ -163,11 +167,15 @@ def _subset_line(name: str, full: Verdict, rows, keep) -> tuple[str, Verdict | N
     if not sub:
         return f"- {name}: 남는 질문이 없다", None
     v = verdict(np.array([h[PRIMARY] - d[PRIMARY] for d, h in sub]))
-    opposite = full.mean * v.mean < 0
-    mark = "⚠ 부호가 전체 결과와 반대" if opposite else "부호는 전체와 같다"
+    if v.mean == 0:
+        mark = "차이가 0이라 부호를 비교할 수 없다"
+    elif full.mean * v.mean < 0:
+        mark = "⚠ 부호가 전체 결과와 반대"
+    else:
+        mark = "부호는 전체와 같다"
     return (
         f"- {name}: 질문 {len(sub)}개, hybrid−dense {PRIMARY} {_sgn(v.mean)} "
-        f"(95% CI {_ci(v)}, p={v.p:.4f}) — {mark}",
+        f"(95% CI {_ci(v)}, p={_p(v.p)}) — {mark}",
         v,
     )
 
@@ -191,6 +199,14 @@ def _split(rows):
             else neither
         ).append(row)
     return both, d_only, h_only, neither
+
+
+def _split_one(row) -> str | None:
+    """hit@5가 갈린 질문이면 맞힌 쪽, 아니면 None."""
+    d, h = row[1], row[2]
+    if d["hit@5"] == h["hit@5"]:
+        return None
+    return "hybrid" if h["hit@5"] else "dense"
 
 
 def _best(detail: dict, gold: list[str], key: str) -> int:
@@ -227,6 +243,10 @@ def _section_summary(results, rows, articles_n, golden_n, full: Verdict) -> list
     )
     out.append("- baseline 없음 — 이번이 첫 측정, 다음 티켓의 기준이 된다.")
     out.append(
+        f"- p값은 {N_ITER:,}회 검정이라 0.0001(=1/{N_ITER + 1:,})이 하한이다. "
+        "0.0001은 정확한 값이 아니라 그보다 작다는 뜻이다."
+    )
+    out.append(
         f"- `{PRIMARY}`는 질문마다 정답 조 중 상위 {K}개 안에 든 비율이다. "
         "측정 전에 주 지표로 정했다. "
         "`hit@k`는 정답이 하나라도 상위 k개 안에 있는 질문의 비율, "
@@ -253,9 +273,18 @@ def _section_summary(results, rows, articles_n, golden_n, full: Verdict) -> list
         "| 지표 | hybrid−BM25 평균 | 95% CI | p (permutation) | 구간 |",
         "| --- | --- | --- | --- | --- |",
     ]
-    out.append(
-        _stat_row(f"{PRIMARY} (주)", np.array([r[2][PRIMARY] - r[0][PRIMARY] for r in rows]))
+    for m in METRICS:
+        out.append(_stat_row(m, np.array([r[2][m] - r[0][m] for r in rows])))
+    n_bm25 = sum(
+        1 for r in rows if _split_one(r) == "hybrid" and _reason(r)[1] == "BM25가 끌어올림"
     )
+    n_diff = sum(1 for r in rows if _split_one(r) is not None)
+    out += [
+        "",
+        f"dense와 `hit@5`가 갈린 {n_diff}개 질문 중 {n_bm25}개는 정답의 BM25 순위가 5위 안이라 "
+        "BM25가 끌어올린 것이다. dense 대비 차이는 BM25가 가진 정보에서 온 것이고, "
+        "BM25 단독과의 차이는 위 표에서 따로 본다.",
+    ]
     out += ["", "### 판정 구간 (주 지표)", ""]
     out.append(f"- 구간: **{full.kind}**")
     if full.kind == "판정 불가":

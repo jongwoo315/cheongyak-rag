@@ -22,6 +22,7 @@ RUNS_DIR = Path(__file__).resolve().parents[3] / "runs"
 GOLDEN_PATH = RUNS_DIR / "golden.jsonl"
 SAMPLE_SIZE = 20
 BEFORE_CHARS = 60
+MIN_SAMPLE_CONTEXT = 20  # 답변 맨 앞 인용은 앞 글자가 없어 표본으로 못 쓴다
 
 ARTICLE = re.compile(r"제\s?(\d+)\s?조(?:\s?의\s?(\d+))?")
 QUESTION_ARTICLE = re.compile(r"제\s?\d+\s?조")
@@ -102,7 +103,7 @@ def build_golden(faq_rows: list[dict], labels: set[str]) -> GoldenResult:
             continue  # 인용 없는 답변은 후보가 아니다
         for c in cites:
             res.counts[c.kind] += 1
-            if c.kind == "none":
+            if c.kind == "none" and len(c.before.strip()) >= MIN_SAMPLE_CONTEXT:
                 none_all.append(f"q{r['q_no']}: …{c.before}【{c.label}】")
         gold = list(dict.fromkeys(c.label for c in cites if c.kind != "other"))
         if not gold:
