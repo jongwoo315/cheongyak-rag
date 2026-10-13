@@ -123,7 +123,7 @@ def test_question_citing_article_absent_from_current_is_dropped():
 
 def test_question_without_citation_is_not_a_candidate():
     res = build_golden([_faq(9, "인용 없는 답변이다.")], LABELS)
-    assert res.rows == [] and res.dropped == {}
+    assert res.rows == [] and res.dropped == {"조문 인용 없는 답변": 1}
 
 
 def test_citation_counts_and_none_samples():

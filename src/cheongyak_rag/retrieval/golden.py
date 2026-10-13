@@ -103,7 +103,8 @@ def build_golden(faq_rows: list[dict], labels: set[str]) -> GoldenResult:
     for r in faq_rows:
         cites = extract_citations(r["answer"])
         if not cites:
-            continue  # 인용 없는 답변은 후보가 아니다
+            dropped["조문 인용 없는 답변"] += 1  # 후보가 아니다. 그래도 뺀 수에는 센다
+            continue
         for c in cites:
             res.counts[c.kind] += 1
             if c.kind == "none" and len(c.before.strip()) >= MIN_SAMPLE_CONTEXT:
