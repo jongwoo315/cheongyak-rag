@@ -48,6 +48,10 @@ def load_golden(path: Path = GOLDEN_PATH) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
 
+def _detail(label: str, bm_pos: dict, dn_pos: dict, score: dict) -> dict:
+    return {"bm25": bm_pos[label], "dense": dn_pos[label], "rrf": score[label]}
+
+
 def evaluate_run(
     run: str,
     golden: list[dict],
@@ -80,9 +84,10 @@ def evaluate_run(
             score = dict(fused)
             bm_pos = {x: r for r, x in enumerate(bm_rank, start=1)}
             dn_pos = {x: r for r, x in enumerate(dn_rank, start=1)}
-            extra["gold_detail"] = {
-                x: {"bm25": bm_pos[x], "dense": dn_pos[x], "rrf": score[x]} for x in g["gold"]
-            }
+
+            detail = {x: _detail(x, bm_pos, dn_pos, score) for x in {*g["gold"], *ranking[:K]}}
+            extra["gold_detail"] = {x: detail[x] for x in g["gold"]}
+            extra["top5_detail"] = {x: detail[x] for x in ranking[:K]}  # RRF 풀이용
         lines.append(
             {
                 "qid": g["qid"],

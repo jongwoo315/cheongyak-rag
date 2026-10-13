@@ -86,6 +86,12 @@ def test_hybrid_line_has_per_gold_bm25_dense_rrf_detail():
     assert d["rrf"] == pytest.approx(1 / (60 + d["bm25"]) + 1 / (60 + d["dense"]))
 
 
+def test_hybrid_top5_detail_lists_competitors_too():
+    line = evaluate_run("hybrid", GOLDEN, ARTICLES, FakeEmbedder())[0]
+    assert list(line["top5_detail"]) == line["top5"]  # 순위 순서 그대로
+    assert all(set(d) == {"bm25", "dense", "rrf"} for d in line["top5_detail"].values())
+
+
 def test_rerun_is_byte_identical():
     a = evaluate_run("hybrid", GOLDEN, ARTICLES, FakeEmbedder())
     b = evaluate_run("hybrid", GOLDEN, ARTICLES, FakeEmbedder())
