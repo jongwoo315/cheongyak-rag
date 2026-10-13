@@ -34,6 +34,7 @@ NAME = re.compile(
     r"[「｢](?P<b>[^」｣]*)[」｣]"
     r"|(?<![가-힣])(?P<w>[가-힣]*(?:시행령|시행규칙|규칙|법|령)|영)(?![가-힣])"
 )
+ADDENDA = re.compile(r"부\s*칙\s*$")  # `부칙 제6조`는 본문 제6조가 아니다
 RULE_BRACKET = ("주택공급에관한규칙", "주택공급규칙")
 RULE_WORDS = {"규칙", "동규칙"}  # 낱말 `규칙` 앞의 `이`·`같은`·`동`은 따로 안 봐도 규칙이다
 
@@ -73,6 +74,8 @@ def extract_citations(answer: str) -> list[Citation]:
         kind = "none"
         for nm in NAME.finditer(sentence):
             kind = _name_kind(nm) or kind  # 가장 가까운(마지막) 이름이 이긴다
+        if ADDENDA.search(answer[: m.start()]):
+            kind = "other"  # 부칙 조문은 규칙 본문 조문이 아니라 정답에서 뺀다
         label = f"제{m[1]}조" + (f"의{m[2]}" if m[2] else "")
         before = re.sub(r"\s+", " ", answer[max(0, m.start() - BEFORE_CHARS) : m.start()])
         out.append(Citation(label, kind, before))

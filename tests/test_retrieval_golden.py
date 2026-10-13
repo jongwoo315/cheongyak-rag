@@ -153,3 +153,10 @@ def test_real_faq_66_is_other_law_and_53_is_rule():
     assert _kinds(faq[53]["answer"]) == [("제23조", "rule")]
     res = build_golden([faq[53]], LABELS)
     assert res.rows[0]["gold"] == ["제23조"]
+
+
+def test_addenda_article_is_not_a_body_article():
+    # 실제 FAQ 141·444: `부칙 제6조`, `부칙제4조`가 본문 제6조·제4조 정답이 되던 것
+    assert extract_citations("규칙 부칙 제6조(경과조치)에 따르면")[0].kind == "other"
+    assert extract_citations("※ 다만, 부칙제4조에 따라 전매")[0].kind == "other"
+    assert extract_citations("규칙 제6조에 따르면")[0].kind == "rule"
