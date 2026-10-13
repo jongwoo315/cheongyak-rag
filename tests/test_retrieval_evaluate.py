@@ -12,6 +12,7 @@ from cheongyak_rag.retrieval.evaluate import (
     run_sanity,
     write_run,
 )
+from cheongyak_rag.retrieval.search import rrf
 
 LABELS = [f"제{i}조" for i in range(1, 9)]
 
@@ -90,6 +91,19 @@ def test_hybrid_top5_detail_lists_competitors_too():
     line = evaluate_run("hybrid", GOLDEN, ARTICLES, FakeEmbedder())[0]
     assert list(line["top5_detail"]) == line["top5"]  # 순위 순서 그대로
     assert all(set(d) == {"bm25", "dense", "rrf"} for d in line["top5_detail"].values())
+
+
+def test_hybrid_is_rrf_of_the_bm25_and_dense_runs():
+    # 문서 3개라 top5가 전체 순위다. hybrid가 다른 순위표를 섞었거나 순서를 바꾸면 깨진다
+    emb = FakeEmbedder()
+    bm = evaluate_run("bm25", GOLDEN, ARTICLES, emb)
+    dn = evaluate_run("dense", GOLDEN, ARTICLES, emb)
+    hy = evaluate_run("hybrid", GOLDEN, ARTICLES, emb)
+    for b, d, h in zip(bm, dn, hy, strict=True):
+        assert h["top5"] == [lab for lab, _ in rrf([b["top5"], d["top5"]])]
+        for lab, detail in h["gold_detail"].items():
+            assert detail["bm25"] == b["top5"].index(lab) + 1
+            assert detail["dense"] == d["top5"].index(lab) + 1
 
 
 def test_rerun_is_byte_identical():
