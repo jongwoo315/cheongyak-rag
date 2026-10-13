@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -48,6 +49,8 @@ def test_paragraphs_included_in_order(articles):
 def test_amendment_marks_stripped(articles):
     # `<개정 2016.8.12>` 날짜 목록이 BM25에 숫자 토큰으로 들어가는 것을 막는다
     assert all("<개정" not in a.text and "<신설" not in a.text for a in articles.values())
+    # `삭제<2024.12.18>` 같은 날짜만 든 표시와 `<img>` 태그도 남지 않는다
+    assert not any(re.search(r"<\d{4}\.|<img", a.text) for a in articles.values())
 
 
 def test_load_from_given_path(tmp_path: Path):
