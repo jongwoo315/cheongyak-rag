@@ -107,14 +107,26 @@ def _dump(rows: list[dict]) -> str:
     return "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
 
 
-def _commit() -> str:
+def _git(*args: str) -> str | None:
     try:
         out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10
+            ["git", *args],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=Path(__file__).resolve().parent,
         )
-        return out.stdout.strip() or "unknown"
     except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout.strip() if out.returncode == 0 else None
+
+
+def _commit() -> str:
+    """HEAD 해시. 추적 파일이 고쳐져 있으면 `-dirty`를 붙인다."""
+    head = _git("rev-parse", "HEAD")
+    if not head:
         return "unknown"
+    return head + ("-dirty" if _git("status", "--porcelain", "--untracked-files=no") else "")
 
 
 def write_run(runs_dir: Path, run: str, lines: list[dict], articles: list[Article], embedder):

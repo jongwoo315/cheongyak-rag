@@ -133,3 +133,13 @@ def test_run_sanity_reports_rank_of_own_article(tmp_path):
     assert res["bm25_top1"] == 3 and res["dense_top1"] == 3
     rows = (tmp_path / "sanity" / "results.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(rows) == 3 and json.loads(rows[0])["label"] == "제1조"
+
+
+def test_commit_marks_dirty_tree(monkeypatch):
+    from cheongyak_rag.retrieval import evaluate
+
+    answers = {"rev-parse": "abc123", "status": " M x.py"}
+    monkeypatch.setattr(evaluate, "_git", lambda *a: answers[a[0]])
+    assert evaluate._commit() == "abc123-dirty"
+    answers["status"] = ""
+    assert evaluate._commit() == "abc123"
