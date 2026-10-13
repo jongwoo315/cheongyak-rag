@@ -133,6 +133,12 @@ def test_first_line_is_conclusion_sentence_without_judgment_words(report):
     assert "개선" not in report and "우수" not in report
 
 
+def test_headline_value_is_hybrid_minus_dense():
+    # 손계산: dense 순위 1,9,8,3,10,7 → 5위 안 2/6. hybrid 1,2,4,7,10,2 → 4/6. 차이 +0.333
+    first = build_report(_results(SPECS), GoldenResult(), ARTICLES, None).splitlines()[0]
+    assert "+0.333" in first
+
+
 def test_every_disagreement_is_listed_with_all_ranks(report):
     section = report.split("## 4.")[1].split("## 5.")[0]
     for qid in ("faq-2", "faq-3", "faq-4", "faq-6"):  # hit@5가 갈린 질문
