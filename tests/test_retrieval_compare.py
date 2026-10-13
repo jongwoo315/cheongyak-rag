@@ -109,8 +109,11 @@ def test_verdict_three_intervals():
 
 def test_check_runs_rejects_different_question_sets():
     res = _results(SPECS)
-    golden = [{"qid": x["qid"]} for x in res["dense"]]
+    golden = [{"qid": x["qid"], "gold": x["gold"]} for x in res["dense"]]
     check_runs(res, golden)  # 같으면 통과
+    relabeled = [{**g, "gold": ["제99조"]} if i == 0 else g for i, g in enumerate(golden)]
+    with pytest.raises(ValueError, match="정답 라벨"):
+        check_runs(res, relabeled)  # qid는 같고 정답이 바뀐 경우
     res["hybrid"] = res["hybrid"][:-1]
     with pytest.raises(ValueError, match="hybrid"):
         check_runs(res, golden)

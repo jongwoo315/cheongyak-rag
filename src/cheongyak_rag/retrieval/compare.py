@@ -107,12 +107,19 @@ def load_results(runs_dir: Path) -> dict[str, list[dict]]:
 
 
 def check_runs(results: dict[str, list[dict]], golden: list[dict]) -> None:
-    """세 run이 golden과 같은 질문 집합이어야 비교가 성립한다."""
-    want = [g["qid"] for g in golden]
+    """세 run이 golden과 같은 질문·같은 정답 라벨에서 돌았어야 비교가 성립한다."""
+    by_qid = {g["qid"]: g for g in golden}
+    if len(by_qid) != len(golden):
+        raise ValueError("golden에 qid가 겹치는 줄이 있다")
     for run, lines in results.items():
         got = [x["qid"] for x in lines]
-        if len(got) != len(want) or set(got) != set(want):
-            raise ValueError(f"{run} run의 질문이 golden과 다르다 (줄 {len(got)} vs {len(want)})")
+        if len(got) != len(golden) or set(got) != set(by_qid):
+            raise ValueError(f"{run} run의 질문이 golden과 다르다 (줄 {len(got)} vs {len(golden)})")
+        for x in lines:
+            if x["gold"] != by_qid[x["qid"]]["gold"]:
+                raise ValueError(
+                    f"{run} run의 {x['qid']} 정답 라벨이 golden과 다르다. 다시 돌릴 것"
+                )
 
 
 def _pair(results: dict[str, list[dict]]) -> list[tuple[dict, dict, dict]]:
