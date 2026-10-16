@@ -14,6 +14,8 @@ dependencies = [
     "openai>=1.55",
     "httpx>=0.28",
     "pymupdf>=1.28.2",
+    "kiwipiepy>=0.24.0",
+    "numpy>=2.4.6",
 ]
 
 [dependency-groups]

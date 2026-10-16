@@ -1,0 +1,13 @@
+{
+  "run": "dense",
+  "model": "text-embedding-3-small",
+  "k1": null,
+  "b": null,
+  "rrf_k": null,
+  "bm25_tags": null,
+  "doc_count": 88,
+  "question_count": 123,
+  "embedding_api_calls": 0,
+  "run_at": "2026-10-13T23:20:00+09:00",
+  "commit": "73e63ed61b5fe6e86b1f01b04c5d01e03658a3e5"
+}
