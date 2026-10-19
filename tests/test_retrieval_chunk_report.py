@@ -190,6 +190,18 @@ def test_disagreement_section_lists_every_hit5_split():
     assert "11개" in sec
 
 
+def test_long_subset_section_uses_only_long_questions():
+    outside_long = [10] * 5 + [1] * 10 + [10] * (N - 15)  # 긴 문항(faq-1..5)은 그대로
+    res = _results({"article": SAME, "item": outside_long})
+    text, _ = cr.build_report(_inp(res))
+    full = text.split("## 1.")[1].split("## 2.")[0]
+    sec = text.split("## 3.")[1].split("## 4.")[0]
+    assert "차이 있음" in full
+    row = next(x for x in sec.splitlines() if x.startswith("| `item` |") and "차이" in x)
+    assert "차이 없음" in row and "차이 있음" not in row
+    assert "| 0.000 | 0.000 | 0.000 |" in row
+
+
 def test_long_subset_section_has_same_zones():
     res = _results({"article": SAME, "item": BETTER})
     text, _ = cr.build_report(_inp(res))
