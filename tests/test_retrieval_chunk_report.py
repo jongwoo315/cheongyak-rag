@@ -132,6 +132,20 @@ def test_tie_goes_to_fewer_chunks():
     assert cr.select(res, STATS).chosen == "paragraph"
 
 
+def test_chosen_is_best_among_lower_bound_winners_not_overall_best_mean():
+    art = [1] * 15 + [10] * 15
+    wide = [10] * 9 + [1] * 6 + [1] * 15  # 평균 +0.2, 신뢰구간이 0을 포함
+    narrow = art[:15] + [1] * 5 + [10] * 10  # 평균 +0.167, 하한 > 0
+    res = _results({"article": art, "paragraph": wide, "item": narrow})
+    sel = cr.select(res, STATS)
+    assert sel.best == "paragraph" and sel.verdicts["paragraph"].lo <= 0
+    assert sel.chosen == "item" and sel.zone == "차이 있음"
+    first = cr.build_report(_inp(res))[0].splitlines()[0]
+    assert "`item`" in first
+    assert cr._sgn(sel.verdicts["item"].mean) in first
+    assert cr._sgn(sel.verdicts["paragraph"].mean) not in first
+
+
 def test_larger_mean_wins_among_positive_lower_bounds():
     better_more = [1] * 20 + [10] * (N - 20)
     res = _results({"article": SAME, "paragraph": BETTER, "item": better_more})

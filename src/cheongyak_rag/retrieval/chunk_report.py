@@ -135,7 +135,7 @@ def _mean(lines: list[dict], ranker: str, key: str) -> float:
 
 
 def _headline(sel: Selection) -> str:
-    v = sel.verdicts[sel.best]
+    v = sel.verdicts[sel.chosen if sel.chosen != BASE else sel.best]
     stat = f"{_sgn(v.mean)} (95% CI {_ci(v)}, p={_p(v.p)})"
     if sel.chosen != BASE:
         return (
