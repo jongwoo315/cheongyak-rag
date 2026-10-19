@@ -231,3 +231,14 @@ def test_faq_chunk_ids_unique_and_path_is_q_no():
     got = ck.faq_chunks(faq, set())
     assert len({c.chunk_id for c in got}) == 2
     assert got[0].path == "Q1"
+
+
+def test_law_chunks_rejects_duplicate_paths():
+    dup = _row(
+        "제9조",
+        "중복",
+        "",
+        [_para("", "", [_item("1", "1. 가")]), _para("", "", [_item("1", "1. 나")])],
+    )
+    with pytest.raises(ValueError, match="제9조제1호"):
+        ck.law_chunks([dup], "item")

@@ -248,8 +248,8 @@ def test_faq_hit_at_5_counts_only_top5_not_hit_at_1():
 def test_faq_without_leave_self_out_self_pair_is_top1():
     check = ce.self_check(FAQ, FAQ_GOLDEN, FakeEmbedder())
     assert check["n"] == 2
-    assert check["self_top1"]["bm25"] == 1.0
-    assert check["misses"] == [] or all("qid" in m for m in check["misses"])
+    assert check["self_top1"]["bm25"] == 1.0  # 가짜 임베더의 dense는 무작위라 bm25만 본다
+    assert all(m["ranker"] != "bm25" for m in check["misses"])
 
 
 def test_leak_count_zero_for_leave_self_out_and_detects_leak():
@@ -275,3 +275,18 @@ def test_cli_faq_writes_results_config_and_self_check(tmp_path):
     assert set(sc["self_top1"]) == set(ce.RANKERS)
     cfg = json.loads((out / "config.json").read_text())
     assert cfg["chunk_count"] == 480
+
+
+def test_leave_self_out_drops_self_pair_even_if_question_text_differs():
+    g = [
+        {**FAQ_GOLDEN[0], "question": "무주택세대구성원  정의가 뭔가요"}
+    ]  # 공백이 달라 텍스트가 다르다
+    line = ce.evaluate_faq(FAQ, g, FakeEmbedder())[0]
+    assert 1 in line["excluded"]
+    for r in ce.RANKERS:
+        assert 1 not in line[r]["top5"]
+
+
+def test_leak_count_counts_own_q_no_even_if_excluded_list_misses_it():
+    line = {"q_no": 1, "excluded": [], **{r: {"top5": [1, 2]} for r in ce.RANKERS}}
+    assert ce.leak_count([line]) == len(ce.RANKERS)

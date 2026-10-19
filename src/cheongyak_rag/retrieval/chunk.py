@@ -116,6 +116,9 @@ def law_chunks(rows: list[dict], candidate: str) -> list[Chunk]:
             out.append(
                 Chunk(f"law:{path}", row["label"], path, text, "law", {"title": row["title"]})
             )
+    dups = [p for p, n in Counter(c.path for c in out).items() if n > 1]
+    if dups:  # path가 chunk_id·조회 키라 겹치면 청크가 조용히 합쳐진다
+        raise ValueError(f"{candidate}: path가 겹친다 {dups[:3]}")
     return out
 
 

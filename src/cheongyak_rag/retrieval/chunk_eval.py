@@ -192,7 +192,12 @@ def _faq_rankings(chunks: list[Chunk], golden: list[dict], embedder, leave_self_
     docs = [_Doc(c.chunk_id, c.text) for c in chunks]
     shared: dict[frozenset, BM25] = {}
     for i, g in enumerate(golden):
-        group = frozenset(c.chunk_id for c in chunks if _question(c) == g["question"])
+        # 질문 텍스트가 같은 쌍과, 텍스트가 달라도 golden이 가리키는 자기 쌍(q_no)
+        group = frozenset(
+            c.chunk_id
+            for c in chunks
+            if _question(c) == g["question"] or c.meta.get("q_no") == g["q_no"]
+        )
         drop = group if leave_self_out else frozenset()
         keep = [j for j, x in enumerate(ids) if x not in drop]
         if drop not in shared:
@@ -232,7 +237,9 @@ def evaluate_faq(chunks: list[Chunk], golden: list[dict], embedder) -> list[dict
 
 def leak_count(lines: list[dict]) -> int:
     """상위 5개에 자기 쌍·같은 질문 쌍이 들어온 횟수(순위 이름별로 센다). 0이어야 한다."""
-    return sum(len(set(x[r]["top5"]) & set(x["excluded"])) for x in lines for r in RANKERS)
+    return sum(
+        len(set(x[r]["top5"]) & ({x["q_no"]} | set(x["excluded"]))) for x in lines for r in RANKERS
+    )
 
 
 def self_check(chunks: list[Chunk], golden: list[dict], embedder) -> dict:
