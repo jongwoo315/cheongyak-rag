@@ -185,3 +185,116 @@ def test_real_item_chunks_every_article_has_a_chunk():
         got = {c.label for c in law_chunks(load_law_rows(), cand)}
         assert got == labels
     assert tokenize("무주택세대구성원")  # kiwi가 돈다
+
+
+# ── FAQ (leave-self-out) ────────────────────────────────────────────────
+
+
+def _faq_chunk(q_no, question, answer, cited=()):
+    return Chunk(
+        f"faq:{q_no}",
+        f"Q{q_no}",
+        f"Q{q_no}",
+        f"{question}\n{answer}",
+        "faq",
+        {"q_no": q_no, "cited": list(cited)},
+    )
+
+
+FAQ = [
+    _faq_chunk(1, "무주택세대구성원 정의가 뭔가요", "세대원 전원이 무주택인 세대", ["제2조"]),
+    _faq_chunk(2, "청약 자격 나이가 어떻게 되나요", "만 19세 이상 소득 기준", ["제3조"]),
+    _faq_chunk(3, "무주택세대구성원 정의가 뭔가요", "같은 질문 다른 답", ["제2조"]),
+    _faq_chunk(4, "무주택 세대 기준 알려주세요", "세대 전원 무주택 요건", ["제2조", "제9조"]),
+    _faq_chunk(5, "공급 목적이 뭔가요", "주택 공급 목적 규정", ["제1조"]),
+]
+FAQ_GOLDEN = [
+    {
+        "qid": "faq-1",
+        "q_no": 1,
+        "question": "무주택세대구성원 정의가 뭔가요",
+        "gold": ["제2조"],
+        "has_article_in_question": False,
+    },
+    {
+        "qid": "faq-2",
+        "q_no": 2,
+        "question": "청약 자격 나이가 어떻게 되나요",
+        "gold": ["제3조"],
+        "has_article_in_question": False,
+    },
+]
+
+
+def test_faq_leave_self_out_removes_self_and_same_question_pairs():
+    lines = ce.evaluate_faq(FAQ, FAQ_GOLDEN, FakeEmbedder())
+    first = lines[0]
+    assert first["excluded"] == [1, 3]
+    for r in ce.RANKERS:
+        assert not {1, 3} & set(first[r]["top5"]), r
+
+
+def test_faq_hit_hand_computed():
+    lines = ce.evaluate_faq(FAQ, FAQ_GOLDEN, FakeEmbedder())
+    first = lines[0]
+    # 남은 쌍은 2·4·5. 4번이 제2조를 인용해 정답과 겹친다. 2번은 제3조, 5번은 제1조
+    assert first["bm25"]["top5"][0] == 4
+    assert first["bm25"]["faq_hit@1"] == 1
+    assert first["bm25"]["faq_hit@5"] == 1
+    # 둘째 질문: 정답 제3조는 2번만 인용하고 2번이 자기 쌍이라 빠진다 → 맞힐 쌍이 없다
+    second = lines[1]
+    assert second["excluded"] == [2]
+    for r in ce.RANKERS:
+        assert second[r]["faq_hit@5"] == 0 and second[r]["faq_hit@1"] == 0
+
+
+def test_faq_hit_at_5_counts_only_top5_not_hit_at_1():
+    chunks = [
+        _faq_chunk(i, f"질문{i} 번호", f"답{i}", ["제7조"] if i == 6 else []) for i in range(1, 8)
+    ]
+    g = [
+        {
+            "qid": "faq-1",
+            "q_no": 1,
+            "question": "질문1 번호",
+            "gold": ["제7조"],
+            "has_article_in_question": False,
+        }
+    ]
+    line = ce.evaluate_faq(chunks, g, FakeEmbedder())[0]
+    for r in ce.RANKERS:
+        top5 = line[r]["top5"]
+        assert line[r]["faq_hit@5"] == int(6 in top5)
+        assert line[r]["faq_hit@1"] == int(top5[0] == 6)
+
+
+def test_faq_without_leave_self_out_self_pair_is_top1():
+    check = ce.self_check(FAQ, FAQ_GOLDEN, FakeEmbedder())
+    assert check["n"] == 2
+    assert check["self_top1"]["bm25"] == 1.0
+    assert check["misses"] == [] or all("qid" in m for m in check["misses"])
+
+
+def test_leak_count_zero_for_leave_self_out_and_detects_leak():
+    lines = ce.evaluate_faq(FAQ, FAQ_GOLDEN, FakeEmbedder())
+    assert ce.leak_count(lines) == 0
+    lines[0]["dense"]["top5"][0] = 3  # 같은 질문 쌍이 새어 들어온 경우
+    assert ce.leak_count(lines) == 1
+
+
+def test_faq_results_deterministic():
+    a = ce.dump_lines(ce.evaluate_faq(FAQ, FAQ_GOLDEN, FakeEmbedder()))
+    b = ce.dump_lines(ce.evaluate_faq(FAQ, FAQ_GOLDEN, FakeEmbedder()))
+    assert a == b
+
+
+def test_cli_faq_writes_results_config_and_self_check(tmp_path):
+    rc = ce.main(["--faq"], runs_dir=tmp_path, embedder=FakeEmbedder())
+    assert rc == 0
+    out = tmp_path / "faq"
+    assert len((out / "results.jsonl").read_text().splitlines()) == 123
+    sc = json.loads((out / "self_check.json").read_text())
+    assert sc["n"] == 123 and sc["leak_count"] == 0
+    assert set(sc["self_top1"]) == set(ce.RANKERS)
+    cfg = json.loads((out / "config.json").read_text())
+    assert cfg["chunk_count"] == 480
