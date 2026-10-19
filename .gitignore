@@ -8,3 +8,4 @@ data/raw/
 .code-review-graph/
 .DS_Store
 data/processed/
+data/cache/
