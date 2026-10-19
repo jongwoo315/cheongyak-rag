@@ -119,7 +119,7 @@ def law_chunks(rows: list[dict], candidate: str) -> list[Chunk]:
     return out
 
 
-def _strip_head(c: Chunk) -> str:
+def strip_head(c: Chunk) -> str:
     """머리 줄(`제N조(제목)`)을 뗀 본문. 머리가 없으면 그대로."""
     head = f"{c.label}({c.meta.get('title')})"
     if c.text == head:
@@ -141,7 +141,7 @@ def check_preservation(rows: list[dict], candidate: str) -> list[str]:
         if row["deleted"]:
             continue
         want = _body(row).split("\n")[1:]  # 머리 줄을 뗀 본문 줄
-        got = [ln for c in by_label.get(row["label"], []) for ln in _strip_head(c).split("\n")]
+        got = [ln for c in by_label.get(row["label"], []) for ln in strip_head(c).split("\n")]
         if got == want:
             continue
         missing, dup = Counter(want) - Counter(got), Counter(got) - Counter(want)
@@ -156,7 +156,7 @@ def check_preservation(rows: list[dict], candidate: str) -> list[str]:
 
 def short_ratio(chunks: list[Chunk], limit: int = SHORT_CHARS) -> float:
     """머리를 뗀 본문이 limit자 미만인 청크 비율. 머리를 붙인 후보도 같은 줄로 잰다."""
-    return sum(len(_strip_head(c)) < limit for c in chunks) / len(chunks)
+    return sum(len(strip_head(c)) < limit for c in chunks) / len(chunks)
 
 
 # ── FAQ ─────────────────────────────────────────────────────────────────
