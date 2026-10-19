@@ -50,6 +50,8 @@ def spacing_pairs(toc: list[TocEntry], pairs: list[FaqPair]) -> list[tuple[int, 
 
 
 def measure(pairs: list[tuple[int, str, str]], embedder) -> dict:
+    if not pairs:  # 목차 파싱이 실패해도 np.mean([])=nan이 구간 판정으로 흘러가지 않게 한다
+        raise ValueError("공백만 다른 질문 쌍이 0개다 — 목차 파싱을 확인한다")
     vecs = embedder.embed([t for _, toc, body in pairs for t in (toc, body)])
     rows = []
     for i, (q_no, toc, body) in enumerate(pairs):

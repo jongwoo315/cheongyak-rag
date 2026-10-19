@@ -68,6 +68,11 @@ def test_measure_means_and_spacing_difference_lowers_jaccard():
     assert out["mean_cosine"] == pytest.approx(p["cosine"])
 
 
+def test_measure_without_pairs_raises_instead_of_nan_band():
+    with pytest.raises(ValueError, match="0개"):
+        sp.measure([], FakeEmbedder())
+
+
 def test_spacing_pairs_takes_only_spacing_only_differences():
     toc = [
         TocEntry(1, "Ⅰ. 가", "", "", "소유한 것으로 본다"),
