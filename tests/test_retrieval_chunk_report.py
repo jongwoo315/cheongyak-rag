@@ -132,6 +132,12 @@ def test_tie_goes_to_fewer_chunks():
     assert cr.select(res, STATS).chosen == "paragraph"
 
 
+def test_tie_break_uses_chunk_count_not_candidate_order():
+    stats = {**STATS, "paragraph": {**STATS["paragraph"], "count": 500}}
+    res = _results({"article": SAME, "paragraph": BETTER, "item": BETTER})
+    assert cr.select(res, stats).chosen == "item"
+
+
 def test_chosen_is_best_among_lower_bound_winners_not_overall_best_mean():
     art = [1] * 15 + [10] * 15
     wide = [10] * 9 + [1] * 6 + [1] * 15  # 평균 +0.2, 신뢰구간이 0을 포함
@@ -144,6 +150,12 @@ def test_chosen_is_best_among_lower_bound_winners_not_overall_best_mean():
     assert "`item`" in first
     assert cr._sgn(sel.verdicts["item"].mean) in first
     assert cr._sgn(sel.verdicts["paragraph"].mean) not in first
+
+
+def test_one_low_candidate_is_not_all_low():
+    res = _results({"article": ART_HALF, "paragraph": SAME})
+    sel = cr.select(res, STATS)
+    assert sel.zone != "모든 후보가 낮다"
 
 
 def test_larger_mean_wins_among_positive_lower_bounds():
