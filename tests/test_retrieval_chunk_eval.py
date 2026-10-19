@@ -1,34 +1,11 @@
-import hashlib
 import json
-
-import numpy as np
 
 from cheongyak_rag.retrieval import chunk_eval as ce
 from cheongyak_rag.retrieval.chunk import Chunk, law_chunks, load_law_rows
 from cheongyak_rag.retrieval.corpus import Article, load_articles
 from cheongyak_rag.retrieval.evaluate import evaluate_run
 from cheongyak_rag.retrieval.search import tokenize
-
-
-class FakeEmbedder:
-    """텍스트 해시로 만든 벡터. API를 안 부른다."""
-
-    model = "fake"
-
-    def __init__(self):
-        self.api_calls = 0
-        self.cache = {}
-        self.calls = []
-
-    def embed(self, texts):
-        self.calls.append(len(texts))
-        out = []
-        for t in texts:
-            if t not in self.cache:
-                h = hashlib.sha256(t.encode()).digest()
-                self.cache[t] = [(b + 1) / 256 for b in h[:16]]
-            out.append(self.cache[t])
-        return np.array(out, dtype=np.float64)
+from tests.fakes import FakeEmbedder
 
 
 def _c(label, path, text="본문"):

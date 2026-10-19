@@ -51,6 +51,29 @@ def article_ranking(chunk_ranking: list[Chunk]) -> list[str]:
     return article_view(chunk_ranking)[0]
 
 
+class ArticleRanks(NamedTuple):
+    rankings: dict[str, list[str]]  # bm25 · dense · hybrid 조 순위
+    pos: dict[str, dict[str, int]]  # 순위 이름 → 조 → 순위(1부터)
+    paths: dict[str, dict[str, str]]  # bm25 · dense → 조 → 그 조의 가장 높은 청크 path
+
+    def best_path(self, label: str) -> str:
+        """두 순위 중 그 조가 더 높이 오른 쪽의 청크 path. 같으면 BM25."""
+        bm_r, dn_r = self.pos["bm25"][label], self.pos["dense"][label]
+        return self.paths["bm25" if bm_r <= dn_r else "dense"][label]
+
+
+def article_ranks(
+    bm_chunks: list[Chunk], dn_chunks: list[Chunk], rrf_k: int = RRF_K
+) -> ArticleRanks:
+    """BM25·dense 청크 순위 → 조 순위 둘 + 그 둘을 RRF로 합친 hybrid 조 순위."""
+    bm_labels, bm_paths = article_view(bm_chunks)
+    dn_labels, dn_paths = article_view(dn_chunks)
+    hybrid = [label for label, _ in rrf([bm_labels, dn_labels], k=rrf_k)]
+    rankings = {"bm25": bm_labels, "dense": dn_labels, "hybrid": hybrid}
+    pos = {name: {x: r for r, x in enumerate(rk, start=1)} for name, rk in rankings.items()}
+    return ArticleRanks(rankings, pos, {"bm25": bm_paths, "dense": dn_paths})
+
+
 def evaluate_candidate(
     chunks: list[Chunk],
     golden: list[dict],
@@ -70,24 +93,21 @@ def evaluate_candidate(
     doc_vecs, query_vecs = vecs[: len(chunks)], vecs[len(chunks) :]
     lines = []
     for i, g in enumerate(golden):
-        bm_labels, bm_paths = article_view([by_id[x] for x in bm25.rank(g["question"])])
-        dn_labels, dn_paths = article_view(
-            [by_id[x] for x in dense_rank(query_vecs[i], doc_vecs, ids)]
+        ar = article_ranks(
+            [by_id[x] for x in bm25.rank(g["question"])],
+            [by_id[x] for x in dense_rank(query_vecs[i], doc_vecs, ids)],
+            rrf_k,
         )
-        hy_labels = [label for label, _ in rrf([bm_labels, dn_labels], k=rrf_k)]
-        rankings = {"bm25": bm_labels, "dense": dn_labels, "hybrid": hy_labels}
-        pos = {name: {x: r for r, x in enumerate(rk, start=1)} for name, rk in rankings.items()}
-        detail = {}
-        for label in g["gold"]:
-            bm_r, dn_r = pos["bm25"][label], pos["dense"][label]
-            # 두 순위 중 더 높이 오른 쪽의 청크. 같으면 BM25
-            path = bm_paths[label] if bm_r <= dn_r else dn_paths[label]
-            detail[label] = {
-                "bm25": bm_r,
-                "dense": dn_r,
+        rankings, pos = ar.rankings, ar.pos
+        detail = {
+            label: {
+                "bm25": pos["bm25"][label],
+                "dense": pos["dense"][label],
                 "hybrid": pos["hybrid"][label],
-                "path": path,
+                "path": ar.best_path(label),
             }
+            for label in g["gold"]
+        }
         lines.append(
             {
                 "qid": g["qid"],
@@ -95,7 +115,7 @@ def evaluate_candidate(
                 "question": g["question"],
                 "gold": g["gold"],
                 "has_article_in_question": g["has_article_in_question"],
-                "top5": hy_labels[:K],
+                "top5": rankings["hybrid"][:K],
                 **{name: metrics(rk, g["gold"]) for name, rk in rankings.items()},
                 "gold_detail": detail,
             }
