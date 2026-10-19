@@ -149,7 +149,7 @@ def _headline(sel: Selection) -> str:
     else:
         why = f"신뢰구간이 0을 포함하고 반폭이 {v.half_width:.3f}로 0.05를 넘어 판정 불가 구간이다"
     return (
-        f"고른 후보는 `{BASE}`다 — 평균 차이가 가장 큰 `{sel.best}`의 `{BASE}` 대비 "
+        f"고른 후보는 `{BASE}`이다 — 평균 차이가 가장 큰 `{sel.best}`의 `{BASE}` 대비 "
         f"hybrid {PRIMARY} 차이는 {stat}이고 {why}."
     )
 
@@ -204,7 +204,7 @@ def _section_conclusion(inp: Inputs, sel: Selection) -> list[str]:
         f"- 질문 {n}개(#131 golden 그대로), 정답은 조 단위다. 주 지표는 hybrid {PRIMARY}이고 "
         "측정 전에 정했다.",
         f"- 고르는 규칙: `{BASE}` 대비 hybrid {PRIMARY} 차이의 95% CI 하한이 0보다 큰 후보 중 "
-        f"평균이 가장 큰 것. 같으면 청크 수가 적은 쪽. 그런 후보가 없으면 `{BASE}`를 유지한다.",
+        f"평균이 가장 큰 것. 같으면 청크 수가 적은 쪽. 그런 후보가 없으면 `{BASE}`을 유지한다.",
         f"- 신뢰구간은 paired bootstrap {N_ITER:,}회, p는 paired permutation {N_ITER:,}회"
         f"(seed 0)다. p는 {N_ITER:,}회 검정이라 0.0001이 하한이다.",
         f"- 후보 4개를 같은 `{BASE}` 하나와 비교하고 다중 비교 보정은 하지 않았다.",
@@ -231,7 +231,8 @@ def _section_long(inp: Inputs, median: float) -> list[str]:
     n = len(inp.long_qids)
     out = ["## 3. 정답 조가 긴 문항", ""]
     out.append(
-        f"정답 조 중 가장 긴 조의 글자 수가 조문 중앙값({median:g}자)을 넘는 질문 {n}개다. "
+        f"정답 조 중 가장 긴 조의 글자 수가 조문 중앙값({median:g}자)을 넘는 질문 {n}개다"
+        f"(전체 {len(inp.results[BASE])}개 중). "
         "긴 조 안에 상세 내용이 묻히는지 본다. 고르는 규칙에는 쓰지 않았고 같은 구간을 낸다."
     )
     out += [""] + _tables(inp, inp.long_qids, with_stats=False)
@@ -259,11 +260,11 @@ def _section_split(inp: Inputs, compare: str, chosen: str) -> list[str]:
     out = ["## 4. hit@5가 갈린 문항", ""]
     if chosen == BASE:
         out.append(
-            f"고른 후보가 `{BASE}`라 같은 후보와는 갈린 문항이 없다. 평균 차이가 가장 큰 "
-            f"`{compare}`와 `{BASE}`를 비교한다."
+            f"고른 후보가 `{BASE}`이라 고른 후보와 `{BASE}` 사이에는 갈린 문항이 없다. "
+            f"비교 대상은 평균 차이가 가장 큰 후보 `{compare}`, 기준 `{BASE}`이다."
         )
     else:
-        out.append(f"고른 후보 `{chosen}`와 `{BASE}`를 비교한다.")
+        out.append(f"비교 대상은 고른 후보 `{chosen}`, 기준 `{BASE}`이다.")
     out += [
         f"hybrid `hit@5`가 다른 질문은 {len(rows)}개다(`{compare}`만 맞힘 {only_c}개, "
         f"`{BASE}`만 맞힘 {len(rows) - only_c}개). 전부 아래에 있다.",
@@ -342,7 +343,7 @@ def _section_samples(inp: Inputs) -> list[str]:
             "### 형태소 관찰 (이번 티켓은 바꾸지 않았다)",
             "",
             f"`무주택세대구성원`을 kiwi는 {kiwi}로 나눈다. BM25 입력 토큰은 "
-            f"{', '.join(f'`{t}`' for t in obs['bm25'])}다.",
+            f"{', '.join(f'`{t}`' for t in obs['bm25'])}이다.",
         ]
     return out
 
