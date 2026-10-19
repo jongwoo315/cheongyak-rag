@@ -290,3 +290,52 @@ def test_leave_self_out_drops_self_pair_even_if_question_text_differs():
 def test_leak_count_counts_own_q_no_even_if_excluded_list_misses_it():
     line = {"q_no": 1, "excluded": [], **{r: {"top5": [1, 2]} for r in ce.RANKERS}}
     assert ce.leak_count([line]) == len(ce.RANKERS)
+
+
+# ── 조 순위 손계산 ──────────────────────────────────────────────────────
+
+
+def test_article_ranks_hybrid_is_rrf_over_article_lists_hand_computed():
+    # 조 순위: bm25 [1,2,3] · dense [2,3,1]
+    # RRF(k=60): 제2조 1/62+1/61 > 제1조 1/61+1/63 > 제3조 1/63+1/62
+    bm = [
+        _c("제1조", "제1조제1항"),
+        _c("제2조", "제2조"),
+        _c("제1조", "제1조제2항"),
+        _c("제3조", "제3조"),
+    ]
+    dn = [_c("제2조", "제2조"), _c("제3조", "제3조제1항"), _c("제1조", "제1조제2항")]
+    ar = ce.article_ranks(bm, dn)
+    assert ar.rankings["bm25"] == ["제1조", "제2조", "제3조"]
+    assert ar.rankings["dense"] == ["제2조", "제3조", "제1조"]
+    assert ar.rankings["hybrid"] == ["제2조", "제1조", "제3조"]
+    assert ar.pos["hybrid"] == {"제2조": 1, "제1조": 2, "제3조": 3}
+
+
+def test_best_path_follows_better_ranking_and_ties_go_to_bm25():
+    bm = [_c("제1조", "제1조-bm"), _c("제2조", "제2조-bm"), _c("제3조", "제3조-bm")]
+    dn = [_c("제3조", "제3조-dn"), _c("제2조", "제2조-dn"), _c("제1조", "제1조-dn")]
+    ar = ce.article_ranks(bm, dn)
+    assert ar.best_path("제1조") == "제1조-bm"  # bm25 1위 · dense 3위
+    assert ar.best_path("제3조") == "제3조-dn"  # bm25 3위 · dense 1위
+    assert ar.best_path("제2조") == "제2조-bm"  # 둘 다 2위
+
+
+def test_faq_hit_counts_partial_overlap_of_cited_and_gold():
+    chunks = [
+        _faq_chunk(1, "질문1 번호", "답1", []),
+        _faq_chunk(2, "질문2 번호", "답2", ["제2조", "제9조"]),
+    ]
+    g = [
+        {
+            "qid": "faq-1",
+            "q_no": 1,
+            "question": "질문1 번호",
+            "gold": ["제2조", "제3조"],
+            "has_article_in_question": False,
+        }
+    ]
+    line = ce.evaluate_faq(chunks, g, FakeEmbedder())[0]
+    for r in ce.RANKERS:
+        assert line[r]["top5"] == [2]
+        assert line[r]["faq_hit@5"] == 1
