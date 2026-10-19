@@ -145,9 +145,15 @@ def _headline(sel: Selection) -> str:
     if sel.zone == ZONE_ALL_LOW:
         why = "모든 후보의 신뢰구간 상한이 0 미만이라 `모든 후보가 낮다` 구간이다"
     elif sel.zone == "차이 없음":
-        why = f"신뢰구간이 0을 포함하고 반폭이 {v.half_width:.3f}(0.05 이하)라 차이 없음 구간이다"
+        why = (
+            f"신뢰구간이 0을 포함하고 폭의 절반이 {v.half_width:.3f}(0.05 이하)라 "
+            "차이 없음 구간이다"
+        )
     else:
-        why = f"신뢰구간이 0을 포함하고 반폭이 {v.half_width:.3f}로 0.05를 넘어 판정 불가 구간이다"
+        why = (
+            f"신뢰구간이 0을 포함하고 폭의 절반이 {v.half_width:.3f}로 0.05를 넘어 "
+            "판정 불가 구간이다"
+        )
     return (
         f"고른 후보는 `{BASE}`이다 — 평균 차이가 가장 큰 `{sel.best}`의 `{BASE}` 대비 "
         f"hybrid {PRIMARY} 차이는 {stat}이고 {why}."
@@ -208,8 +214,8 @@ def _section_conclusion(inp: Inputs, sel: Selection) -> list[str]:
         f"- 신뢰구간은 paired bootstrap {N_ITER:,}회, p는 paired permutation {N_ITER:,}회"
         f"(seed 0)다. p는 {N_ITER:,}회 검정이라 0.0001이 하한이다.",
         f"- 후보 4개를 같은 `{BASE}` 하나와 비교하고 다중 비교 보정은 하지 않았다.",
-        "- 구간: 하한 > 0 → 차이 있음 / 0을 포함하고 반폭 ≤ 0.05 → 차이 없음 / "
-        "0을 포함하고 반폭 > 0.05 → 판정 불가 / 상한 < 0 → 낮다. "
+        "- 구간: 하한 > 0 → 차이 있음 / 0을 포함하고 폭의 절반 ≤ 0.05 → 차이 없음 / "
+        "0을 포함하고 폭의 절반 > 0.05 → 판정 불가 / 상한 < 0 → 낮다. "
         "네 후보 모두 낮다이면 `모든 후보가 낮다`.",
         "",
         f"### 전체 질문 — `{BASE}` 대비 hybrid {PRIMARY}",
