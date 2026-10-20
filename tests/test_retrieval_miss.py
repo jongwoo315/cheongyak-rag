@@ -365,6 +365,26 @@ def test_first_line_is_one_sentence_naming_all_four_candidates(report):
     assert "일부 찾음" in first and "차이 없음" in first  # 구간 이름이 들어 있다
 
 
+def test_conclusion_reads_each_candidates_own_values():
+    counts = {"article": (0, 0), "paragraph": (6, 18), "paragraph+head": (4, 12)}
+    counts |= {"item": (8, 10), "item+head": (6, 7)}
+    bands = ["차이 없음", "놓친 것이 더 많다", "놓친 것이 더 많다", "차이 없음", "차이 없음"]
+    golden = {
+        "missed": list(range(20)),
+        "candidates": {
+            c: {"found_count": f, "lost_count": lo, "band": b}
+            for (c, (f, lo)), b in zip(counts.items(), bands, strict=True)
+        },
+    }
+    first = miss._conclusion(miss.summarize_a(SYN), golden)
+    assert "`paragraph` F 6 · L 18(놓친 것이 더 많다)" in first
+    assert "`paragraph+head` F 4 · L 12(놓친 것이 더 많다)" in first
+    assert "`item` F 8 · L 10(차이 없음)" in first
+    assert "`item+head` F 6 · L 7(차이 없음)" in first
+    assert "(비교: `article` F 0 · L 0)" in first
+    assert "`paragraph` 0건(못 찾음)" in first and "`item` 2건(찾음)" in first  # SYN의 A 값
+
+
 def test_section_notes_are_at_the_top_of_each_section(report):
     a = report.split("## 1.")[1].split("## 2.")[0]
     b = report.split("## 2.")[1].split("## 3.")[0]
