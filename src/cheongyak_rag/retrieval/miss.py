@@ -9,7 +9,10 @@
 """
 
 import json
+import statistics
 from pathlib import Path
+
+import numpy as np
 
 from cheongyak_rag.retrieval import chunk_eval
 from cheongyak_rag.retrieval.chunk import CANDIDATES, law_chunks
@@ -117,3 +120,125 @@ def golden_misses(
             for cand in candidates
         },
     }
+
+
+# ── 원인 — `article` 후보에서 놓친 조 ────────────────────────────────────────
+
+TOP_TERMS = 5  # 낱말별 기여 중 보여줄 상위 개수
+SUM_TOLERANCE = 1e-9  # 실패 징후 4 — 낱말별 기여의 합과 BM25.scores의 차
+
+
+def bm25_terms(bm25: BM25, query: str, label: str) -> dict[str, float]:
+    """질문 낱말마다 그 문서의 BM25 점수 기여(idf × tf 항). 기여가 큰 순서.
+
+    `BM25.scores`와 같은 식이다 — 질문 낱말은 집합으로 세고, 문서에 없는 낱말은 기여 0이라 뺀다.
+    """
+    i = bm25.labels.index(label)
+    tf, length = bm25.tf[i], bm25.lengths[i]
+    norm = bm25.k1 * (1 - bm25.b + bm25.b * length / bm25.avg_len)
+    terms = set(bm25.tokenizer(query)) & bm25.idf.keys()
+    contrib = {t: bm25.idf[t] * tf[t] * (bm25.k1 + 1) / (tf[t] + norm) for t in terms if t in tf}
+    return dict(sorted(contrib.items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def _cos(a: np.ndarray, b: np.ndarray) -> float:
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+
+def _terms_text(terms: dict[str, float]) -> str:
+    top = list(terms.items())[:TOP_TERMS]
+    return ", ".join(f"{t} {v:.3f}" for t, v in top) or "없음"
+
+
+def cites_number(cause: dict) -> bool:
+    """원인 문장이 그 원인의 점수·코사인 값을 글자로 담고 있나(실패 징후 3)."""
+    return any(
+        f"{cause[k]:.3f}" in cause["sentence"] for k in ("own_score", "own_cos") if k in cause
+    )
+
+
+def build_causes(
+    lines: list[dict], articles: list[Article], rows: list[dict], embedder
+) -> list[dict]:
+    """`article` 후보 점검 줄 중 자기 조가 1위가 아니던 (retriever, 조) 마다 원인 숫자와 문장."""
+    misses = [
+        (name, x)
+        for x in lines
+        if x["candidate"] == "article"
+        for name in ("bm25", "dense")
+        if x[f"{name}_rank"] != 1
+    ]
+    if not misses:
+        return []
+    by_label = {a.label: i for i, a in enumerate(articles)}
+    chars = [len(a.text) for a in articles]
+    median = statistics.median(chars)
+    bm25 = BM25(articles)
+    items = law_chunks(rows, "item")
+    queries = list(dict.fromkeys(x["query"] for _, x in misses))
+    vecs = embedder.embed([a.text for a in articles] + [c.text for c in items] + queries)
+    art_vecs = vecs[: len(articles)]
+    item_vecs = vecs[len(articles) : len(articles) + len(items)]
+    query_vecs = dict(zip(queries, vecs[len(articles) + len(items) :], strict=True))
+    out = []
+    for name, x in misses:
+        label, top1, q = x["label"], x[f"{name}_top1"], x["query"]
+        own_i, top_i = by_label[label], by_label[top1]
+        cause = {
+            "retriever": name,
+            "label": label,
+            "query": q,
+            "own_rank": x[f"{name}_rank"],
+            "top1": top1,
+            "own_chars": chars[own_i],
+            "top1_chars": chars[top_i],
+            "median_chars": median,
+            "own_tokens": bm25.lengths[own_i],
+            "top1_tokens": bm25.lengths[top_i],
+            "avg_tokens": bm25.avg_len,
+        }
+        size = (
+            f"자기 조 {chars[own_i]}자(조문 글자 수 중앙값 {median:g}자의"
+            f" {chars[own_i] / median:.1f}배)·토큰 {bm25.lengths[own_i]}개,"
+            f" 1위 {top1} {chars[top_i]}자·토큰 {bm25.lengths[top_i]}개"
+        )
+        if name == "bm25":
+            own_t, top_t = bm25_terms(bm25, q, label), bm25_terms(bm25, q, top1)
+            scores = bm25.scores(q)
+            cause |= {
+                "own_score": scores[own_i],
+                "top1_score": scores[top_i],
+                "own_terms": own_t,
+                "top1_terms": top_t,
+                "own_terms_gap": abs(sum(own_t.values()) - scores[own_i]),
+                "top1_terms_gap": abs(sum(top_t.values()) - scores[top_i]),
+            }
+            cause["sentence"] = (
+                f"{label}: BM25 점수 {scores[own_i]:.3f}로 {x['bm25_rank']}위,"
+                f" 1위 {top1} {scores[top_i]:.3f}."
+                f" 낱말별 기여 — 자기 조 {_terms_text(own_t)} / 1위 조 {_terms_text(top_t)}."
+                f" {size}(토큰 평균 {bm25.avg_len:.1f}개)."
+            )
+        else:
+            qv = query_vecs[q]
+            own_cos, top_cos = _cos(qv, art_vecs[own_i]), _cos(qv, art_vecs[top_i])
+            own_items = [
+                (c.path, _cos(qv, v))
+                for c, v in zip(items, item_vecs, strict=True)
+                if c.label == label
+            ]
+            best_path, best_cos = max(own_items, key=lambda kv: kv[1])
+            cause |= {
+                "own_cos": own_cos,
+                "top1_cos": top_cos,
+                "item_best_path": best_path,
+                "item_best_cos": best_cos,
+            }
+            cause["sentence"] = (
+                f"{label}: 질문과의 코사인 {own_cos:.3f}로 {x['dense_rank']}위,"
+                f" 1위 {top1} {top_cos:.3f}. {size}."
+                f" `item` 후보에서 자기 조 청크 중 질문과 가장 가까운 {best_path}의"
+                f" 코사인은 {best_cos:.3f}."
+            )
+        out.append(cause)
+    return out

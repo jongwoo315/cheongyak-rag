@@ -1,11 +1,15 @@
 import json
+import math
+import statistics
 
+import numpy as np
 import pytest
 
 from cheongyak_rag.retrieval import miss
 from cheongyak_rag.retrieval.chunk import CANDIDATES, law_chunks
 from cheongyak_rag.retrieval.corpus import Article, _body
 from cheongyak_rag.retrieval.evaluate import first_sentence, run_sanity
+from cheongyak_rag.retrieval.search import BM25
 from tests.fakes import FakeEmbedder
 
 
@@ -162,3 +166,83 @@ def test_golden_misses_reads_run_files(tmp_path):
     assert got["missed"] == ["faq-0", "faq-2"]
     art = got["candidates"]["article"]
     assert (art["found_count"], art["lost_count"]) == (1, 1)
+
+
+# ── Task 3 — 원인 ───────────────────────────────────────────────────────
+
+
+def test_bm25_terms_matches_hand_calculation():
+    docs = [Article("가", "", "a b b"), Article("나", "", "c d")]
+    bm = BM25(docs, tokenizer=str.split)
+    got = miss.bm25_terms(bm, "a b x", "가")
+    idf = math.log((2 - 1 + 0.5) / (1 + 0.5) + 1)
+    norm = 1.2 * (1 - 0.75 + 0.75 * 3 / 2.5)
+    assert set(got) == {"a", "b"}  # x는 어느 문서에도 없다
+    assert got["a"] == pytest.approx(idf * 1 * 2.2 / (1 + norm))
+    assert got["b"] == pytest.approx(idf * 2 * 2.2 / (2 + norm))
+    assert list(got) == ["b", "a"]  # 기여가 큰 순서
+    assert miss.bm25_terms(bm, "a", "나") == {}  # 그 문서에 없는 낱말은 기여 0
+
+
+def test_bm25_term_contributions_sum_to_scores():
+    bm = BM25(ARTICLES)
+    for q in ("청약 자격은 나이와 소득으로 정한다.", "순위는 가입 기간 추첨", "없는낱말"):
+        scores = bm.scores(q)
+        for a in ARTICLES:
+            total = sum(miss.bm25_terms(bm, q, a.label).values())
+            assert abs(total - scores[bm.labels.index(a.label)]) < miss.SUM_TOLERANCE
+
+
+def _fake_miss(name, label, top1, rank):
+    """`article` 점검 줄 하나. 자기 순위·1위만 채운 합성 줄 — build_causes가 읽는 값이다."""
+    q = first_sentence(next(a for a in ARTICLES if a.label == label))
+    line = {"candidate": "article", "label": label, "query": q}
+    for r in ("bm25", "dense", "hybrid"):
+        line[f"{r}_rank"] = 1
+        line[f"{r}_top1"] = label
+    line[f"{name}_rank"], line[f"{name}_top1"] = rank, top1
+    return line
+
+
+def test_causes_cover_only_missed_retrievers_of_article_candidate():
+    lines = [_fake_miss("bm25", "제3조", "제4조", 2), _fake_miss("dense", "제6조", "제1조", 4)]
+    lines += [{**lines[0], "candidate": "item"}]  # article 외 후보는 원인 대상이 아니다
+    got = miss.build_causes(lines, ARTICLES, ROWS, FakeEmbedder())
+    assert [(c["retriever"], c["label"], c["top1"]) for c in got] == [
+        ("bm25", "제3조", "제4조"),
+        ("dense", "제6조", "제1조"),
+    ]
+    assert (
+        miss.build_causes([_fake_miss("bm25", "제3조", "제3조", 1)], ARTICLES, ROWS, FakeEmbedder())
+        == []
+    )
+
+
+def test_bm25_cause_numbers_match_scores_and_sentence_cites_them():
+    bm = BM25(ARTICLES)
+    (c,) = miss.build_causes(
+        [_fake_miss("bm25", "제3조", "제4조", 2)], ARTICLES, ROWS, FakeEmbedder()
+    )
+    scores = bm.scores(c["query"])
+    assert c["own_score"] == pytest.approx(scores[2]) and c["top1_score"] == pytest.approx(
+        scores[3]
+    )
+    assert c["own_terms_gap"] < miss.SUM_TOLERANCE and c["top1_terms_gap"] < miss.SUM_TOLERANCE
+    assert c["own_chars"] == len(ARTICLES[2].text) and c["top1_tokens"] == bm.lengths[3]
+    assert c["median_chars"] == statistics.median(len(a.text) for a in ARTICLES)
+    assert miss.cites_number(c) and f"{c['own_score']:.3f}" in c["sentence"]
+
+
+def test_dense_cause_cosines_and_best_item_chunk():
+    emb = FakeEmbedder()
+    (c,) = miss.build_causes([_fake_miss("dense", "제4조", "제1조", 3)], ARTICLES, ROWS, emb)
+    qv = emb.embed([c["query"]])[0]
+    cos = lambda t: float(  # noqa: E731
+        (v := emb.embed([t])[0]) @ qv / (np.linalg.norm(v) * np.linalg.norm(qv))
+    )
+    assert c["own_cos"] == pytest.approx(cos(ARTICLES[3].text))
+    assert c["top1_cos"] == pytest.approx(cos(ARTICLES[0].text))
+    own_items = [ch for ch in law_chunks(ROWS, "item") if ch.label == "제4조"]
+    assert c["item_best_cos"] == pytest.approx(max(cos(ch.text) for ch in own_items))
+    assert c["item_best_path"] in {ch.path for ch in own_items}
+    assert miss.cites_number(c)
