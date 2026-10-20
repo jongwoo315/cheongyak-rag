@@ -456,8 +456,8 @@ def _section_causes(causes: list[dict]) -> list[str]:
     out = [
         "## 3. 원인 — `article`에서 놓친 건",
         "",
-        "`item` 후보 코사인은 청크 본문이 질문과 글자까지 같으면 1.000이 된다."
-        " 질문이 조문 첫 문장이라서 생기는 값이다.",
+        "dense 건의 `item` 후보 코사인 1.000은 `item` 청크 본문이 질문과 글자까지 같을 때 나온다."
+        " 질문이 조문 첫 줄 전체(첫 줄이 한 문장뿐인 조)라서 생기는 값이다.",
         "",
     ]
     out += [f"- {_esc(c['sentence'])}" for c in causes] or ["- 놓친 건이 없다."]
