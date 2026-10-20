@@ -428,6 +428,8 @@ def _section_b(golden: dict) -> list[str]:
         "## 2. 묶음 B — golden에서 #131 hybrid가 놓친 문항",
         "",
         "이미 커밋된 run을 다시 읽은 값이다. 새로 잰 것이 아니다(`runs/hybrid`, `runs/73/<후보>`)."
+        " plan을 쓰기 전에 이 값을 이미 알았고(설계 문서 「선행 실측 B」),"
+        " 코드가 같은 값을 다시 만들었다."
         f" 질문 {golden['total']}개 중 #131 hybrid의 hit@5가 0인 문항은 {m}개다.",
         "",
     ]

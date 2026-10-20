@@ -374,6 +374,7 @@ def test_section_notes_are_at_the_top_of_each_section(report):
     )  # SYN은 질문 3개
     assert "다른 후보에서는" in top
     assert "이미 커밋된 run을 다시 읽은 값이다" in b.split("###")[0]
+    assert "plan을 쓰기 전에 이 값을 이미 알았고" in b.split("###")[0]
 
 
 def test_report_has_no_judgment_words_and_article_baseline_values(report):
