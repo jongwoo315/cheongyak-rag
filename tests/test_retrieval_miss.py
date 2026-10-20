@@ -248,6 +248,17 @@ def test_dense_cause_cosines_and_best_item_chunk():
     assert miss.cites_number(c)
 
 
+def test_cites_number_fails_when_any_number_is_missing_or_only_a_substring():
+    bm25 = {"retriever": "bm25", "own_score": 32.079, "top1_score": 34.426}
+    assert miss.cites_number({**bm25, "sentence": "점수 32.079, 1위 34.426."})
+    assert not miss.cites_number({**bm25, "sentence": "점수 32.079."})  # 1위 점수가 없다
+    other = {**bm25, "sentence": "점수 132.0791, 1위 34.426."}  # 다른 수의 일부
+    assert not miss.cites_number(other)
+    dense = {"retriever": "dense", "own_cos": 0.5, "top1_cos": 0.6, "item_best_cos": 1.0}
+    assert miss.cites_number({**dense, "sentence": "0.500 / 0.600 / 1.000"})
+    assert not miss.cites_number({**dense, "sentence": "0.500 / 0.600 / 10.000"})
+
+
 # ── Task 4 — 리포트와 실행 진입점 ────────────────────────────────────────
 
 

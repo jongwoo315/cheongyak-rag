@@ -9,6 +9,7 @@
 """
 
 import json
+import re
 import statistics
 import sys
 from pathlib import Path
@@ -154,10 +155,21 @@ def _terms_text(terms: dict[str, float]) -> str:
     return ", ".join(f"{t} {v:.3f}" for t, v in top) or "없음"
 
 
+CITED_KEYS = {
+    "bm25": ("own_score", "top1_score"),
+    "dense": ("own_cos", "top1_cos", "item_best_cos"),
+}
+
+
 def cites_number(cause: dict) -> bool:
-    """원인 문장이 그 원인의 점수·코사인 값을 글자로 담고 있나(실패 징후 3)."""
-    return any(
-        f"{cause[k]:.3f}" in cause["sentence"] for k in ("own_score", "own_cos") if k in cause
+    """원인 문장이 그 retriever의 숫자(점수 둘 또는 코사인 셋)를 모두 글자로 담고 있나(실패 징후 3).
+
+    숫자는 앞뒤에 숫자·점이 붙지 않은 낱개 토큰으로 찾는다.
+    `32.079`가 `132.0791` 안에서 걸리지 않는다.
+    """
+    return all(
+        re.search(rf"(?<![\d.]){re.escape(f'{cause[k]:.3f}')}(?!\d)", cause["sentence"])
+        for k in CITED_KEYS[cause["retriever"]]
     )
 
 
