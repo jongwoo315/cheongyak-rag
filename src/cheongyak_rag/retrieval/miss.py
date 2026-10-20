@@ -467,8 +467,10 @@ def _section_causes(causes: list[dict]) -> list[str]:
     out += [
         "",
         f"- 숫자를 인용하지 않은 원인 문장: {sum(not cites_number(c) for c in causes)}건",
-        f"- BM25 낱말별 기여의 합과 `BM25.scores`의 차: 최대 {max(gaps, default=0.0):.1e}"
-        f"(기준 {SUM_TOLERANCE:.0e})",
+        f"- BM25 낱말별 기여의 합과 `BM25.scores`의 차: 최대 {max(gaps):.1e}"
+        f"(기준 {SUM_TOLERANCE:.0e})"
+        if gaps
+        else "- BM25 낱말별 기여의 합과 `BM25.scores`의 차: BM25 원인이 없어 검산하지 않았다.",
     ]
     return out
 
@@ -537,7 +539,10 @@ def main(
         "재현(징후 2)": len(repro["diffs"]),
         "숫자 없는 원인 문장(징후 3)": sum(not cites_number(c) for c in causes),
         "낱말 기여 검산 실패(징후 4)": sum(
-            g >= SUM_TOLERANCE for c in causes for k, g in c.items() if k.endswith("_terms_gap")
+            not g < SUM_TOLERANCE  # NaN도 실패로 센다
+            for c in causes
+            for k, g in c.items()
+            if k.endswith("_terms_gap")
         ),
     }
     for name, count in bad.items():

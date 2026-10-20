@@ -387,6 +387,26 @@ def test_causes_section_states_checks(report):
     assert "숫자를 인용하지 않은 원인 문장: 0건" in section and "최대" in section
 
 
+def test_causes_section_says_unchecked_when_no_bm25_cause():
+    dense_only = miss.build_causes(
+        [_fake_miss("dense", "제6조", "제1조", 4)], ARTICLES, ROWS, FakeEmbedder()
+    )
+    repro = miss.reproduce([x for x in SYN if x["candidate"] == "article"], [])
+    report = miss.build_report(SYN, _golden_syn(), dense_only, repro)
+    section = report.split("## 3.")[1].split("## 4.")[0]
+    assert "검산하지 않았다" in section and "최대" not in section
+
+
+def test_main_exits_nonzero_when_term_gap_is_nan(env, monkeypatch):
+    law, runs, out = env
+    (cause,) = miss.build_causes(
+        [_fake_miss("bm25", "제3조", "제4조", 2)], ARTICLES, ROWS, FakeEmbedder()
+    )
+    nan_cause = {**cause, "own_terms_gap": float("nan")}
+    monkeypatch.setattr(miss, "build_causes", lambda *args, **kwargs: [nan_cause])
+    assert miss.main(runs, out, FakeEmbedder(), law, n=N) == 1
+
+
 # main — 가짜 임베더와 tmp 법령 파일로 처음부터 끝까지
 
 
