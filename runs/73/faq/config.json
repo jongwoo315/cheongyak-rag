@@ -1,0 +1,22 @@
+{
+  "model": "text-embedding-3-small",
+  "k1": 1.2,
+  "b": 0.75,
+  "rrf_k": 60,
+  "bm25_tags": [
+    "NNG",
+    "NNP",
+    "SH",
+    "SL",
+    "SN",
+    "VA",
+    "VV",
+    "XR"
+  ],
+  "chunk_count": 480,
+  "question_count": 123,
+  "embedding_api_calls": 0,
+  "new_embedded_texts": 0,
+  "run_at": "2026-10-20T00:24:42+09:00",
+  "commit": "8fc7508b9c1255e2df5978ef9b796c51cc266990"
+}

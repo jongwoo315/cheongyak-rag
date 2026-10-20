@@ -1,0 +1,13 @@
+{
+  "candidate": "article",
+  "compare_candidate": "item+head",
+  "best_candidate": "item+head",
+  "zone": "판정 불가",
+  "best_diff": {
+    "mean": -0.0005323267518389487,
+    "lo": -0.05725053232675184,
+    "hi": 0.05386420828493996,
+    "p": 0.9899010098990101
+  },
+  "rule": "hybrid recall@5 차이의 95% CI 하한이 0보다 큰 후보 중 평균이 가장 큰 것, 없으면 article"
+}

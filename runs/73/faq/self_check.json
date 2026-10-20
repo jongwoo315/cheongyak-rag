@@ -1,0 +1,166 @@
+{
+  "n": 123,
+  "self_top1": {
+    "bm25": 0.8861788617886179,
+    "dense": 0.959349593495935,
+    "hybrid": 0.9024390243902439
+  },
+  "misses": [
+    {
+      "qid": "faq-8",
+      "ranker": "bm25",
+      "top1_q_no": 10
+    },
+    {
+      "qid": "faq-8",
+      "ranker": "hybrid",
+      "top1_q_no": 9
+    },
+    {
+      "qid": "faq-14",
+      "ranker": "bm25",
+      "top1_q_no": 15
+    },
+    {
+      "qid": "faq-18",
+      "ranker": "bm25",
+      "top1_q_no": 19
+    },
+    {
+      "qid": "faq-18",
+      "ranker": "dense",
+      "top1_q_no": 19
+    },
+    {
+      "qid": "faq-18",
+      "ranker": "hybrid",
+      "top1_q_no": 19
+    },
+    {
+      "qid": "faq-52",
+      "ranker": "bm25",
+      "top1_q_no": 50
+    },
+    {
+      "qid": "faq-52",
+      "ranker": "hybrid",
+      "top1_q_no": 50
+    },
+    {
+      "qid": "faq-54",
+      "ranker": "bm25",
+      "top1_q_no": 55
+    },
+    {
+      "qid": "faq-54",
+      "ranker": "hybrid",
+      "top1_q_no": 55
+    },
+    {
+      "qid": "faq-61",
+      "ranker": "bm25",
+      "top1_q_no": 203
+    },
+    {
+      "qid": "faq-61",
+      "ranker": "hybrid",
+      "top1_q_no": 203
+    },
+    {
+      "qid": "faq-80",
+      "ranker": "dense",
+      "top1_q_no": 77
+    },
+    {
+      "qid": "faq-80",
+      "ranker": "hybrid",
+      "top1_q_no": 77
+    },
+    {
+      "qid": "faq-95",
+      "ranker": "bm25",
+      "top1_q_no": 273
+    },
+    {
+      "qid": "faq-95",
+      "ranker": "hybrid",
+      "top1_q_no": 273
+    },
+    {
+      "qid": "faq-103",
+      "ranker": "bm25",
+      "top1_q_no": 105
+    },
+    {
+      "qid": "faq-103",
+      "ranker": "hybrid",
+      "top1_q_no": 105
+    },
+    {
+      "qid": "faq-107",
+      "ranker": "bm25",
+      "top1_q_no": 114
+    },
+    {
+      "qid": "faq-129",
+      "ranker": "bm25",
+      "top1_q_no": 464
+    },
+    {
+      "qid": "faq-203",
+      "ranker": "bm25",
+      "top1_q_no": 202
+    },
+    {
+      "qid": "faq-203",
+      "ranker": "dense",
+      "top1_q_no": 202
+    },
+    {
+      "qid": "faq-203",
+      "ranker": "hybrid",
+      "top1_q_no": 202
+    },
+    {
+      "qid": "faq-288",
+      "ranker": "bm25",
+      "top1_q_no": 252
+    },
+    {
+      "qid": "faq-288",
+      "ranker": "hybrid",
+      "top1_q_no": 252
+    },
+    {
+      "qid": "faq-363",
+      "ranker": "bm25",
+      "top1_q_no": 279
+    },
+    {
+      "qid": "faq-363",
+      "ranker": "hybrid",
+      "top1_q_no": 279
+    },
+    {
+      "qid": "faq-388",
+      "ranker": "bm25",
+      "top1_q_no": 127
+    },
+    {
+      "qid": "faq-388",
+      "ranker": "dense",
+      "top1_q_no": 391
+    },
+    {
+      "qid": "faq-388",
+      "ranker": "hybrid",
+      "top1_q_no": 127
+    },
+    {
+      "qid": "faq-422",
+      "ranker": "dense",
+      "top1_q_no": 407
+    }
+  ],
+  "leak_count": 0
+}
