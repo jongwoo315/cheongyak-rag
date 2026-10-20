@@ -397,6 +397,17 @@ def test_causes_section_says_unchecked_when_no_bm25_cause():
     assert "검산하지 않았다" in section and "최대" not in section
 
 
+def test_main_exits_nonzero_when_a_cause_sentence_lacks_its_numbers(env, monkeypatch):
+    law, runs, out = env
+    monkeypatch.setattr(miss, "cites_number", lambda cause: False)
+    # env 점검 줄에는 article 놓친 건이 없어 원인 문장이 안 만들어진다 — 합성 원인을 넣는다
+    cause = miss.build_causes(
+        [_fake_miss("bm25", "제3조", "제4조", 2)], ARTICLES, ROWS, FakeEmbedder()
+    )
+    monkeypatch.setattr(miss, "build_causes", lambda *args, **kwargs: cause)
+    assert miss.main(runs, out, FakeEmbedder(), law, n=N) == 1
+
+
 def test_main_exits_nonzero_when_term_gap_is_nan(env, monkeypatch):
     law, runs, out = env
     (cause,) = miss.build_causes(
