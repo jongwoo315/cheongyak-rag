@@ -3,9 +3,10 @@
     python -m cheongyak_rag.retrieval.miss
 
 묶음 A — #131 점검 질문 20개를 후보 5개로 다시 넣는다(`sanity_by_candidate`).
-묶음 B — #131 hybrid가 golden에서 hit@5 = 0이던 문항을 `runs/73/`에서 다시 읽는다(`golden_misses`).
+묶음 B — #131 hybrid(`runs/hybrid`)가 golden에서 hit@5 = 0이던 문항을
+`runs/73/<후보>`에서 다시 읽는다(`golden_misses`).
 원인 — `article` 후보에서 놓친 조의 점수·코사인·글자 수(`build_causes`).
-새 검색 구조를 정하지 않는다. `runs/73/selected.json`과 #131 run은 읽기만 한다.
+새 검색 구조를 정하지 않는다. `runs/hybrid`·`runs/73/<후보>`·`runs/sanity`는 읽기만 한다.
 """
 
 import json
