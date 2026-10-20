@@ -218,7 +218,7 @@ def build_causes(
                 "top1_terms_gap": abs(sum(top_t.values()) - scores[top_i]),
             }
             cause["sentence"] = (
-                f"{label}: BM25 점수 {scores[own_i]:.3f}로 {x['bm25_rank']}위,"
+                f"{label}: BM25 점수 {scores[own_i]:.3f}(자기 조 {x['bm25_rank']}위),"
                 f" 1위 {top1} {scores[top_i]:.3f}."
                 f" 낱말별 기여 — 자기 조 {_terms_text(own_t)} / 1위 조 {_terms_text(top_t)}."
                 f" {size}(토큰 평균 {bm25.avg_len:.1f}개)."
@@ -239,7 +239,7 @@ def build_causes(
                 "item_best_cos": best_cos,
             }
             cause["sentence"] = (
-                f"{label}: 질문과의 코사인 {own_cos:.3f}로 {x['dense_rank']}위,"
+                f"{label}: 질문과의 코사인 {own_cos:.3f}(자기 조 {x['dense_rank']}위),"
                 f" 1위 {top1} {top_cos:.3f}. {size}."
                 f" `item` 후보에서 자기 조 청크 중 질문과 가장 가까운 {best_path}의"
                 f" 코사인은 {best_cos:.3f}."
@@ -439,7 +439,13 @@ def _section_b(golden: dict) -> list[str]:
 
 def _section_causes(causes: list[dict]) -> list[str]:
     gaps = [g for c in causes for k, g in c.items() if k.endswith("_terms_gap")]
-    out = ["## 3. 원인 — `article`에서 놓친 건", ""]
+    out = [
+        "## 3. 원인 — `article`에서 놓친 건",
+        "",
+        "`item` 후보 코사인은 청크 본문이 질문과 글자까지 같으면 1.000이 된다."
+        " 질문이 조문 첫 문장이라서 생기는 값이다.",
+        "",
+    ]
     out += [f"- {_esc(c['sentence'])}" for c in causes] or ["- 놓친 건이 없다."]
     out += [
         "",
