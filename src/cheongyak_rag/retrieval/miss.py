@@ -10,13 +10,16 @@
 
 import json
 import statistics
+import sys
 from pathlib import Path
 
 import numpy as np
 
+from cheongyak_rag.config import settings
 from cheongyak_rag.retrieval import chunk_eval
-from cheongyak_rag.retrieval.chunk import CANDIDATES, law_chunks
-from cheongyak_rag.retrieval.corpus import Article
+from cheongyak_rag.retrieval.chunk import CANDIDATES, law_chunks, load_law_rows
+from cheongyak_rag.retrieval.corpus import LAW_PATH, Article, load_articles
+from cheongyak_rag.retrieval.embed import Embedder
 from cheongyak_rag.retrieval.evaluate import SANITY_N, first_sentence, pick_sanity
 from cheongyak_rag.retrieval.golden import RUNS_DIR
 from cheongyak_rag.retrieval.search import BM25, dense_rank
@@ -110,10 +113,11 @@ def golden_misses(
     runs73: Path | None = None,
     candidates: tuple[str, ...] = CANDIDATES,
 ) -> dict:
-    """{"missed": #131 hybrid hit@5 = 0인 qid, "candidates": {후보: compare_golden 결과}}."""
+    """{"total": 질문 수, "missed": #131 hybrid가 놓친 qid, "candidates": {후보: 대조 결과}}."""
     base = _read_lines(runs_dir / "hybrid" / "results.jsonl")
     runs73 = runs73 or runs_dir / "73"
     return {
+        "total": len(base),
         "missed": [x["qid"] for x in base if x["hit@5"] == 0],
         "candidates": {
             cand: compare_golden(base, _read_lines(runs73 / cand / "results.jsonl"))
@@ -242,3 +246,282 @@ def build_causes(
             )
         out.append(cause)
     return out
+
+
+# ── 묶음 A 요약 · 재현 ───────────────────────────────────────────────────
+
+RUNS138 = RUNS_DIR / "138"
+REPORT_PATH = Path(__file__).resolve().parents[3] / "docs" / "138-sanity-miss.md"
+REPRO_KEYS = ("label", "query", "bm25_rank", "bm25_top1", "dense_rank", "dense_top1")
+
+
+def band_a(found: int, total: int) -> str:
+    """실패 징후 1 A — 놓쳤던 건 중 자기 조가 1위가 된 건수의 구간."""
+    if total == 0:
+        return "해당 없음"
+    return "찾음" if found == total else "못 찾음" if found == 0 else "일부 찾음"
+
+
+def summarize_a(lines: list[dict]) -> dict:
+    """`article` 후보에서 놓친 (retriever, 질문) 건을 후보별로 다시 본다.
+
+    후보마다 줄 순서가 같으므로(`sanity_by_candidate`) 질문은 후보 안의 순번으로 짝짓는다.
+    """
+    by_cand: dict[str, list[dict]] = {}
+    for x in lines:
+        by_cand.setdefault(x["candidate"], []).append(x)
+    art = by_cand["article"]
+    misses = [
+        (name, i) for name in ("bm25", "dense") for i, x in enumerate(art) if x[f"{name}_rank"] != 1
+    ]
+    cands = {}
+    for cand, sel in by_cand.items():
+        picks = [(name, sel[i]) for name, i in misses]
+        found = [(name, x) for name, x in picks if x[f"{name}_rank"] == 1]
+        cands[cand] = {
+            "top1": {r: sum(x[f"{r}_rank"] == 1 for x in sel) for r in chunk_eval.RANKERS},
+            "ranks": [x[f"{name}_rank"] for name, x in picks],
+            "found": len(found),
+            "band": band_a(len(found), len(misses)),
+            "top1_has_query": sum(x[f"{name}_own_has_query"] for name, x in found),
+            "top1_chars": [x[f"{name}_own_chars"] for name, x in found],
+            "query_chars": [x["query_chars"] for _, x in found],
+        }
+    return {
+        "n": len(art),
+        "misses": [(name, art[i]["label"]) for name, i in misses],
+        "candidates": cands,
+    }
+
+
+def reproduce(lines: list[dict], sanity_rows: list[dict]) -> dict:
+    """실패 징후 2 — `article` 후보 점검 줄이 #131 `runs/sanity`와 질문마다 같은가."""
+    art = [x for x in lines if x["candidate"] == "article"]
+    diffs = []
+    if len(art) != len(sanity_rows):
+        diffs.append({"key": "질문 수", "now": len(art), "before": len(sanity_rows)})
+    for now, before in zip(art, sanity_rows, strict=False):
+        diffs += [
+            {"label": before["label"], "key": k, "now": now[k], "before": before[k]}
+            for k in REPRO_KEYS
+            if now[k] != before[k]
+        ]
+    return {
+        "n": len(art),
+        "diffs": diffs,
+        "bm25_top1": sum(x["bm25_rank"] == 1 for x in art),
+        "dense_top1": sum(x["dense_rank"] == 1 for x in art),
+    }
+
+
+# ── 리포트 ──────────────────────────────────────────────────────────────
+
+OTHERS = CANDIDATES[1:]  # `article`은 #131과 같은 구조라 비교 기준이다
+RETRIEVER_NAME = {"bm25": "BM25", "dense": "dense"}
+
+
+def _c(cand: str) -> str:
+    return f"`{cand}`"
+
+
+def _esc(text: str) -> str:
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _table(head: list[str], rows: list[list]) -> list[str]:
+    out = ["| " + " | ".join(head) + " |", "|" + " --- |" * len(head)]
+    return out + ["| " + " | ".join(str(c) for c in r) + " |" for r in rows]
+
+
+def _list(nums: list[int]) -> str:
+    return "·".join(str(n) for n in nums) or "—"
+
+
+def _conclusion(a: dict, golden: dict) -> str:
+    ca, gc = a["candidates"], golden["candidates"]
+    part_a = " · ".join(f"{_c(c)} {ca[c]['found']}건({ca[c]['band']})" for c in OTHERS)
+    part_b = " · ".join(
+        f"{_c(c)} F {gc[c]['found_count']} · L {gc[c]['lost_count']}({gc[c]['band']})"
+        for c in OTHERS
+    )
+    base_b = f"F {gc['article']['found_count']} · L {gc['article']['lost_count']}"
+    return (
+        f"#131 점검 run에서 놓친 {len(a['misses'])}건 중 자기 조가 1위가 된 건수는 {part_a}"
+        f"(비교: `article` {ca['article']['found']}건)이며,"
+        f" #131 hybrid가 놓친 golden {len(golden['missed'])}문항 중 후보가 맞힌 수 F와"
+        f" #131이 맞힌 문항 중 후보가 놓친 수 L은 {part_b}(비교: `article` {base_b})이다."
+    )
+
+
+def _section_a(a: dict) -> list[str]:
+    ca, n = a["candidates"], a["n"]
+    miss_names = [f"{RETRIEVER_NAME[r]} {label}" for r, label in a["misses"]]
+    out = [
+        "## 1. 묶음 A — 점검 run을 후보별로 다시 돌린 값",
+        "",
+        "질문은 조문 첫 문장을 자른 것이라 자기 조 청크 안에 글자 그대로 있다. 청크가 작을수록"
+        " 청크와 질문이 거의 같은 글이 되므로, 아래 1위가 실제 사용자 질문에서도 나오는지는"
+        " 이 측정만으로 알 수 없다.",
+        "",
+        f"### 질문 {n}개 중 자기 조가 1위인 수",
+        "",
+    ]
+    out += _table(
+        ["후보", "BM25", "dense", "hybrid"],
+        [[_c(c)] + [f"{ca[c]['top1'][r]}/{n}" for r in chunk_eval.RANKERS] for c in ca],
+    )
+    out += ["", "### 놓쳤던 건의 자기 조 순위 (그 retriever에서)", ""]
+    out += _table(
+        ["후보"] + miss_names + ["찾은 건수", "구간"],
+        [
+            [_c(c), *ca[c]["ranks"], f"{ca[c]['found']}/{len(miss_names)}", ca[c]["band"]]
+            for c in ca
+        ],
+    )
+    out += [
+        "",
+        "### 찾은 건의 1위 청크 (찾지 못한 건은 1위가 다른 조라 뺐다)",
+        "",
+        "이 값은 구간을 바꾸지 않는다.",
+        "",
+    ]
+    out += _table(
+        ["후보", "질문 문장이 글자 그대로 들어 있는 1위 청크", "1위 청크 글자 수", "질문 글자 수"],
+        [
+            [
+                _c(c),
+                f"{ca[c]['top1_has_query']}/{ca[c]['found']}",
+                _list(ca[c]["top1_chars"]),
+                _list(ca[c]["query_chars"]),
+            ]
+            for c in ca
+        ],
+    )
+    return out
+
+
+def _qrows(rows: list[dict]) -> list[list]:
+    return [
+        [r["qid"], _esc(r["question"][:50]), "·".join(r["gold"]), r["base_rank"], r["cand_rank"]]
+        for r in rows
+    ]
+
+
+def _section_b(golden: dict) -> list[str]:
+    gc, m = golden["candidates"], len(golden["missed"])
+    out = [
+        "## 2. 묶음 B — golden에서 #131 hybrid가 놓친 문항",
+        "",
+        "이미 커밋된 run을 다시 읽은 값이다. 새로 잰 것이 아니다(`runs/hybrid`, `runs/73/<후보>`)."
+        f" 질문 {golden['total']}개 중 #131 hybrid의 hit@5가 0인 문항은 {m}개다.",
+        "",
+    ]
+    out += _table(
+        ["후보", "찾은 수 F", "놓친 수 L", "F − L", "구간"],
+        [
+            [
+                _c(c),
+                gc[c]["found_count"],
+                gc[c]["lost_count"],
+                gc[c]["found_count"] - gc[c]["lost_count"],
+                gc[c]["band"],
+            ]
+            for c in gc
+        ],
+    )
+    head = ["qid", "질문", "정답 조", "#131 순위", "후보 순위"]
+    for c in OTHERS:
+        for title, key in (("찾은 문항", "found"), ("놓친 문항", "lost")):
+            out += ["", f"### {_c(c)} {title} {len(gc[c][key])}개", ""]
+            out += _table(head, _qrows(gc[c][key])) if gc[c][key] else ["없다."]
+    return out
+
+
+def _section_causes(causes: list[dict]) -> list[str]:
+    gaps = [g for c in causes for k, g in c.items() if k.endswith("_terms_gap")]
+    out = ["## 3. 원인 — `article`에서 놓친 건", ""]
+    out += [f"- {_esc(c['sentence'])}" for c in causes] or ["- 놓친 건이 없다."]
+    out += [
+        "",
+        f"- 숫자를 인용하지 않은 원인 문장: {sum(not cites_number(c) for c in causes)}건",
+        f"- BM25 낱말별 기여의 합과 `BM25.scores`의 차: 최대 {max(gaps, default=0.0):.1e}"
+        f"(기준 {SUM_TOLERANCE:.0e})",
+    ]
+    return out
+
+
+def _section_repro(repro: dict) -> list[str]:
+    n = repro["n"]
+    out = [
+        "## 4. 재현 — `article` 후보 점검 run과 #131 `runs/sanity`",
+        "",
+        f"- `article` 후보: BM25 {repro['bm25_top1']}/{n} · dense {repro['dense_top1']}/{n}개 1위",
+    ]
+    if repro["diffs"]:
+        out.append(f"- #131 `runs/sanity`와 다른 값 {len(repro['diffs'])}개:")
+        out += [f"  - {d}" for d in repro["diffs"]]
+    else:
+        out.append(f"- 질문 {n}개 모두 자기 순위와 1위 조가 #131 `runs/sanity`와 같다.")
+    return out
+
+
+def build_report(lines: list[dict], golden: dict, causes: list[dict], repro: dict) -> str:
+    a = summarize_a(lines)
+    parts = [
+        [_conclusion(a, golden)],
+        _section_a(a),
+        _section_b(golden),
+        _section_causes(causes),
+        _section_repro(repro),
+    ]
+    return "\n\n".join("\n".join(p) for p in parts) + "\n"
+
+
+# ── 실행 ────────────────────────────────────────────────────────────────
+
+
+def _dump_json(path: Path, obj) -> None:
+    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def main(
+    runs_dir: Path = RUNS_DIR,
+    out: Path = REPORT_PATH,
+    embedder=None,
+    law_path: Path = LAW_PATH,
+    n: int = SANITY_N,
+) -> int:
+    rows, articles = load_law_rows(law_path), load_articles(law_path)
+    embedder = embedder or Embedder(settings.openai_embed_model)
+    lines = sanity_by_candidate(rows, articles, embedder, n=n)
+    golden = golden_misses(runs_dir)
+    causes = build_causes(lines, articles, rows, embedder)
+    sanity_path = runs_dir / "sanity" / "results.jsonl"
+    repro = reproduce([x for x in lines if x["candidate"] == "article"], _read_lines(sanity_path))
+    dest = runs_dir / "138"
+    dest.mkdir(parents=True, exist_ok=True)
+    (dest / "sanity.jsonl").write_text(
+        "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in lines), encoding="utf-8"
+    )
+    _dump_json(dest / "golden_misses.json", golden)
+    _dump_json(dest / "causes.json", causes)
+    report = build_report(lines, golden, causes, repro)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(report, encoding="utf-8")
+    print(report.splitlines()[0])
+    print(f"OpenAI 호출 {embedder.api_calls}회 → {dest} · {out}")
+    bad = {
+        "재현(징후 2)": len(repro["diffs"]),
+        "숫자 없는 원인 문장(징후 3)": sum(not cites_number(c) for c in causes),
+        "낱말 기여 검산 실패(징후 4)": sum(
+            g >= SUM_TOLERANCE for c in causes for k, g in c.items() if k.endswith("_terms_gap")
+        ),
+    }
+    for name, count in bad.items():
+        if count:
+            print(f"실패 징후 {name}: {count}건", file=sys.stderr)
+    return 1 if any(bad.values()) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

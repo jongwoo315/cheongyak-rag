@@ -246,3 +246,173 @@ def test_dense_cause_cosines_and_best_item_chunk():
     assert c["item_best_cos"] == pytest.approx(max(cos(ch.text) for ch in own_items))
     assert c["item_best_path"] in {ch.path for ch in own_items}
     assert miss.cites_number(c)
+
+
+# ── Task 4 — 리포트와 실행 진입점 ────────────────────────────────────────
+
+
+def _sl(cand, label, ranks, chars=100, has=True):
+    """합성 점검 줄. ranks = (bm25, dense, hybrid) 자기 순위."""
+    line = {"candidate": cand, "label": label, "query": "q", "query_chars": 30}
+    for r, k in zip(("bm25", "dense", "hybrid"), ranks, strict=True):
+        line |= {f"{r}_rank": k, f"{r}_top1": label if k == 1 else "제9조"}
+    for r in ("bm25", "dense"):
+        line |= {f"{r}_own_path": label, f"{r}_own_chars": chars, f"{r}_own_has_query": has}
+    return line
+
+
+# article은 제2조 bm25와 제3조 dense를 놓친다(2건). 후보마다 찾은 수가 0·1·2
+SYN = [
+    *[_sl("article", "제1조", (1, 1, 1)), _sl("article", "제2조", (3, 1, 2))],
+    _sl("article", "제3조", (1, 4, 2)),
+    *[_sl("paragraph", "제1조", (1, 1, 1)), _sl("paragraph", "제2조", (3, 1, 2))],
+    _sl("paragraph", "제3조", (1, 5, 2)),
+    *[_sl("paragraph+head", "제1조", (1, 1, 1)), _sl("paragraph+head", "제2조", (1, 1, 1), 40)],
+    _sl("paragraph+head", "제3조", (1, 5, 2)),
+    *[_sl("item", "제1조", (1, 1, 1)), _sl("item", "제2조", (1, 1, 1), 40, False)],
+    _sl("item", "제3조", (1, 1, 1), 55),
+    *[_sl("item+head", "제1조", (1, 1, 1)), _sl("item+head", "제2조", (1, 1, 1), 60)],
+    _sl("item+head", "제3조", (1, 1, 1), 70),
+]
+
+
+@pytest.mark.parametrize(
+    ("found", "total", "band"),
+    [
+        (4, 4, "찾음"),
+        (3, 4, "일부 찾음"),
+        (1, 4, "일부 찾음"),
+        (0, 4, "못 찾음"),
+        (0, 0, "해당 없음"),
+    ],
+)
+def test_band_a(found, total, band):
+    assert miss.band_a(found, total) == band
+
+
+def test_summarize_a_counts_found_among_article_misses():
+    a = miss.summarize_a(SYN)
+    assert a["n"] == 3 and a["misses"] == [("bm25", "제2조"), ("dense", "제3조")]
+    c = a["candidates"]
+    assert c["article"]["ranks"] == [3, 4] and c["article"]["band"] == "못 찾음"
+    assert c["paragraph"]["found"] == 0
+    assert (c["paragraph+head"]["found"], c["paragraph+head"]["band"]) == (1, "일부 찾음")
+    assert c["paragraph+head"]["top1_chars"] == [40]
+    assert (c["item"]["found"], c["item"]["band"]) == (2, "찾음")
+    assert c["item"]["top1_has_query"] == 1 and c["item"]["top1_chars"] == [40, 55]
+    assert c["item+head"]["query_chars"] == [30, 30]
+    assert a["candidates"]["article"]["top1"] == {"bm25": 2, "dense": 2, "hybrid": 1}
+
+
+def test_reproduce_reports_every_differing_field():
+    art = [x for x in SYN if x["candidate"] == "article"]
+    same = [{k: x[k] for k in miss.REPRO_KEYS} for x in art]
+    assert miss.reproduce(art, same)["diffs"] == []
+    changed = [{**s} for s in same]
+    changed[1]["dense_rank"] = 2
+    got = miss.reproduce(art, changed)
+    assert [(d["label"], d["key"], d["now"], d["before"]) for d in got["diffs"]] == [
+        ("제2조", "dense_rank", 1, 2)
+    ]
+    assert miss.reproduce(art, same[:2])["diffs"][0]["key"] == "질문 수"
+
+
+def _golden_syn():
+    """F = 2, L = 3 → 찾은 것도 놓친 것도 3 미만. `article`은 #131과 같은 줄을 낸 것으로 둔다."""
+    spec = [(0, 9, 1, 1)] * 2 + [(0, 9, 0, 9)] + [(1, 1, 0, 9)] * 3 + [(1, 1, 1, 1)]
+    base, cand = _pair(spec)
+    same = [_cand(x["qid"], x["hit@5"], x["gold_rank"]["제1조"]) for x in base]
+    per = {c: miss.compare_golden(base, same if c == "article" else cand) for c in CANDIDATES}
+    return {"total": len(base), "missed": ["faq-0", "faq-1", "faq-2"], "candidates": per}
+
+
+@pytest.fixture(scope="module")
+def report():
+    causes = miss.build_causes(
+        [_fake_miss("bm25", "제3조", "제4조", 2), _fake_miss("dense", "제6조", "제1조", 4)],
+        ARTICLES,
+        ROWS,
+        FakeEmbedder(),
+    )
+    repro = miss.reproduce([x for x in SYN if x["candidate"] == "article"], [])
+    return miss.build_report(SYN, _golden_syn(), causes, repro)
+
+
+def test_report_sections_in_order(report):
+    heads = [x for x in report.splitlines() if x.startswith("## ")]
+    assert [h.split(".")[0] for h in heads] == ["## 1", "## 2", "## 3", "## 4"]
+    assert (
+        "묶음 A" in heads[0] and "묶음 B" in heads[1] and "원인" in heads[2] and "재현" in heads[3]
+    )
+
+
+def test_first_line_is_one_sentence_naming_all_four_candidates(report):
+    first = report.splitlines()[0]
+    for cand in CANDIDATES[1:]:
+        assert f"`{cand}`" in first
+    assert first.endswith(".") and not first.startswith("# ")
+    assert "일부 찾음" in first and "차이 없음" in first  # 구간 이름이 들어 있다
+
+
+def test_section_notes_are_at_the_top_of_each_section(report):
+    a = report.split("## 1.")[1].split("## 2.")[0]
+    b = report.split("## 2.")[1].split("## 3.")[0]
+    assert (
+        "질문은 조문 첫 문장을 자른 것이라 자기 조 청크 안에 글자 그대로 있다" in a.split("###")[0]
+    )
+    assert "이미 커밋된 run을 다시 읽은 값이다" in b.split("###")[0]
+
+
+def test_report_has_no_judgment_words_and_article_baseline_values(report):
+    assert "개선" not in report and "우수" not in report
+    assert "`article` 0건" in report.splitlines()[0]  # 숫자 옆에 비교 기준이 붙는다
+
+
+def test_causes_section_states_checks(report):
+    section = report.split("## 3.")[1].split("## 4.")[0]
+    assert "숫자를 인용하지 않은 원인 문장: 0건" in section and "최대" in section
+
+
+# main — 가짜 임베더와 tmp 법령 파일로 처음부터 끝까지
+
+
+def _write_jsonl(path, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), "utf-8")
+
+
+@pytest.fixture
+def env(tmp_path):
+    law = tmp_path / "law.jsonl"
+    _write_jsonl(law, ROWS)
+    runs = tmp_path / "runs"
+    base, cand = _pair([(0, 9, 1, 1), (1, 1, 0, 8), (0, 7, 0, 7), (1, 1, 1, 1)])
+    _write_jsonl(runs / "hybrid/results.jsonl", base)
+    for c in CANDIDATES:
+        _write_jsonl(runs / f"73/{c}/results.jsonl", cand)
+    run_sanity(runs, ARTICLES, FakeEmbedder(), n=N)  # #131 점검 run
+    return law, runs, tmp_path / "report.md"
+
+
+def test_main_writes_runs_and_report_and_second_run_is_identical(env):
+    law, runs, out = env
+    emb = FakeEmbedder()
+    assert miss.main(runs, out, emb, law, n=N) == 0
+    names = ("sanity.jsonl", "golden_misses.json", "causes.json")
+    assert all((runs / "138" / f).exists() for f in names)
+    assert len((runs / "138/sanity.jsonl").read_text().splitlines()) == len(CANDIDATES) * N
+    first = {f: (runs / "138" / f).read_bytes() for f in names} | {"report": out.read_bytes()}
+    assert miss.main(runs, out, FakeEmbedder(), law, n=N) == 0
+    second = {f: (runs / "138" / f).read_bytes() for f in names} | {"report": out.read_bytes()}
+    assert first == second
+
+
+def test_main_exits_nonzero_when_article_run_differs_from_sanity(env):
+    law, runs, out = env
+    rows = (runs / "sanity/results.jsonl").read_text().splitlines()
+    first = json.loads(rows[0])
+    first["bm25_rank"] += 7
+    rows[0] = json.dumps(first, ensure_ascii=False)
+    (runs / "sanity/results.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    assert miss.main(runs, out, FakeEmbedder(), law, n=N) == 1
+    assert "bm25_rank" in out.read_text()  # 다른 값이 리포트에 남는다
