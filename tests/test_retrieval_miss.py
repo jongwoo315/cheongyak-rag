@@ -368,9 +368,11 @@ def test_first_line_is_one_sentence_naming_all_four_candidates(report):
 def test_section_notes_are_at_the_top_of_each_section(report):
     a = report.split("## 1.")[1].split("## 2.")[0]
     b = report.split("## 2.")[1].split("## 3.")[0]
+    top = a.split("###")[0]
     assert (
-        "질문은 조문 첫 문장을 자른 것이라 자기 조 청크 안에 글자 그대로 있다" in a.split("###")[0]
-    )
+        "`article` 후보에서는 3개 모두 자기 조 청크 안에 글자 그대로 있다" in top
+    )  # SYN은 질문 3개
+    assert "다른 후보에서는" in top
     assert "이미 커밋된 run을 다시 읽은 값이다" in b.split("###")[0]
 
 
