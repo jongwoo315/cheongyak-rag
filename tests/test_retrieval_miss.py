@@ -79,3 +79,86 @@ def test_own_has_query_is_true_when_question_sits_in_chunk(lines):
             assert x[f"{name}_own_chars"] == len(c.text)
             assert x[f"{name}_own_has_query"] == (x["query"] in c.text)
             assert x["query_chars"] == len(x["query"])
+
+
+# ── Task 2 — golden 놓친 문항 ───────────────────────────────────────────
+
+
+def _base(qid, hit, rank):
+    return {
+        "qid": qid, "question": f"질문 {qid}", "gold": ["제1조"],
+        "hit@5": hit, "gold_rank": {"제1조": rank},
+    }  # fmt: skip
+
+
+def _cand(qid, hit, rank):
+    return {"qid": qid, "hybrid": {"hit@5": hit, "gold_rank": {"제1조": rank}}}
+
+
+def _pair(spec):
+    """spec: [(#131 hit, #131 순위, 후보 hit, 후보 순위)]"""
+    base = [_base(f"faq-{i}", b, br) for i, (b, br, _, _) in enumerate(spec)]
+    cand = [_cand(f"faq-{i}", c, cr) for i, (_, _, c, cr) in enumerate(spec)]
+    return base, cand
+
+
+def test_compare_golden_counts_found_and_lost_with_ranks():
+    base, cand = _pair([(0, 9, 1, 2), (0, 8, 0, 7), (1, 1, 0, 6), (1, 2, 1, 1)])
+    got = miss.compare_golden(base, cand)
+    assert (got["found_count"], got["lost_count"]) == (1, 1)
+    assert got["found"] == [
+        {
+            "qid": "faq-0",
+            "question": "질문 faq-0",
+            "gold": ["제1조"],
+            "base_rank": 9,
+            "cand_rank": 2,
+        }
+    ]
+    assert [(x["qid"], x["base_rank"], x["cand_rank"]) for x in got["lost"]] == [("faq-2", 1, 6)]
+
+
+@pytest.mark.parametrize(
+    ("found", "lost", "band"),
+    [
+        (3, 0, "찾은 것이 더 많다"),
+        (5, 2, "찾은 것이 더 많다"),
+        (2, 0, "차이 없음"),
+        (0, 2, "차이 없음"),
+        (0, 3, "놓친 것이 더 많다"),
+        (4, 7, "놓친 것이 더 많다"),
+    ],
+)
+def test_golden_band_boundaries(found, lost, band):
+    assert miss.golden_band(found, lost) == band
+
+
+def test_compare_golden_band_comes_from_f_minus_l():
+    spec = [(0, 9, 1, 1)] * 3 + [(1, 1, 1, 1)]
+    assert miss.compare_golden(*_pair(spec))["band"] == "찾은 것이 더 많다"  # F−L = 3
+    spec = [(1, 1, 0, 9)] * 3 + [(0, 9, 0, 9)]
+    assert miss.compare_golden(*_pair(spec))["band"] == "놓친 것이 더 많다"  # F−L = −3
+    spec = [(0, 9, 1, 1)] * 2 + [(1, 1, 0, 9)] * 0
+    assert miss.compare_golden(*_pair(spec))["band"] == "차이 없음"  # F−L = 2
+
+
+def test_compare_golden_rejects_different_questions():
+    base, cand = _pair([(0, 9, 1, 1), (1, 1, 1, 1)])
+    with pytest.raises(ValueError, match="qid"):
+        miss.compare_golden(base, cand[::-1])
+
+
+def test_golden_misses_reads_run_files(tmp_path):
+    base, cand = _pair([(0, 9, 1, 1), (1, 1, 0, 5), (0, 4, 0, 4)])
+    (tmp_path / "hybrid").mkdir()
+    (tmp_path / "hybrid/results.jsonl").write_text(
+        "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in base), encoding="utf-8"
+    )
+    (tmp_path / "73/article").mkdir(parents=True)
+    (tmp_path / "73/article/results.jsonl").write_text(
+        "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in cand), encoding="utf-8"
+    )
+    got = miss.golden_misses(tmp_path, candidates=("article",))
+    assert got["missed"] == ["faq-0", "faq-2"]
+    art = got["candidates"]["article"]
+    assert (art["found_count"], art["lost_count"]) == (1, 1)

@@ -8,10 +8,14 @@
 새 검색 구조를 정하지 않는다. `runs/73/selected.json`과 #131 run은 읽기만 한다.
 """
 
+import json
+from pathlib import Path
+
 from cheongyak_rag.retrieval import chunk_eval
 from cheongyak_rag.retrieval.chunk import CANDIDATES, law_chunks
 from cheongyak_rag.retrieval.corpus import Article
 from cheongyak_rag.retrieval.evaluate import SANITY_N, first_sentence, pick_sanity
+from cheongyak_rag.retrieval.golden import RUNS_DIR
 from cheongyak_rag.retrieval.search import BM25, dense_rank
 
 
@@ -48,3 +52,68 @@ def sanity_by_candidate(
                 line[f"{name}_own_has_query"] = q in own.text
             out.append(line)
     return out
+
+
+# ── 묶음 B — golden에서 #131 hybrid가 놓친 문항 ─────────────────────────────
+
+GAP = 3  # 실패 징후 1 B — F − L이 이 값 이상이면 찾은 쪽, 이 값 이하(음수)면 놓친 쪽
+
+
+def golden_band(found: int, lost: int) -> str:
+    diff = found - lost
+    if diff >= GAP:
+        return "찾은 것이 더 많다"
+    if diff <= -GAP:
+        return "놓친 것이 더 많다"
+    return "차이 없음"
+
+
+def _read_lines(path: Path) -> list[dict]:
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x]
+
+
+def compare_golden(base: list[dict], cand: list[dict]) -> dict:
+    """#131 hybrid 줄(`base`)과 후보 run 줄(`cand`)을 같은 질문끼리 대조한다.
+
+    found = #131이 놓쳤는데 후보가 맞힌 문항, lost = #131이 맞혔는데 후보가 놓친 문항.
+    순위는 정답 조 중 가장 높은 것.
+    """
+    if [x["qid"] for x in base] != [x["qid"] for x in cand]:
+        raise ValueError("두 run의 질문(qid)과 순서가 다르다")
+    found, lost = [], []
+    for b, c in zip(base, cand, strict=True):
+        ch = c["hybrid"]
+        if b["hit@5"] == ch["hit@5"]:
+            continue
+        row = {
+            "qid": b["qid"],
+            "question": b["question"],
+            "gold": b["gold"],
+            "base_rank": min(b["gold_rank"].values()),
+            "cand_rank": min(ch["gold_rank"].values()),
+        }
+        (found if b["hit@5"] == 0 else lost).append(row)
+    return {
+        "found_count": len(found),
+        "lost_count": len(lost),
+        "band": golden_band(len(found), len(lost)),
+        "found": found,
+        "lost": lost,
+    }
+
+
+def golden_misses(
+    runs_dir: Path = RUNS_DIR,
+    runs73: Path | None = None,
+    candidates: tuple[str, ...] = CANDIDATES,
+) -> dict:
+    """{"missed": #131 hybrid hit@5 = 0인 qid, "candidates": {후보: compare_golden 결과}}."""
+    base = _read_lines(runs_dir / "hybrid" / "results.jsonl")
+    runs73 = runs73 or runs_dir / "73"
+    return {
+        "missed": [x["qid"] for x in base if x["hit@5"] == 0],
+        "candidates": {
+            cand: compare_golden(base, _read_lines(runs73 / cand / "results.jsonl"))
+            for cand in candidates
+        },
+    }
