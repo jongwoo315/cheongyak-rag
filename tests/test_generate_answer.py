@@ -198,3 +198,16 @@ def test_malformed_response_shape_is_recorded_not_raised():
 
     a = ans.generate("질문", {"law": [], "faq": []}, Bad(), "gpt-5.4-mini")
     assert a.error and a.abstain
+
+
+def test_empty_api_key_is_a_hard_error():
+    with pytest.raises(ans.HardApiError):
+        ans.make_client(api_key="  ")
+
+
+def test_cli_exits_1_when_api_key_is_empty(monkeypatch, capsys):
+    from cheongyak_rag.config import settings
+
+    monkeypatch.setattr(settings, "openai_api_key", "")
+    assert ans.main(["질문"]) == 1
+    assert "OPENAI_API_KEY" in capsys.readouterr().err
