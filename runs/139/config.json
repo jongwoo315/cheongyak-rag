@@ -1,0 +1,39 @@
+{
+  "model": "gpt-5.4-mini",
+  "k": 5,
+  "faq_k": 3,
+  "questions": 133,
+  "budget_usd": 6.0,
+  "first_run": {
+    "calls": 132,
+    "retries": 0,
+    "cache_hits": 1,
+    "failures": 0,
+    "forced_abstain": 0,
+    "input_tokens": 894998,
+    "output_tokens": 18993,
+    "usd": 0.756717,
+    "usd_new": 0.75264675,
+    "latency_p50": 1.407,
+    "latency_p95": 2.12,
+    "stopped": false,
+    "stopped_at": null,
+    "stop_reason": null
+  },
+  "last_run": {
+    "calls": 0,
+    "retries": 0,
+    "cache_hits": 133,
+    "failures": 0,
+    "forced_abstain": 0,
+    "input_tokens": 894998,
+    "output_tokens": 18993,
+    "usd": 0.756717,
+    "usd_new": 0,
+    "latency_p50": 1.407,
+    "latency_p95": 2.12,
+    "stopped": false,
+    "stopped_at": null,
+    "stop_reason": null
+  }
+}
