@@ -198,3 +198,11 @@ def test_main_writes_docs_file(tmp_path):
     docs = tmp_path / "docs" / "139-answer.md"
     assert rp.main([], out_dir=out, docs_path=docs, law_rows=law, faq_rows=FAQ_ROWS) == 0
     assert docs.read_text(encoding="utf-8").startswith("생성 실패")
+
+
+def test_faq_citation_renders_question_in_sample():
+    rows = _rows(n_golden=2)
+    rows[0] = _row("faq-1", cites=("Q1", "제2조"))
+    rows[1] = _row("faq-2", cites=("Q2",))
+    section = _render(rows).split("## 2.")[1].split("## 3.")[0]
+    assert "FAQ Q1 · FAQ 질문 1" in section and "FAQ Q2 · FAQ 질문 2" in section
