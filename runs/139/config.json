@@ -20,7 +20,7 @@
     "stopped_at": null,
     "stop_reason": null
   },
-  "last_run": {
+  "second_run": {
     "calls": 0,
     "retries": 0,
     "cache_hits": 133,

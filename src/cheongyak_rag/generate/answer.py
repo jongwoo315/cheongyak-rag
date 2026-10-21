@@ -27,6 +27,7 @@ from cheongyak_rag.retrieval.query import Index, selected_candidate
 PRICE_PER_1M = {"gpt-5.4-mini": (0.75, 4.50)}
 MAX_COMPLETION_TOKENS = 1500
 SHOW_CHARS = 300
+REQUEST_TIMEOUT_S = 60
 SHOW_SEARCH_CHARS = 80
 
 SYSTEM = """\
@@ -180,10 +181,11 @@ def generate(
             "content": resp.choices[0].message.content,
             "input_tokens": resp.usage.prompt_tokens,
             "output_tokens": resp.usage.completion_tokens,
-            "latency_s": round(time.perf_counter() - t0, 3),
+            # 재시도 대기를 뺀 마지막 시도의 시간. 감싼 클라이언트가 없으면 전체 시간
+            "latency_s": round(
+                getattr(client, "last_attempt_s", None) or time.perf_counter() - t0, 3
+            ),
         }
-        if cache is not None:
-            cache.put(key, value)
     out.input_tokens, out.output_tokens = value["input_tokens"], value["output_tokens"]
     out.usd = cost_usd(model, out.input_tokens, out.output_tokens)
     out.latency_s = value["latency_s"]
@@ -192,6 +194,8 @@ def generate(
     except ValueError as e:
         out.error = str(e)
         return out
+    if cache is not None and not out.cached:
+        cache.put(key, value)  # 읽히는 응답만 둔다 — 잘린 응답이 굳어 다시 안 불리는 것을 막는다
     cites = list(dict.fromkeys(_label(c) for c in data["citations"]))
     out.citations = [c for c in cites if c in labels]
     out.invalid_citations = [c for c in cites if c not in labels]
@@ -243,7 +247,8 @@ def make_client(api_key: str | None = None):
         raise HardApiError("OPENAI_API_KEY가 비어 있다. 셸 환경변수에 넣을 것")
     from openai import OpenAI
 
-    return OpenAI(api_key=api_key)
+    # SDK 자체 재시도는 끈다 — 재시도와 호출 수는 evaluate의 RetryingClient가 센다
+    return OpenAI(api_key=api_key, max_retries=0, timeout=REQUEST_TIMEOUT_S)
 
 
 def main(

@@ -115,10 +115,6 @@ def precision(rows: list[dict], *, hit_only: bool = False) -> dict:
     return {"value": value, "n": len(vals), "excluded_faq_only": faq_only, "zero": zero}
 
 
-def _is_run(cfg: dict) -> bool:
-    return cfg["last_run"] != cfg["first_run"]
-
-
 def metrics(rows: list[dict], cfg: dict) -> dict:
     golden = [r for r in rows if r["set"] == "golden"]
     ood = [r for r in rows if r["set"] == "ood"]
@@ -150,7 +146,7 @@ def metrics(rows: list[dict], cfg: dict) -> dict:
         "input_tokens": sum(r["input_tokens"] for r in rows),
         "output_tokens": sum(r["output_tokens"] for r in rows),
         "avg_input": sum(r["input_tokens"] for r in rows) / len(rows) if rows else 0.0,
-        "second_calls": cfg["last_run"]["calls"] if _is_run(cfg) else None,
+        "second_calls": cfg["second_run"]["calls"] if "second_run" in cfg else None,
     }
 
 

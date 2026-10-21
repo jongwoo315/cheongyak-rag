@@ -101,6 +101,19 @@ def test_bad_response_is_recorded_as_error(content):
     assert a.input_tokens == 1000  # 호출은 했으니 토큰은 센다
 
 
+def test_unparseable_response_is_not_cached(tmp_path):
+    cache = ans.GenCache(tmp_path / "gen.jsonl")
+    assert _gen(FakeChat(["{깨짐"]), cache).error
+    client = FakeChat([_reply()])
+    assert _gen(client, cache).error is None and len(client.calls) == 1  # 다시 불러 고친다
+
+
+def test_latency_uses_client_attempt_time():
+    client = FakeChat([_reply()])
+    client.last_attempt_s = 1.234
+    assert _gen(client).latency_s == 1.234
+
+
 def test_api_exception_is_recorded_and_hard_error_propagates():
     a = _gen(FakeChat([RuntimeError("boom")]))
     assert "boom" in a.error and a.input_tokens == 0

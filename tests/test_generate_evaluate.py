@@ -50,8 +50,8 @@ def _main(env, client, *extra, sleep=lambda s: None):
     )
 
 
-def _rows(env):
-    lines = (env / "out" / "answers.jsonl").read_text(encoding="utf-8").splitlines()
+def _rows(env, name="answers.jsonl"):
+    lines = (env / "out" / name).read_text(encoding="utf-8").splitlines()
     return [json.loads(x) for x in lines]
 
 
@@ -116,8 +116,8 @@ def test_budget_stops_the_run(env, capsys):
     client = FakeChat([_reply()], prompt_tokens=100_000, completion_tokens=1000)  # 질문당 ≈$0.08
     assert _main(env, client, "--budget-usd", "0.1") == 2
     assert len(client.calls) == 2  # 둘째 답에서 0.1을 넘어 멈춘다
-    assert len(_rows(env)) == 2
-    run = _config(env)["first_run"]
+    assert len(_rows(env, "answers.partial.jsonl")) == 2
+    run = json.loads((env / "out" / "config.partial.json").read_text("utf-8"))["stopped_run"]
     assert run["stopped"] is True and run["stopped_at"] == "faq-2"
     assert "예산" in capsys.readouterr().err
 
@@ -131,7 +131,58 @@ def test_second_run_makes_no_call_and_is_byte_identical(env):
     assert (env / "out" / "answers.jsonl").read_bytes() == first
     cfg = _config(env)
     assert cfg["first_run"]["calls"] == 3  # 호출한 실행의 값을 지우지 않는다
-    assert (cfg["last_run"]["calls"], cfg["last_run"]["cache_hits"]) == (0, 3)
+    assert (cfg["second_run"]["calls"], cfg["second_run"]["cache_hits"]) == (0, 3)
+
+
+def test_second_run_with_calls_is_not_hidden(env):
+    _main(env, FakeChat([_reply()]))
+    (env / "gen.jsonl").unlink()  # 캐시가 안 맞는 결함을 흉내 낸다. 답은 같다
+    _main(env, FakeChat([_reply()]))
+    cfg = _config(env)
+    assert cfg["first_run"]["calls"] == 3 and cfg["second_run"]["calls"] == 3
+
+
+def test_changed_answers_replace_first_run(env):
+    _main(env, FakeChat([_reply()]))
+    (env / "gen.jsonl").unlink()
+    _main(
+        env, FakeChat([_reply().replace("답 [제2조]", "다른 답 [제2조]")])
+    )  # 프롬프트를 고쳐 다시 잰 경우
+    cfg = _config(env)
+    assert cfg["first_run"]["calls"] == 3 and "second_run" not in cfg
+
+
+def test_stopped_run_does_not_overwrite_complete_result(env):
+    _main(env, FakeChat([_reply()], prompt_tokens=100_000, completion_tokens=1000))
+    good = (env / "out" / "answers.jsonl").read_bytes()
+    (env / "gen.jsonl").unlink()
+    assert _main(env, FakeChat([_reply()], prompt_tokens=100_000), "--budget-usd", "0.1") == 2
+    assert (env / "out" / "answers.jsonl").read_bytes() == good
+    assert len(_rows(env, "answers.partial.jsonl")) == 2
+    assert _config(env)["first_run"]["stopped"] is False
+
+
+def test_consecutive_errors_stop_the_run(env):
+    many = [{"qid": f"ood-{i}", "question": f"질문 {i}"} for i in range(1, 9)]
+    _write(env / "ood.jsonl", many)
+    client = FakeChat([RuntimeError("503")])
+    assert _main(env, client) == 3
+    assert len(client.calls) == ev.MAX_CONSECUTIVE_ERRORS
+    part = json.loads((env / "out" / "config.partial.json").read_text(encoding="utf-8"))
+    assert "연속" in part["stopped_run"]["stop_reason"]
+
+
+def test_429_exhaustion_is_recorded_per_question(env):
+    class Rate(Exception):
+        status_code = 429
+
+    client = FakeChat([Rate(), Rate(), Rate(), Rate(), Rate(), Rate(), _reply()])
+    assert _main(env, client) == 0
+    rows = _rows(env)
+    assert rows[0]["error"] and "Rate" in rows[0]["error"]  # 6번 시도 뒤 첫 질문만 실패
+    assert rows[1]["error"] is None
+    run = _config(env)["first_run"]
+    assert run["retries"] == 5 and run["failures"] == 1
 
 
 def test_failure_counts_are_in_config(env):
@@ -175,12 +226,19 @@ def test_hard_errors_stop_without_retry(err):
 def test_hard_error_stops_run_and_keeps_partial_rows(env, capsys):
     client = FakeChat([_reply(), _Err(401)])
     assert _main(env, client) == 3
-    assert len(_rows(env)) == 1
-    run = _config(env)["first_run"]
-    assert run["stopped"] is True and "401" in run["stop_reason"]
+    assert len(_rows(env, "answers.partial.jsonl")) == 1
+    part = json.loads((env / "out" / "config.partial.json").read_text("utf-8"))["stopped_run"]
+    assert part["stopped"] is True and "401" in part["stop_reason"]
 
 
 def test_percentile():
     assert ev.percentile([1.0, 2.0, 3.0, 4.0, 5.0], 50) == 3.0
     assert ev.percentile(list(map(float, range(1, 101))), 95) == 95.0
     assert ev.percentile([], 95) == 0.0
+
+
+def test_attempt_latency_excludes_backoff_sleep():
+    inner = FakeChat([_Err(429), _reply()])
+    client = ev.RetryingClient(inner, sleep=lambda s: None)
+    client.chat.completions.create(model="m")
+    assert 0 <= client.last_attempt_s < 1

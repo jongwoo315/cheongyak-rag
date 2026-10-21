@@ -38,12 +38,12 @@ def _run(**kw):
     return base | kw
 
 
-def _cfg(first=None, last=None):
-    first = first or _run()
-    return {
+def _cfg(first=None, second=None):
+    cfg = {
         "model": "gpt-5.4-mini", "k": 5, "faq_k": 3, "questions": 133, "budget_usd": 6,
-        "first_run": first, "last_run": last or first,
+        "first_run": first or _run(),
     }  # fmt: skip
+    return cfg | ({"second_run": second} if second else {})
 
 
 def _rows(n_golden=20, n_ood=10, **kw):
@@ -172,8 +172,10 @@ def test_metrics_table_has_all_eight_signals_with_zone_text():
 
 def test_second_run_row_says_not_yet_when_no_rerun():
     assert "두 번째 실행 아직 없음" in _render()
-    rerun = _cfg(last=_run(calls=0, cache_hits=133))
+    rerun = _cfg(second=_run(calls=0, cache_hits=133))
     assert "0회" in _render(cfg=rerun).split("## 6.")[1]
+    broken = _cfg(second=_run(calls=1, cache_hits=132))
+    assert "캐시 결함" in _render(cfg=broken)
 
 
 def test_main_writes_docs_file(tmp_path):
