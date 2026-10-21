@@ -188,11 +188,8 @@ def render(rows: list[dict], cfg: dict, law_text, faq_by_q: dict) -> str:
         f"인용 정밀도 {p['value']:.2f}, 총 ${m['usd']:.2f}."
     )
     run = cfg["first_run"]
-    second = (
-        f"{m['second_calls']}회 — {zone_second_calls(m['second_calls'])}"
-        if m["second_calls"] is not None
-        else "두 번째 실행 아직 없음"
-    )
+    n2 = m["second_calls"]
+    second = f"{n2}회" if n2 is not None else "두 번째 실행 아직 없음"
     table = [
         ("1", "생성 실패 + 인용 없어 abstain으로 바꾼 답",
          f"{m['failures']} + {m['forced']} = {m['signal1']}건", zone_failures(m["signal1"])),
@@ -207,7 +204,7 @@ def render(rows: list[dict], cfg: dict, law_text, faq_by_q: dict) -> str:
         ("6a", "첫 실행 호출 수", f"{m['calls']} (재시도 {m['retries']})", zone_calls(m["calls"])),
         ("6b", "총 $", f"${m['usd']:.4f}", zone_usd(m["usd"])),
         ("6c", "질문당 입력 토큰 평균", f"{m['avg_input']:,.0f}", zone_tokens(m["avg_input"])),
-        ("6d", "두 번째 실행 호출", second, ""),
+        ("6d", "두 번째 실행 호출", second, zone_second_calls(n2) if n2 is not None else "—"),
         ("7", "지연 p95 (첫 호출, 캐시 안 탄 값)",
          f"p50 {run['latency_p50']:.1f}초 · p95 {run['latency_p95']:.1f}초",
          zone_latency(run["latency_p95"])),
@@ -281,7 +278,8 @@ def render(rows: list[dict], cfg: dict, law_text, faq_by_q: dict) -> str:
             for r in p["zero"]] or ["- 없다"]  # fmt: skip
 
     out += ["", "## 6. 비용", ""]
-    out += [f"- 호출 수 {m['calls']} (재시도 {m['retries']}), 캐시 적중 {run['cache_hits']}",
+    out += [f"- 호출 수 {m['calls']} (재시도 {m['retries']}), 캐시 적중 {run['cache_hits']}"
+            " (이 실행 전에 같은 입력으로 이미 부른 질문)",
             f"- 토큰: 입력 {m['input_tokens']:,} · 출력 {m['output_tokens']:,}",
             f"- ${m['usd']:.4f} (예산 상한 ${cfg['budget_usd']})",
             f"- 지연: p50 {run['latency_p50']:.1f}초 · p95 {run['latency_p95']:.1f}초",
