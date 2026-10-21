@@ -18,6 +18,8 @@ from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 
+from openai import APIConnectionError
+
 from cheongyak_rag.config import settings
 from cheongyak_rag.generate.answer import (
     Answer,
@@ -42,6 +44,16 @@ BACKOFF_S = 2.0
 HARD_STATUS = (401, 403)
 
 
+def _is_transient(e: Exception) -> bool:
+    """429(요청 한도) · 5xx · 연결 오류. 시간 초과(`APITimeoutError`)는 연결 오류의 하위다."""
+    status = getattr(e, "status_code", None)
+    return (
+        status == 429
+        or (isinstance(status, int) and status >= 500)
+        or isinstance(e, APIConnectionError)
+    )
+
+
 def _is_hard(e: Exception) -> bool:
     return getattr(e, "status_code", None) in HARD_STATUS or (
         getattr(e, "code", None) == "insufficient_quota"
@@ -49,9 +61,10 @@ def _is_hard(e: Exception) -> bool:
 
 
 class RetryingClient:
-    """`chat.completions.create`에 429 재시도를 씌운다. 시도마다 `calls`를 센다.
+    """`chat.completions.create`에 재시도를 씌운다. 시도마다 `calls`를 센다.
 
-    429는 2·4·8·16·32초를 기다려 최대 5번 다시 보낸다. 인증·권한·쿼터 오류는 `HardApiError`.
+    429 · 5xx · 연결 오류는 2·4·8·16·32초를 기다려 최대 5번 다시 보낸다.
+    인증·권한·쿼터 오류는 `HardApiError`.
     """
 
     def __init__(self, client, *, sleep=time.sleep):
@@ -71,7 +84,7 @@ class RetryingClient:
             except Exception as e:
                 if _is_hard(e):
                     raise HardApiError(f"{type(e).__name__}: {e}") from e
-                if getattr(e, "status_code", None) != 429 or attempt == MAX_RETRIES:
+                if not _is_transient(e) or attempt == MAX_RETRIES:
                     raise
                 self.retries += 1
                 self._sleep(BACKOFF_S * 2**attempt)

@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
+import httpx
 import pytest
+from openai import APIConnectionError
 
 from cheongyak_rag.generate import answer as ans
 from cheongyak_rag.generate import evaluate as ev
@@ -205,6 +207,23 @@ def test_retry_429_with_exponential_wait():
     resp = client.chat.completions.create(model="m")
     assert resp.choices[0].message.content == _reply()
     assert (client.calls, client.retries, sleeps) == (3, 2, [2.0, 4.0])
+
+
+@pytest.mark.parametrize(
+    "err", [_Err(503), _Err(500), APIConnectionError(request=httpx.Request("POST", "http://x"))]
+)
+def test_retry_transient_non_429_errors(err):
+    sleeps = []
+    client = ev.RetryingClient(FakeChat([err, _reply()]), sleep=sleeps.append)
+    client.chat.completions.create(model="m")
+    assert (client.calls, client.retries, sleeps) == (2, 1, [2.0])
+
+
+def test_retry_does_not_repeat_client_errors():
+    client = ev.RetryingClient(FakeChat([_Err(400)]), sleep=lambda s: None)
+    with pytest.raises(_Err):
+        client.chat.completions.create(model="m")
+    assert (client.calls, client.retries) == (1, 0)
 
 
 def test_retry_gives_up_after_five():

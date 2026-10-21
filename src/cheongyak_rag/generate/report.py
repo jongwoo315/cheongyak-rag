@@ -284,7 +284,9 @@ def render(rows: list[dict], cfg: dict, law_text, faq_by_q: dict) -> str:
         big = [r["qid"] for r in rows if r["input_tokens"] > 8000]
         out += [f"- 입력 8,000 토큰 초과 문항: {', '.join(big)}"]
     if m["retries"]:
-        out += [f"- 재시도 {m['retries']}회는 전부 429(요청 한도) 대기 뒤 다시 보낸 것이다"]
+        out += [
+            f"- 재시도 {m['retries']}회는 429(요청 한도)·5xx·연결 오류 뒤 대기하고 다시 보낸 것이다"
+        ]
     return "\n".join(out) + "\n"
 
 
