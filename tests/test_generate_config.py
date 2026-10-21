@@ -26,3 +26,14 @@ def test_cost_usd_unknown_model_raises():
     # 표에 없는 모델의 $를 0으로 대신하지 않는다
     with pytest.raises(KeyError):
         cost_usd("gpt-unknown", 10, 10)
+
+
+def test_unlisted_model_stops_before_any_call(monkeypatch, capsys):
+    from cheongyak_rag.config import settings
+    from cheongyak_rag.generate import answer as ans
+    from tests.fakes import FakeChat
+
+    monkeypatch.setattr(settings, "openai_gen_model", "gpt-9")
+    client = FakeChat(["{}"])
+    assert ans.main(["질문"], client=client) == 1
+    assert client.calls == [] and "gpt-9" in capsys.readouterr().err

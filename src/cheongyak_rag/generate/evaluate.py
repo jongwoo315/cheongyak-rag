@@ -26,6 +26,7 @@ from cheongyak_rag.generate.answer import (
     GenCache,
     HardApiError,
     cache_path_for,
+    check_model,
     generate,
     make_client,
 )
@@ -186,6 +187,7 @@ def main(
     args = ap.parse_args(argv)
     try:
         candidate = selected_candidate(runs73)
+        check_model(settings.openai_gen_model)
         questions = [("golden", q) for q in _load(golden_path)] + [
             ("ood", q) for q in _load(ood_path)
         ]

@@ -61,6 +61,12 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
     return (input_tokens * in_p + output_tokens * out_p) / 1_000_000
 
 
+def check_model(model: str) -> None:
+    """호출 전에 가격 표에 있는 모델인지 본다. 호출 뒤에 KeyError가 나면 돈은 이미 나갔다."""
+    if model not in PRICE_PER_1M:
+        raise HardApiError(f"가격 표에 없는 모델 {model!r}. PRICE_PER_1M에 넣을 것")
+
+
 @dataclass
 class Answer:
     question: str
@@ -267,6 +273,7 @@ def main(
     args = ap.parse_args(argv)
     try:
         candidate = selected_candidate(runs_dir)
+        check_model(settings.openai_gen_model)
         client = client or make_client()
     except (FileNotFoundError, HardApiError) as e:
         print(e, file=sys.stderr)
