@@ -124,6 +124,7 @@ def metrics(rows: list[dict], cfg: dict) -> dict:
     n_invalid = sum(len(r["invalid_citations"]) for r in rows)
     g_abstain = [r for r in golden if r["abstain"] and not r["error"]]
     run = cfg["first_run"]
+    earlier = cfg.get("earlier_runs", [])
     return {
         "failures": len(failures),
         "failure_rows": failures,
@@ -140,8 +141,9 @@ def metrics(rows: list[dict], cfg: dict) -> dict:
         "precision": precision(rows),
         "precision_hit": precision(rows, hit_only=True),
         "leak": sum(bool(r["self_faq_in_context"]) for r in rows),
-        "calls": run["calls"],
-        "retries": run["retries"],
+        "calls": run["calls"] + sum(r["calls"] for r in earlier),
+        "retries": run["retries"] + sum(r["retries"] for r in earlier),
+        "earlier": len(earlier),
         "usd": sum(r["usd"] for r in rows),
         "input_tokens": sum(r["input_tokens"] for r in rows),
         "output_tokens": sum(r["output_tokens"] for r in rows),
@@ -197,7 +199,9 @@ def render(rows: list[dict], cfg: dict, law_text, faq_by_q: dict) -> str:
         ("5", "인용 정밀도 (baseline 없음 — 첫 측정)",
          f"{p['value']:.2f} (문항 {p['n']}, FAQ만 인용해 뺀 {p['excluded_faq_only']}); "
          f"검색 hit@5 문항만 {ph['value']:.2f} (문항 {ph['n']})", zone_precision(p["value"])),
-        ("6a", "첫 실행 호출 수", f"{m['calls']} (재시도 {m['retries']})", zone_calls(m["calls"])),
+        ("6a", "첫 실행 호출 수", f"{m['calls']} (재시도 {m['retries']})" + (
+            f" · 실패 행을 이어 받기 전 {m['earlier']}회 실행 포함" if m["earlier"] else ""),
+         zone_calls(m["calls"])),
         ("6b", "총 $", f"${m['usd']:.4f}", zone_usd(m["usd"])),
         ("6c", "질문당 입력 토큰 평균", f"{m['avg_input']:,.0f}", zone_tokens(m["avg_input"])),
         ("6d", "두 번째 실행 호출", second, zone_second_calls(n2) if n2 is not None else "—"),

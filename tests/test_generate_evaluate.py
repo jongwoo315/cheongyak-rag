@@ -289,3 +289,15 @@ def test_search_failure_stops_run_and_keeps_partial_rows(env, capsys):
     assert len(_rows(env, "answers.partial.jsonl")) == 1
     part = json.loads((env / "out" / "config.partial.json").read_text("utf-8"))["stopped_run"]
     assert part["stopped_at"] == "faq-2" and "검색 실패" in part["stop_reason"]
+
+
+def test_run_resuming_failed_results_keeps_earlier_call_count(env):
+    _main(env, FakeChat([_reply(), RuntimeError("503"), _reply()]))  # faq-2만 실패
+    assert _config(env)["first_run"]["failures"] == 1
+    _main(env, FakeChat([_reply()]))  # faq-2만 다시 부른다. 나머지는 캐시
+    cfg = _config(env)
+    assert cfg["first_run"]["calls"] == 1 and "second_run" not in cfg
+    assert [r["calls"] for r in cfg["earlier_runs"]] == [3]
+    _main(env, FakeChat([_reply()]))  # 이제 재실행: 앞선 기록을 지우지 않는다
+    cfg = _config(env)
+    assert cfg["second_run"]["calls"] == 0 and [r["calls"] for r in cfg["earlier_runs"]] == [3]

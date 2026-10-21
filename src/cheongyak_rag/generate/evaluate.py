@@ -227,10 +227,18 @@ def main(
         old = json.loads(cfg_path.read_text(encoding="utf-8")) if cfg_path.exists() else {}
         # 답이 이전과 바이트까지 같으면 재실행이다 — 첫 실행의 값은 지우지 않고 second_run에 둔다
         rerun = "first_run" in old and ans_path.exists() and ans_path.read_text("utf-8") == text
+        # 실패 행이 있던 결과를 이어 받는 실행은 호출이 캐시로 빠지니 앞선 호출 수를 함께 둔다
+        failed_before = ans_path.exists() and any(
+            json.loads(x)["error"] for x in ans_path.read_text("utf-8").splitlines() if x
+        )
         ans_path.write_text(text, encoding="utf-8")
         cfg["first_run"] = old["first_run"] if rerun else run
         if rerun:
             cfg["second_run"] = run
+        if "earlier_runs" in old and rerun:
+            cfg["earlier_runs"] = old["earlier_runs"]
+        elif "first_run" in old and failed_before and not rerun:
+            cfg["earlier_runs"] = old.get("earlier_runs", []) + [old["first_run"]]
         cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
         f"질문 {len(rows)}/{len(questions)} · 호출 {run['calls']} · 재시도 {run['retries']}"
