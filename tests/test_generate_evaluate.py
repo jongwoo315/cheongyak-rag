@@ -261,3 +261,31 @@ def test_attempt_latency_excludes_backoff_sleep():
     client = ev.RetryingClient(inner, sleep=lambda s: None)
     client.chat.completions.create(model="m")
     assert 0 <= client.last_attempt_s < 1
+
+
+def test_search_failure_stops_run_and_keeps_partial_rows(env, capsys):
+    class FlakyEmbedder(FakeEmbedder):
+        def embed(self, texts):
+            if list(texts) == ["청약 자격은?"]:
+                raise ConnectionError("임베딩 끊김")
+            return super().embed(texts)
+
+    emb = FlakyEmbedder()
+    # 인덱스를 만들 때는 문서만 임베딩하므로 질문 임베딩에서 처음 걸린다
+    code = ev.main(
+        [],
+        client=FakeChat([_reply()]),
+        embedder=emb,
+        law_rows=LAW,
+        faq_rows=FAQ,
+        golden_path=env / "golden.jsonl",
+        ood_path=env / "ood.jsonl",
+        out_dir=env / "out",
+        runs73=env,
+        cache_path=env / "gen.jsonl",
+        sleep=lambda s: None,
+    )
+    assert code == 3
+    assert len(_rows(env, "answers.partial.jsonl")) == 1
+    part = json.loads((env / "out" / "config.partial.json").read_text("utf-8"))["stopped_run"]
+    assert part["stopped_at"] == "faq-2" and "검색 실패" in part["stop_reason"]

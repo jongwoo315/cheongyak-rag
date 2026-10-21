@@ -123,11 +123,15 @@ def _row(a: Answer, q: dict, kind: str, result: dict) -> dict:
 def run_all(index, client, cache, model, questions, budget_usd):
     """질문마다 검색 → 답. (rows, answers, stop). 멈추면 stop = (종류, 사유), 아니면 None.
 
-    종류: budget(예산 초과 — 그 질문까지 하고 멈춘다) · hard(인증·쿼터) · errors(연속 실패).
+    종류: budget(예산 초과 — 그 질문까지 하고 멈춘다) · hard(인증·쿼터) ·
+    errors(연속 실패, 검색 실패).
     """
     rows, answers, spent, streak = [], [], 0.0, 0
     for kind, q in questions:
-        result = index.search(q["question"], K, faq_k=FAQ_K, exclude_same_question=True)
+        try:
+            result = index.search(q["question"], K, faq_k=FAQ_K, exclude_same_question=True)
+        except Exception as e:  # noqa: BLE001 — 임베딩 호출 실패 때 그때까지의 결과를 잃지 않는다
+            return rows, answers, ("errors", f"{q['qid']}: 검색 실패 {type(e).__name__}: {e}")
         try:
             a = generate(q["question"], result, client, model, cache)
         except HardApiError as e:
