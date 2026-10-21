@@ -301,3 +301,12 @@ def test_run_resuming_failed_results_keeps_earlier_call_count(env):
     _main(env, FakeChat([_reply()]))  # 이제 재실행: 앞선 기록을 지우지 않는다
     cfg = _config(env)
     assert cfg["second_run"]["calls"] == 0 and [r["calls"] for r in cfg["earlier_runs"]] == [3]
+
+
+def test_retrieval_hit_false_when_gold_not_in_context(env):
+    _write(
+        env / "golden.jsonl",
+        [{"qid": "faq-1", "q_no": 1, "question": "무주택세대구성원이란?", "gold": ["제99조"]}],
+    )
+    assert _main(env, FakeChat([_reply()])) == 0
+    assert _rows(env)[0]["retrieval_hit"] is False
