@@ -186,3 +186,15 @@ def test_cli_does_not_exclude_same_question(tmp_path):
 def test_cli_prints_error_and_exits_nonzero(tmp_path, capsys):
     assert _cli(tmp_path, FakeChat(["{깨짐"])) == 1
     assert "생성 실패" in capsys.readouterr().out
+
+
+def test_malformed_response_shape_is_recorded_not_raised():
+    from types import SimpleNamespace
+
+    class Bad:
+        chat = SimpleNamespace(
+            completions=SimpleNamespace(create=lambda **kw: SimpleNamespace(choices=[], usage=None))
+        )
+
+    a = ans.generate("질문", {"law": [], "faq": []}, Bad(), "gpt-5.4-mini")
+    assert a.error and a.abstain

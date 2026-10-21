@@ -172,20 +172,20 @@ def generate(
                 },
                 max_completion_tokens=MAX_COMPLETION_TOKENS,
             )
+            value = {
+                "content": resp.choices[0].message.content,
+                "input_tokens": resp.usage.prompt_tokens,
+                "output_tokens": resp.usage.completion_tokens,
+                # 재시도 대기를 뺀 마지막 시도의 시간. 감싼 클라이언트가 없으면 전체 시간
+                "latency_s": round(
+                    getattr(client, "last_attempt_s", None) or time.perf_counter() - t0, 3
+                ),
+            }
         except HardApiError:
             raise
         except Exception as e:  # noqa: BLE001 — 질문 하나의 실패로 일괄 실행을 멈추지 않는다
             out.error = f"{type(e).__name__}: {e}"
             return out
-        value = {
-            "content": resp.choices[0].message.content,
-            "input_tokens": resp.usage.prompt_tokens,
-            "output_tokens": resp.usage.completion_tokens,
-            # 재시도 대기를 뺀 마지막 시도의 시간. 감싼 클라이언트가 없으면 전체 시간
-            "latency_s": round(
-                getattr(client, "last_attempt_s", None) or time.perf_counter() - t0, 3
-            ),
-        }
     out.input_tokens, out.output_tokens = value["input_tokens"], value["output_tokens"]
     out.usd = cost_usd(model, out.input_tokens, out.output_tokens)
     out.latency_s = value["latency_s"]
