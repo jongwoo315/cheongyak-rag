@@ -328,6 +328,11 @@ def _collect(engine: Engine, client, key: str, cutoff: date, sleep) -> dict:
     raws, n_match, c_detail = fetch_all(
         OP_DETAIL, client, key, {"cond[RCRIT_PBLANC_DE::GTE]": cutoff.isoformat()}, sleep
     )
+    if n_match == 0:
+        # 2026-10-23 실측: 상류가 HTTP 200에 totalCount 0으로 전부 비워 돌려준 적이 있다
+        raise NoticeApiError(
+            f"모집공고일 {cutoff} 이후 공고가 matchCount 0이다. API 상태를 확인할 것"
+        )
     notices = [to_notice_row(r) for r in raws]
 
     model_raws: list[dict] = []

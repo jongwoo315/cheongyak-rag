@@ -113,3 +113,16 @@ def test_api_error_exits_1_without_writing_summary(api, pg_engine, tmp_path, mon
     assert not (tmp_path / "x.json").exists()
     with pg_engine.connect() as conn:
         assert conn.execute(text("SELECT count(*) FROM notices")).scalar() == 0
+
+
+def test_zero_notices_in_window_is_an_error_not_a_success(pg_engine, tmp_path, capsys):
+    # 2026-10-23 새벽 실측: API가 HTTP 200에 totalCount 0·data []로 모든 operation을 비워 돌려줬다.
+    # 0건 적재를 성공(exit 0)으로 치면 빈 테이블이 「성공」으로 남는다
+    empty = FakeApi([make_notice(4, de="2026-01-05")])  # 기간 안에 공고가 없다
+    out = tmp_path / "last_run.json"
+
+    assert run(empty, pg_engine, out) == 1
+
+    err = capsys.readouterr().err
+    assert "matchCount 0" in err and "API 상태" in err
+    assert not out.exists()
