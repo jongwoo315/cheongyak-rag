@@ -64,11 +64,25 @@ def pg_test_url() -> str:
     finally:
         admin.dispose()
     url = test.render_as_string(hide_password=False)
+    alembic(url, "upgrade", "head")
+    return url
+
+
+def alembic(url: str, *args: str) -> None:
     subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        [sys.executable, "-m", "alembic", *args],
         cwd=REPO,
         env={**os.environ, "DATABASE_URL": url},
         check=True,
         capture_output=True,
     )
-    return url
+
+
+@pytest.fixture
+def pg_engine(pg_test_url):
+    """테스트마다 두 테이블을 비운 테스트 DB 엔진."""
+    engine = create_engine(pg_test_url)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE notice_models, notices"))
+    yield engine
+    engine.dispose()
