@@ -132,6 +132,25 @@ def test_notice_before_the_oldest_version_has_no_version(pg_engine):
     }
 
 
+def test_view_carries_the_promulgation_date_and_number_of_the_picked_row(pg_engine):
+    _load(pg_engine, ALL)
+    _notices(pg_engine, date(2024, 7, 1), date(2024, 10, 31))
+
+    with pg_engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT rcrit_pblanc_de, promulgation_date, promulgation_no"
+                " FROM notice_law_versions"
+            )
+        ).all()
+
+    assert {r[0]: (r[1], r[2]) for r in rows} == {
+        date(2024, 7, 1): (date(2024, 3, 25), "no-261483"),
+        date(2024, 10, 31): (date(2024, 9, 30), "no-265605"),
+    }
+    assert len(rows) == 2  # 공고마다 한 행
+
+
 def test_view_has_one_row_per_notice_even_without_versions(pg_engine):
     _notices(pg_engine, date(2026, 8, 1), date(2026, 8, 1), date(2026, 9, 1))  # 3 공고
 
