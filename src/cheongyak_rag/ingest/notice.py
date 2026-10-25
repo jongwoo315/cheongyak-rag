@@ -29,7 +29,7 @@ PER_PAGE = 1000
 PACE = 0.1  # 요청 사이 간격(초)
 BACKOFF = (1, 2, 4, 8)  # 429·5xx·연결 오류 재시도 대기(초). 최대 4회
 SNIPPET = 200
-RECHECK_LIMIT = 3  # 주택형 없는 공고를 다시 조회하는 최대 건수
+RECHECK_LIMIT = 3  # 재조회해도 주택형이 없는 공고가 이만큼 쌓이면 그 뒤 공고는 재조회하지 않는다
 DEFAULT_OUT = Path("runs/71/last_run.json")
 
 
