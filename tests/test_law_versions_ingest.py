@@ -175,7 +175,7 @@ def test_main_lists_days_with_more_than_one_mst(pg_engine, tmp_path):
         make_row("261483", date(2024, 7, 1), date(2024, 3, 25)),
         make_row("257091", date(2024, 7, 1), date(2023, 12, 20)),
         make_row("265605", date(2024, 10, 1), date(2024, 9, 30)),
-        make_row("265605", date(2024, 11, 1), date(2024, 9, 30)),  # 같은 MST의 단계 시행은 아니다
+        make_row("265605", date(2024, 11, 1), date(2024, 9, 30)),  # 같은 MST의 단계 시행 — 같은 날 여러 MST로 세지 않는다
     ]
     out = tmp_path / "law_versions.json"
 
