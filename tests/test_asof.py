@@ -308,6 +308,16 @@ def test_a_cached_file_of_another_law_is_an_error_not_a_match(pg_engine, paths):
     assert not c["ok"] and "법령명" in c["error"]
 
 
+def test_a_non_object_api_body_is_recorded_not_a_crash(pg_engine, paths):
+    _setup(pg_engine)
+    client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=[])))
+
+    assert run(pg_engine, paths, client) == 1
+
+    (c,) = json.loads(paths["run"].read_text(encoding="utf-8"))["compare"]
+    assert not c["ok"] and "법령 객체가 아니다" in c["error"]
+
+
 def test_a_failed_version_is_recorded_and_the_report_is_still_written(pg_engine, paths):
     _setup(pg_engine)
 

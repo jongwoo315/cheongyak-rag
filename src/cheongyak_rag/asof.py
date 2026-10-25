@@ -161,7 +161,10 @@ def _load_body(oc: str, mst: str, effective: str, dest: Path, client: httpx.Clie
         return _check_name(cached, oc)
     params = {"OC": oc, "target": "eflaw", "MST": mst, "efYd": effective.replace("-", ""),
               "type": "JSON"}  # fmt: skip
-    return _check_name(_get_json(client, SERVICE_URL, params, oc), oc)
+    body = _get_json(client, SERVICE_URL, params, oc)
+    if not isinstance(body, dict):
+        raise LawApiError(f"본문 응답이 법령 객체가 아니다: {type(body).__name__}")
+    return _check_name(body, oc)
 
 
 def _save(body: dict, dest: Path) -> None:
