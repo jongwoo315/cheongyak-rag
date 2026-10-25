@@ -1,0 +1,71 @@
+{
+  "run_at": "2026-10-25T23:43:56+09:00",
+  "received": 129,
+  "pages": 2,
+  "calls": 2,
+  "inserted": 0,
+  "updated": 129,
+  "duplicates": 0,
+  "rows_after": 129,
+  "pk_digest": "bd1611817eb2260b8eb14c31d8c9cbb5c143e1d2",
+  "oldest": "2005-03-09",
+  "newest": "2026-06-15",
+  "same_day_multi_mst": [
+    {
+      "effective_date": "2024-07-01",
+      "msts": [
+        "257091",
+        "261483"
+      ]
+    },
+    {
+      "effective_date": "2024-03-25",
+      "msts": [
+        "257091",
+        "261483"
+      ]
+    },
+    {
+      "effective_date": "2023-04-01",
+      "msts": [
+        "248399",
+        "249489"
+      ]
+    },
+    {
+      "effective_date": "2017-01-01",
+      "msts": [
+        "168924",
+        "187555"
+      ]
+    },
+    {
+      "effective_date": "2015-02-27",
+      "msts": [
+        "165765",
+        "166099",
+        "168924"
+      ]
+    },
+    {
+      "effective_date": "2014-06-30",
+      "msts": [
+        "156264",
+        "156265"
+      ]
+    },
+    {
+      "effective_date": "2008-01-01",
+      "msts": [
+        "81341",
+        "82292"
+      ]
+    }
+  ],
+  "previous": {
+    "run_at": "2026-10-25T23:43:54+09:00",
+    "rows_after": 129,
+    "pk_digest": "bd1611817eb2260b8eb14c31d8c9cbb5c143e1d2",
+    "inserted": 129
+  }
+}

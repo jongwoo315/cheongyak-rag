@@ -1,0 +1,203 @@
+{
+  "notices": 84,
+  "view_rows": 84,
+  "decided": 84,
+  "unresolved": [],
+  "by_version": [
+    {
+      "mst": "286965",
+      "effective_date": "2026-06-15",
+      "promulgation_no": "01592",
+      "notices": 84
+    }
+  ],
+  "versions": {
+    "rows": 129,
+    "oldest": "2005-03-09",
+    "newest": "2026-06-15",
+    "earliest_notice": "2026-07-27",
+    "after_kickoff": []
+  },
+  "same_day_multi_mst": [
+    {
+      "effective_date": "2024-07-01",
+      "msts": [
+        "257091",
+        "261483"
+      ],
+      "picked": "261483"
+    },
+    {
+      "effective_date": "2024-03-25",
+      "msts": [
+        "257091",
+        "261483"
+      ],
+      "picked": "261483"
+    },
+    {
+      "effective_date": "2023-04-01",
+      "msts": [
+        "248399",
+        "249489"
+      ],
+      "picked": "249489"
+    },
+    {
+      "effective_date": "2017-01-01",
+      "msts": [
+        "168924",
+        "187555"
+      ],
+      "picked": "187555"
+    },
+    {
+      "effective_date": "2015-02-27",
+      "msts": [
+        "165765",
+        "166099",
+        "168924"
+      ],
+      "picked": "168924"
+    },
+    {
+      "effective_date": "2014-06-30",
+      "msts": [
+        "156264",
+        "156265"
+      ],
+      "picked": "156265"
+    },
+    {
+      "effective_date": "2008-01-01",
+      "msts": [
+        "81341",
+        "82292"
+      ],
+      "picked": "82292"
+    }
+  ],
+  "samples": [
+    {
+      "house_nm": "시흥하중지구 A1블록 신혼희망타운(공공분양) 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-10-23",
+      "mst": "286965",
+      "effective_date": "2026-06-15"
+    },
+    {
+      "house_nm": "계양신도시 카이브 유보라(AC4BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "mst": "286965",
+      "effective_date": "2026-06-15"
+    },
+    {
+      "house_nm": "시흥거모지구 S-1블록 공공분양(본청약)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "mst": "286965",
+      "effective_date": "2026-06-15"
+    },
+    {
+      "house_nm": "계양신도시 카이브 유보라(AC3BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "mst": "286965",
+      "effective_date": "2026-06-15"
+    },
+    {
+      "house_nm": "GTX운정중앙역 시티프라디움 4단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "mst": "286965",
+      "effective_date": "2026-06-15"
+    }
+  ],
+  "compare": [
+    {
+      "mst": "286965",
+      "effective_date": "2026-06-15",
+      "notices": 84,
+      "source": "cache",
+      "file": "/Users/jw/prv/.wt/78-asof-resolve/data/raw/law-008243-20260615.json",
+      "ok": true,
+      "expected": {
+        "시행일자": "20260615",
+        "공포번호": "01592"
+      },
+      "actual": {
+        "시행일자": "20260615",
+        "공포번호": "01592"
+      }
+    }
+  ],
+  "calls": 0,
+  "collection": {
+    "run_at": "2026-10-25T23:43:56+09:00",
+    "received": 129,
+    "pages": 2,
+    "calls": 2,
+    "inserted": 0,
+    "updated": 129,
+    "duplicates": 0,
+    "rows_after": 129,
+    "pk_digest": "bd1611817eb2260b8eb14c31d8c9cbb5c143e1d2",
+    "oldest": "2005-03-09",
+    "newest": "2026-06-15",
+    "same_day_multi_mst": [
+      {
+        "effective_date": "2024-07-01",
+        "msts": [
+          "257091",
+          "261483"
+        ]
+      },
+      {
+        "effective_date": "2024-03-25",
+        "msts": [
+          "257091",
+          "261483"
+        ]
+      },
+      {
+        "effective_date": "2023-04-01",
+        "msts": [
+          "248399",
+          "249489"
+        ]
+      },
+      {
+        "effective_date": "2017-01-01",
+        "msts": [
+          "168924",
+          "187555"
+        ]
+      },
+      {
+        "effective_date": "2015-02-27",
+        "msts": [
+          "165765",
+          "166099",
+          "168924"
+        ]
+      },
+      {
+        "effective_date": "2014-06-30",
+        "msts": [
+          "156264",
+          "156265"
+        ]
+      },
+      {
+        "effective_date": "2008-01-01",
+        "msts": [
+          "81341",
+          "82292"
+        ]
+      }
+    ],
+    "previous": {
+      "run_at": "2026-10-25T23:43:54+09:00",
+      "rows_after": 129,
+      "pk_digest": "bd1611817eb2260b8eb14c31d8c9cbb5c143e1d2",
+      "inserted": 129
+    }
+  },
+  "run_at": "2026-10-25T23:44:19+09:00"
+}

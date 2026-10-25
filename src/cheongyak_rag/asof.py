@@ -265,10 +265,7 @@ def render(run: dict) -> str:
     unresolved = run["unresolved"]
     if coll:
         total_calls = coll["calls"] + run["calls"]
-        calls_text = (
-            f"{total_calls}회 (수집 {coll['calls']}: 목록 {coll['pages']}페이지"
-            f" + 본문 대조 {run['calls']})"
-        )
+        calls_text = f"{total_calls}회 (수집 목록 {coll['pages']}페이지 + 본문 대조 {run['calls']})"
         calls_band = _band_calls(total_calls)
     else:
         calls_text, calls_band = (
@@ -361,12 +358,14 @@ def render(run: dict) -> str:
             ]  # fmt: skip
         )
 
+    same_days = {s["effective_date"] for s in run["same_day_multi_mst"]}
+    same_day_hit = sum(e["notices"] for e in run["by_version"] if e["effective_date"] in same_days)
     lines += [
         "",
         "## 3. 같은 날 여러 MST",
         "",
         "고르는 규칙: 공포일이 늦은 쪽, 같으면 MST가 큰 쪽(설계 §1)."
-        " 이번 공고가 이런 날에 걸렸는지는 위 버전별 표의 시행일로 본다.",
+        f" 이번 공고 중 고른 시행일이 이 날짜들에 드는 것은 {same_day_hit}건이다.",
         "",
     ]
     lines += _table(
