@@ -1,6 +1,6 @@
 {
-  "run_at": "2026-10-25T18:13:00+09:00",
-  "elapsed_sec": 15.2,
+  "run_at": "2026-10-25T18:19:46+09:00",
+  "elapsed_sec": 16.8,
   "since": "2026-07-25",
   "calls": {
     "detail": 1,
@@ -114,12 +114,12 @@
   },
   "months": 3,
   "previous": {
-    "run_at": "2026-10-25T18:12:40+09:00",
+    "run_at": "2026-10-25T18:13:00+09:00",
     "notices_rows_after": 84,
     "models_rows_after": 473,
     "notices_pk_digest": "51b38b1b9bc32a90ccb65e07902ae6b89b174acf",
     "models_pk_digest": "098cdab3e2053c92131feec3f165e71177ce630a",
-    "notices_inserted": 84,
-    "models_inserted": 473
+    "notices_inserted": 0,
+    "models_inserted": 0
   }
 }
