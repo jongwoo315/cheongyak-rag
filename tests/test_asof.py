@@ -384,6 +384,20 @@ def test_a_failed_version_is_recorded_and_the_report_is_still_written(pg_engine,
     assert "0/1건 일치" in paths["md"].read_text(encoding="utf-8").splitlines()[0]
 
 
+def test_one_mismatched_version_among_two_is_recorded_and_the_other_is_kept(pg_engine, paths):
+    _load_versions(pg_engine, CURRENT, OLD)
+    _load_notices(pg_engine, date(2026, 8, 1), date(2024, 10, 1))
+
+    assert run(pg_engine, paths, FakeService(wrong={"265605"}).client()) == 1
+
+    s = json.loads(paths["run"].read_text(encoding="utf-8"))
+    assert {c["mst"]: c["ok"] for c in s["compare"]} == {"286965": True, "265605": False}
+    assert s["calls"] == 2
+    assert (paths["raw"] / "law-008243-20260615.json").exists()
+    assert not (paths["raw"] / "law-008243-20241001.json").exists()
+    assert "1/2건 일치" in paths["md"].read_text(encoding="utf-8").splitlines()[0]
+
+
 def test_band_rows_follows_the_plan_ranges():
     assert asof._band_rows(129, 0) == "129행 → 통과"
     assert "개정이 나온" in asof._band_rows(130, 0)
