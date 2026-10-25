@@ -26,7 +26,8 @@ def test_downgrade_removes_both_and_upgrade_restores(pg_test_url):
         assert "notice_law_versions" not in views
         assert "notices" in tables  # 0002는 그대로다
     finally:
-        # 위 assert가 실패해도 세션 공용 DB를 head로 돌려놓는다. 안 그러면 뒤 테스트가 전부 연쇄로 죽는다
+        # 위 assert가 실패해도 세션 공용 DB를 head로 돌려놓는다.
+        # 안 그러면 뒤 테스트가 전부 연쇄로 죽는다
         alembic(pg_test_url, "upgrade", "head")
     tables, views = _objects(pg_test_url)
     assert "law_versions" in tables
