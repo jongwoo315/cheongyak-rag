@@ -167,3 +167,20 @@ def test_malformed_body_is_an_error_not_an_empty_result():
 
     with pytest.raises(notice.NoticeApiError, match="matchCount"):
         notice.fetch_all(DETAIL, api.client(), KEY_ENCODED, {}, sleep=_no_sleep)
+
+
+def test_fetch_all_raises_when_a_later_page_comes_back_short():
+    # matchCount는 1500인데 2쪽이 비어 있으면 일부만 받고 성공으로 끝나면 안 된다
+    api = FakeApi([make_notice(i) for i in range(1500)])
+    base = api.handler
+
+    def handler(request):
+        if request.url.params.get("page") == "2":
+            body = base(request).json() | {"data": []}
+            return httpx.Response(200, json=body)
+        return base(request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    with pytest.raises(notice.NoticeApiError, match="matchCount 1500인데 1000행"):
+        notice.fetch_all(DETAIL, client, KEY_ENCODED, {}, sleep=_no_sleep)

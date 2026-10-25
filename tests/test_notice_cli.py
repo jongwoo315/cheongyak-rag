@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import date
 
+import httpx
 import pytest
 from sqlalchemy import text
 
@@ -126,3 +127,47 @@ def test_zero_notices_in_window_is_an_error_not_a_success(pg_engine, tmp_path, c
     err = capsys.readouterr().err
     assert "matchCount 0" in err and "API 상태" in err
     assert not out.exists()
+
+
+def test_all_models_empty_is_an_error_not_a_success(pg_engine, tmp_path, capsys):
+    # 공고는 받았는데 주택형 호출이 전부 비어 있으면 상류가 비워 돌려준 것이다
+    only_notices = FakeApi([make_notice(1), make_notice(2)])
+    out = tmp_path / "last_run.json"
+
+    assert run(only_notices, pg_engine, out) == 1
+
+    assert "주택형이 없다" in capsys.readouterr().err
+    assert not out.exists()
+    with pg_engine.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM notices")).scalar() == 0
+
+
+def test_recheck_that_finds_models_keeps_them(api, pg_engine, tmp_path):
+    # 첫 주택형 호출이 일시적으로 비었다가 다시 물었을 때 받아지면 그 행을 적재한다
+    notice3 = api.notices[2]
+    seen = {"n": 0}
+    base = api.handler
+
+    def handler(request):
+        p = request.url.params
+        if (
+            request.url.path.endswith("Mdl")
+            and p.get("cond[HOUSE_MANAGE_NO::EQ]") == (notice3["HOUSE_MANAGE_NO"])
+        ):
+            seen["n"] += 1
+            if seen["n"] == 1:
+                return httpx.Response(200, json={"matchCount": 0, "data": [], "totalCount": 0})
+            api.models.append(make_model(notice3, "01"))
+        return base(request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    out = tmp_path / "last_run.json"
+
+    code = notice.main(
+        ["--out", str(out)], client=client, engine=pg_engine, sleep=lambda _s: None, today=TODAY
+    )
+
+    assert code == 0
+    summary = json.loads(out.read_text())
+    assert summary["no_models"] == []
+    assert summary["models"]["in_table"] == 4

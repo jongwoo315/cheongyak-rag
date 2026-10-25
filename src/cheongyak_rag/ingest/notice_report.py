@@ -113,8 +113,13 @@ def _rerun(run: dict) -> tuple[str, bool | None]:
 
 
 def _load_band(run: dict) -> tuple[str, int, int]:
-    n_gap = abs(run["notices"]["match_count"] - run["notices"]["in_table"])
-    m_gap = abs(run["models"]["match_count"] - run["models"]["in_table"])
+    # 빠진 PK와 남는 PK를 둘 다 센다
+    n_gap = abs(run["notices"]["match_count"] - run["notices"]["in_table"]) + len(
+        run["notices"]["extra"]
+    )
+    m_gap = abs(run["models"]["match_count"] - run["models"]["in_table"]) + len(
+        run["models"]["extra"]
+    )
     if n_gap == 0 and m_gap == 0:
         band = "두 테이블 모두 0 → 통과"
     elif n_gap <= 3 and m_gap <= 20:

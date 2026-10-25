@@ -81,6 +81,12 @@ def test_load_gap_bands(pg_engine, run_file, swagger):
         run["models"]["in_table"] -= 21
         run["models"]["missing"] = ["x/x/01"]
 
+    def extra_only(run):
+        run["notices"]["extra"] = ["z/z"]
+
+    t_extra = build(pg_engine, run_file, swagger, extra_only)
+    assert "1~3건(`notices`) 또는 1~20건(`notice_models`) 차이" in t_extra
+
     t_small = build(pg_engine, run_file, swagger, small)
     assert "1~3건(`notices`) 또는 1~20건(`notice_models`) 차이" in t_small
     assert "a/a" in t_small and "b/b" in t_small

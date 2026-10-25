@@ -5,7 +5,7 @@ from cheongyak_rag.config import settings
 
 
 def test_pg_test_url_points_at_a_different_database(pg_test_url):
-    assert make_url(pg_test_url).database == "cheongyak_test"
+    assert make_url(pg_test_url).database.startswith("cheongyak_test_")
     assert make_url(pg_test_url).database != make_url(settings.database_url).database
 
 

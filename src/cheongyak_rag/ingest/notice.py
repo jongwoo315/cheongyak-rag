@@ -103,9 +103,10 @@ def fetch_all(
     for page in range(2, math.ceil(match / PER_PAGE) + 1):
         body, n = _get(client, url, {**params, "page": page}, key, sleep)
         calls += n
-        if not body["data"]:
-            break
         rows += body["data"]
+    if len(rows) < match:
+        # 빈 페이지에서 조용히 끝내면 일부만 적재하고도 성공으로 보인다
+        raise NoticeApiError(f"{op}: matchCount {match}인데 {len(rows)}행만 받았다")
     return rows, match, calls
 
 
@@ -347,19 +348,26 @@ def _collect(engine: Engine, client, key: str, cutoff: date, sleep) -> dict:
         c_models += calls
         retries += max(0, calls - _expected_calls(match))
     retries += max(0, c_detail - _expected_calls(n_match))
-    models = [to_model_row(r) for r in model_raws]
 
-    # 주택형이 0개인 공고는 한 번 더 물어 일시적인 누락인지 본다
+    # 주택형이 0개인 공고는 한 번 더 물어 일시적인 누락인지 본다. 두 번째에 받았으면 그 행을 쓴다
     no_models, c_recheck = [], 0
     for pk, n in per_notice.items():
         if n:
             continue
         entry = {"pk": _pk_str(*pk), "recheck_match_count": None}
         if len(no_models) < RECHECK_LIMIT:
-            _, match, calls = fetch_all(OP_MODELS, client, key, _model_cond(pk), sleep)
+            rows, match, calls = fetch_all(OP_MODELS, client, key, _model_cond(pk), sleep)
             c_recheck += calls
             entry["recheck_match_count"] = match
+            if rows:
+                model_raws += rows
+                m_match += match
+                continue
         no_models.append(entry)
+    if not model_raws:
+        # 공고는 받았는데 주택형이 전부 비면 상류가 비워 돌려준 것이다 (위 matchCount 0 방어와 같다)
+        raise NoticeApiError("받은 공고 전부에 주택형이 없다. API 상태를 확인할 것")
+    models = [to_model_row(r) for r in model_raws]
 
     n_ins, n_upd = upsert(engine, NOTICES, [c.row for c in notices])
     m_ins, m_upd = upsert(engine, MODELS, [c.row for c in models])
