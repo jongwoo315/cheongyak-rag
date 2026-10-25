@@ -153,6 +153,25 @@ def test_a_retried_call_is_counted_in_total_and_retries(api, pg_engine, tmp_path
     assert calls["total"] == 6 and calls["retries"] == 1 and calls["detail"] == 2
 
 
+def test_dropped_and_new_notices_show_up_as_extra_and_change_the_digest(api, pg_engine, tmp_path):
+    out = tmp_path / "last_run.json"
+    run(api, pg_engine, out)
+    first = json.loads(out.read_text(encoding="utf-8"))
+
+    dropped = api.notices.pop(1)  # 2번이 응답에서 빠지고 5번이 새로 온다
+    added = make_notice(5)
+    api.notices.append(added)
+    api.models.append(make_model(added, "01"))
+    assert run(api, pg_engine, out) == 0
+    second = json.loads(out.read_text(encoding="utf-8"))
+
+    pk = f"{dropped['HOUSE_MANAGE_NO']}/{dropped['PBLANC_NO']}"
+    assert second["notices"]["extra"] == [pk]  # 테이블에는 있는데 이번 응답에는 없다
+    assert second["notices"]["inserted"] == 1 and second["notices"]["rows_after"] == 4
+    assert second["notices"]["pk_digest"] != first["notices"]["pk_digest"]
+    assert second["models"]["pk_digest"] != first["models"]["pk_digest"]
+
+
 def test_failure_midway_through_fetching_leaves_tables_and_summary_untouched(
     api, pg_engine, tmp_path, capsys
 ):
