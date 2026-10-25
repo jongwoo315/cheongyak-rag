@@ -288,6 +288,8 @@ def render(run: dict) -> str:
     n_ok = sum(1 for c in cmp_ if c["ok"])
     mismatch = len(cmp_) - n_ok
     v, coll = run["versions"], run.get("collection")
+    # 징후 2는 법제처 목록이 준 행 수다. 수집이 옛 행을 지우지 않으므로 테이블 행 수는 더 클 수 있다
+    listed = coll["received"] if coll and "received" in coll else v["rows"]
     picked = {(e["mst"], e["effective_date"]) for e in run["by_version"]}
     rerun_text, rerun_ok = _rerun(coll)
     first = (
@@ -323,10 +325,12 @@ def render(run: dict) -> str:
         ),
         (
             "2. 목록 완결성",
-            f"법령명 일치 {v['rows']}행 · 시행일 {v['oldest']} ~ {v['newest']}"
+            f"법령명 일치 {listed}행"
+            + (f"(테이블에는 {v['rows']}행)" if listed != v["rows"] else "")
+            + f" · 시행일 {v['oldest']} ~ {v['newest']}"
             f" · 가장 이른 모집공고일 {v['earliest_notice']}"
             f" · (MST, 시행일) 중복 {coll.get('duplicates', '—') if coll else '—'}건",
-            _band_rows(v["rows"], coll.get("duplicates") if coll else None),
+            _band_rows(listed, coll.get("duplicates") if coll else None),
         ),
         (
             "3. 같은 날 여러 MST",
@@ -372,7 +376,7 @@ def render(run: dict) -> str:
             for u in unresolved
         ]
     )
-    if v["rows"] > EXPECTED_ROWS:
+    if listed > EXPECTED_ROWS:
         lines += [
             "",
             f"### 착수 실측 뒤에 늘어난 행 (시행일이 {LATEST_AT_KICKOFF}보다 늦은 것)",

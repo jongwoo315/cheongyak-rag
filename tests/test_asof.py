@@ -237,6 +237,24 @@ def test_collection_summary_feeds_the_calls_and_rerun_rows(pg_engine, paths):
     assert "새로 들어간 행은 0건" in md
 
 
+def test_list_completeness_uses_the_rows_received_not_the_table_count(pg_engine, paths):
+    _setup(pg_engine)  # 테이블에는 4행 — 수집이 지우지 않아 옛 행이 남은 상황을 흉내 낸다
+    paths["versions_run"].parent.mkdir(parents=True)
+    paths["versions_run"].write_text(
+        json.dumps({"received": 128, "pages": 2, "calls": 2, "duplicates": 0}), encoding="utf-8"
+    )
+
+    run(pg_engine, paths)
+
+    row = next(
+        ln
+        for ln in paths["md"].read_text(encoding="utf-8").splitlines()
+        if ln.startswith("| 2. 목록 완결성")
+    )
+    assert "법령명 일치 128행(테이블에는 4행)" in row
+    assert "128행 이하 → 미완" in row
+
+
 def test_the_key_never_shows_up_anywhere(pg_engine, paths, capsys):
     _setup(pg_engine)
     run(pg_engine, paths)
