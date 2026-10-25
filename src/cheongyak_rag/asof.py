@@ -37,6 +37,7 @@ RUN_PATH = Path("runs/78/last_run.json")
 VERSIONS_RUN = Path("runs/78/law_versions.json")
 OUT_PATH = Path("docs/78-asof.md")
 SAMPLES = 5
+MAX_UNRESOLVED = 3  # plan §실패 징후 1: 안 정해진 공고가 이보다 많으면 미완
 # 착수 시점(2026-10-25) 실측이다. 새 개정이나 새 공고가 나오면 구간 문구가 「다르다」를 낸다.
 # 결과가 틀렸다는 뜻은 아니다. 공고 84건 전부 이 버전이었다
 EXPECTED_VERSION = ("286965", "2026-06-15")
@@ -228,7 +229,7 @@ def compare(
 def _band_versions(unresolved: int, mismatch: int, picked: set[tuple]) -> str:
     if unresolved == 0 and mismatch == 0:
         band = "두 값 모두 0 → 통과"
-    elif unresolved <= 3 and mismatch == 0:
+    elif unresolved <= MAX_UNRESOLVED and mismatch == 0:
         band = (
             "안 정해진 공고 1~3건이고 불일치 0 → 그 공고 목록과 모집공고일, 원인을 리포트에 적는다"
         )
@@ -500,6 +501,10 @@ def main(argv=None, client: httpx.Client | None = None, engine: Engine | None = 
             print(f"  예전 본문일 수 있다. {c['file']}을 지우고 다시 돌려 볼 것", file=sys.stderr)
     if run["view_rows"] != run["notices"]:
         print(f"view 행 수 {run['view_rows']} ≠ 공고 수 {run['notices']}", file=sys.stderr)
+        return 1
+    if len(run["unresolved"]) > MAX_UNRESOLVED or run["decided"] == 0:
+        # plan §실패 징후 1: 안 정해진 공고 4건 이상은 미완이다. 하나도 못 정했으면 비교할 것도 없다
+        print(f"버전이 안 정해진 공고 {len(run['unresolved'])}건: 미완", file=sys.stderr)
         return 1
     return 1 if bad else 0
 

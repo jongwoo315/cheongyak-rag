@@ -174,6 +174,23 @@ def test_notices_older_than_the_oldest_version_are_listed_as_unresolved(pg_engin
     assert "2024-09-30" in md
 
 
+def test_four_unresolved_notices_exit_1_but_the_report_is_written(pg_engine, paths, capsys):
+    _load_versions(pg_engine, CURRENT, OLD)
+    _load_notices(pg_engine, *[date(2024, 9, 29)] * 4, date(2026, 8, 1))
+
+    assert run(pg_engine, paths) == 1
+
+    assert "공고 1/5건" in paths["md"].read_text(encoding="utf-8").splitlines()[0]
+    assert "미완" in capsys.readouterr().err
+
+
+def test_no_notice_resolved_exits_1(pg_engine, paths):
+    _load_versions(pg_engine, CURRENT)
+    _load_notices(pg_engine, date(2020, 1, 1))
+
+    assert run(pg_engine, paths) == 1
+
+
 def test_same_day_report_names_the_mst_the_view_picks(pg_engine, paths):
     _setup(pg_engine)
     _load_notices(pg_engine, date(2024, 7, 1))  # 같은 날 둘인 날에 걸린 공고도 하나 둔다
