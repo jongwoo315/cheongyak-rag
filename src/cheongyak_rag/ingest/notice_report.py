@@ -392,6 +392,22 @@ def main(argv=None, engine: Engine | None = None) -> int:
     finally:
         if own:
             engine.dispose()
+    # 수집이 실패한 뒤에는 last_run.json이 이전 실행의 것이다.
+    # DB와 안 맞는데 쓰면 이전 실행의 적재율이 지금 것처럼 나온다
+    stale = [
+        f"{name} 실행 요약 {run[key]['rows_after']}행 ≠ DB {live}행"
+        for name, key, live in (
+            ("notices", "notices", data["tables"]["notices"]["rows"]),
+            ("notice_models", "models", data["tables"]["models"]["rows"]),
+        )
+        if run[key]["rows_after"] != live
+    ]
+    if stale:
+        print(
+            "실행 요약이 DB와 맞지 않는다. 수집을 다시 돌릴 것: " + " · ".join(stale),
+            file=sys.stderr,
+        )
+        return 1
     if args.notes.exists():
         data["notes"] = args.notes.read_text(encoding="utf-8")
     text = render(data)

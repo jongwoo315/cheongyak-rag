@@ -3,6 +3,7 @@ import json
 from datetime import date
 
 import pytest
+from sqlalchemy import text
 
 from cheongyak_rag.ingest import notice, notice_report
 from tests.notice_fakes import KEY_DECODED, KEY_ENCODED, FakeApi, make_model, make_notice
@@ -187,6 +188,25 @@ def test_cli_writes_report_and_refuses_when_key_is_in_it(
     assert notice_report.main(argv, engine=pg_engine) == 1
     assert not out.exists()
     assert KEY_DECODED not in capsys.readouterr().err
+
+
+def test_cli_refuses_a_run_summary_that_no_longer_matches_the_tables(
+    pg_engine, run_file, swagger, tmp_path, capsys
+):
+    # 수집이 중간에 실패하면 last_run.json은 이전 실행의 것이다. 그 값으로 적재율을 쓰면 안 된다
+    sw = tmp_path / "swagger.json"
+    sw.write_text(json.dumps(swagger), encoding="utf-8")
+    out = tmp_path / "report.md"
+    with pg_engine.begin() as conn:
+        conn.execute(text("DELETE FROM notices WHERE house_manage_no = '2026000003'"))
+
+    code = notice_report.main(
+        ["--run", str(run_file), "--swagger", str(sw), "--out", str(out)], engine=pg_engine
+    )
+
+    assert code == 1 and not out.exists()
+    err = capsys.readouterr().err
+    assert "notices 실행 요약 3행 ≠ DB 2행" in err
 
 
 def test_cli_refuses_when_key_is_blank_because_the_leak_check_cannot_run(
