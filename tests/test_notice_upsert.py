@@ -59,6 +59,29 @@ def test_upsert_stores_raw_with_every_key_and_types(pg_engine):
     assert bgn is None and str(de) == "2026-10-01" and flag is False
 
 
+def test_upsert_splits_into_chunks_and_still_counts_every_row(pg_engine):
+    # CHUNK 500 기준으로 세 덩어리다
+    rows = _rows([make_notice(i) for i in range(1, 1201)], notice.to_notice_row)
+
+    assert notice.upsert(pg_engine, notice.NOTICES, rows) == (1200, 0)
+    assert notice.upsert(pg_engine, notice.NOTICES, rows) == (0, 1200)
+
+    assert _count(pg_engine, "notices") == 1200
+
+
+def test_upsert_collapses_the_same_pk_inside_one_batch(pg_engine):
+    # 안 합치면 Postgres가 "cannot affect row a second time"으로 거부한다
+    first = make_notice(1, HOUSE_NM="앞")
+    last = make_notice(1, HOUSE_NM="뒤")
+
+    rows = _rows([first, last], notice.to_notice_row)
+
+    assert notice.upsert(pg_engine, notice.NOTICES, rows) == (1, 0)
+
+    with pg_engine.connect() as conn:
+        assert conn.execute(text("SELECT house_nm FROM notices")).scalar() == "뒤"
+
+
 def test_upsert_empty_is_a_noop(pg_engine):
     assert notice.upsert(pg_engine, notice.NOTICES, []) == (0, 0)
 
