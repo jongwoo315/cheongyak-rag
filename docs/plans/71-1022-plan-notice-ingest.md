@@ -20,6 +20,19 @@
 
 **Tier:** C · **Notion:** #71 · **설계:** `docs/plans/71-1022-design-notice-ingest.md` (먼저 읽을 것 — 착수 때 실측한 사실이 거기 있다)
 
+## RESUME (2026-10-25)
+
+- 이전 실행은 2026-10-23 00:29에 멈췄다. 원인 둘이다: odcloud가 00:01부터 약 28분간 빈 응답(`totalCount 0`)을 줬고, 그 턴 끝에
+  다른 플러그인(ralph-wiggum)의 Stop 훅이 ralph 상태 파일을 지워 루프가 다시 시작되지 않았다. 우리 코드 문제가 아니다
+- 2026-10-25 main 세션 확인: API 정상. `cond[RCRIT_PBLANC_DE::GTE]=2026-07-25` → `matchCount` 84
+- 이미 있는 산출물 — 덮어쓰지 말고 테스트로 확인한다: Task 1 `0c7ed27` · Task 2 `c1e09ca` · Task 3 `3bdba59` · Task 4 `6baeb8c` ·
+  Task 5-5 `58d49fa` · matchCount 0 방어 `9ec1432`. 실제 DB `cheongyak`은 0002까지 올라가 있고 두 테이블은 비어 있다.
+  `runs/71/last_run.json`은 실패한 실행의 것이라 다시 쓴다
+- 남은 것: Task 5의 1~4(수집 2회 · PK 집합 비교 · 리포트), `sc:reflect`, `superpowers:requesting-code-review`, Pre-PR 다시 실행,
+  커밋, PR, Notion `PR` 칸
+- 파일이 있다고 통과 기준을 채운 것이 아니다. 테스트와 실제 실행 결과로 확인한다
+- **턴을 끝낼 때 마지막 메시지에 반드시 글자로 된 요약을 남긴다.** 마지막 메시지에 글자가 없으면 ralph-wiggum 훅이 상태 파일을 지운다
+
 ## jw 기준
 
 청약홈 공고들을 sql 테이블에 성공적으로 적재한다
