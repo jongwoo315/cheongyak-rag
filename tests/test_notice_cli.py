@@ -142,6 +142,18 @@ def test_all_models_empty_is_an_error_not_a_success(pg_engine, tmp_path, capsys)
         assert conn.execute(text("SELECT count(*) FROM notices")).scalar() == 0
 
 
+def test_duplicate_pk_across_pages_is_a_mismatch_not_a_success(pg_engine, tmp_path, capsys):
+    # matchCount는 맞는데 같은 PK가 두 번 오면 upsert가 한 행으로 합쳐 한 행이 모자란다
+    n1 = make_notice(1)
+    dup = FakeApi([n1, dict(n1)], [make_model(n1, "01")])
+    out = tmp_path / "last_run.json"
+
+    assert run(dup, pg_engine, out) == 1
+
+    assert "적재 불일치: 공고 2행 받았는데 테이블에 1행" in capsys.readouterr().err
+    assert json.loads(out.read_text(encoding="utf-8"))["notices"]["rows_after"] == 1
+
+
 def test_recheck_that_finds_models_keeps_them(api, pg_engine, tmp_path):
     # 첫 주택형 호출이 일시적으로 비었다가 다시 물었을 때 받아지면 그 행을 적재한다
     notice3 = api.notices[2]

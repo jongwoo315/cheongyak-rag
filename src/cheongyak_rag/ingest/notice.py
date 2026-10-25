@@ -497,6 +497,16 @@ def main(argv=None, client=None, engine=None, sleep=time.sleep, today=None) -> i
     finally:
         tmp.unlink(missing_ok=True)
     _print_summary(summary, args.months)
+    # 받은 행이 테이블에 다 있어야 성공이다.
+    # 페이지 사이에 같은 PK가 두 번 오면 한 행으로 합쳐져 모자란다
+    short = [
+        f"{name} {t['received']}행 받았는데 테이블에 {t['in_table']}행"
+        for name, t in (("공고", summary["notices"]), ("주택형", summary["models"]))
+        if t["received"] != t["in_table"]
+    ]
+    if short:
+        print("적재 불일치: " + " · ".join(short), file=sys.stderr)
+        return 1
     return 0
 
 
