@@ -187,3 +187,36 @@ def test_cli_writes_report_and_refuses_when_key_is_in_it(
     assert notice_report.main(argv, engine=pg_engine) == 1
     assert not out.exists()
     assert KEY_DECODED not in capsys.readouterr().err
+
+
+def test_cli_refuses_when_key_is_blank_because_the_leak_check_cannot_run(
+    pg_engine, run_file, swagger, tmp_path, monkeypatch, capsys
+):
+    sw = tmp_path / "swagger.json"
+    sw.write_text(json.dumps(swagger), encoding="utf-8")
+    out = tmp_path / "report.md"
+    monkeypatch.setattr(notice.settings, "data_go_kr_key", " \n")
+
+    code = notice_report.main(
+        ["--run", str(run_file), "--swagger", str(sw), "--out", str(out)], engine=pg_engine
+    )
+
+    assert code == 1 and not out.exists()
+    assert "DATA_GO_KR_KEY가 비어 있다" in capsys.readouterr().err
+
+
+def test_cli_leak_check_uses_the_stripped_key(pg_engine, run_file, swagger, tmp_path, monkeypatch):
+    # .env 값에 공백이 붙어 있어도 실제로 요청에 쓰인 키(strip한 값)를 찾아야 한다
+    sw = tmp_path / "swagger.json"
+    sw.write_text(json.dumps(swagger), encoding="utf-8")
+    out = tmp_path / "report.md"
+    monkeypatch.setattr(notice.settings, "data_go_kr_key", f" {KEY_ENCODED}\n")
+    leaked = json.loads(run_file.read_text(encoding="utf-8"))
+    leaked["no_models"][0]["note"] = KEY_DECODED
+    run_file.write_text(json.dumps(leaked), encoding="utf-8")
+
+    code = notice_report.main(
+        ["--run", str(run_file), "--swagger", str(sw), "--out", str(out)], engine=pg_engine
+    )
+
+    assert code == 1 and not out.exists()

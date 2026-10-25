@@ -258,7 +258,8 @@ def render(d: dict) -> str:
         ),
         (
             "7. 키 노출",
-            # 1회라도 있으면 main이 리포트를 쓰지 않고 멈춘다. 여기까지 왔으면 0이다
+            # main이 렌더한 본문과 실행 요약 JSON에서 키를 찾고, 있으면 파일을 쓰지 않고 exit 1이다.
+            # 이 문구가 파일에 있다면 그 검사를 통과한 것이다 (키가 비면 main이 먼저 멈춘다)
             "실행 요약 JSON 0회 · 이 리포트 0회(쓰기 전에 검사한다)",
             "테스트에서 가짜 키 문자열이 출력·예외·리포트에 0회 나타나야 한다. 1회라도 나오면 버그",
         ),
@@ -370,7 +371,15 @@ def main(argv=None, engine: Engine | None = None) -> int:
     args = ap.parse_args(argv)
 
     run_text = args.run.read_text(encoding="utf-8")
-    secrets = notice._secrets(settings.data_go_kr_key) if settings.data_go_kr_key.strip() else []
+    key = settings.data_go_kr_key.strip()
+    if not key:
+        # 키가 없으면 아래 노출 검사가 아무것도 찾지 못하고 통과한다
+        print(
+            "DATA_GO_KR_KEY가 비어 있다. 키 노출 검사를 할 수 없어 리포트를 쓰지 않는다",
+            file=sys.stderr,
+        )
+        return 1
+    secrets = notice._secrets(key)
     if any(s in run_text for s in secrets):
         print("실행 요약 JSON에 서비스 키가 들어 있다. 리포트를 쓰지 않는다", file=sys.stderr)
         return 1
