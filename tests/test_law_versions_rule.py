@@ -99,6 +99,20 @@ def test_same_day_same_promulgation_picks_the_larger_mst(pg_engine):
     assert _picked(pg_engine) == {date(2020, 1, 1): ("200", date(2020, 1, 1))}
 
 
+def test_mst_tie_break_compares_numbers_not_text(pg_engine):
+    # 글자 순서로는 "99999" > "100001"이다
+    _load(
+        pg_engine,
+        [
+            ("99999", date(2010, 1, 1), date(2009, 12, 1)),
+            ("100001", date(2010, 1, 1), date(2009, 12, 1)),
+        ],
+    )
+    _notices(pg_engine, date(2010, 1, 1))
+
+    assert _picked(pg_engine) == {date(2010, 1, 1): ("100001", date(2010, 1, 1))}
+
+
 def test_missing_promulgation_date_loses_to_a_known_one(pg_engine):
     _load(
         pg_engine, [("900", date(2020, 1, 1), None), ("100", date(2020, 1, 1), date(2019, 12, 1))]

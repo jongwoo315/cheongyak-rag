@@ -25,8 +25,9 @@ def oc(monkeypatch):
 class FakeService:
     """lawService.do 본문 조회. `wrong`에 든 MST는 공포번호를 다르게 준다."""
 
-    def __init__(self, wrong=()):
+    def __init__(self, wrong=(), leak=False):
         self.wrong = set(wrong)
+        self.leak = leak
         self.requests: list[httpx.Request] = []
 
     def _handler(self, request: httpx.Request) -> httpx.Response:
@@ -36,7 +37,11 @@ class FakeService:
         info = {
             "법령명_한글": LAW_NAME,
             "시행일자": p["efYd"],
-            "공포번호": "no-other" if p["MST"] in self.wrong else f"no-{p['MST']}",
+            "공포번호": FAKE_OC
+            if self.leak
+            else "no-other"
+            if p["MST"] in self.wrong
+            else f"no-{p['MST']}",
         }
         return httpx.Response(200, json={"법령": {"기본정보": info}})
 
@@ -234,7 +239,7 @@ def test_api_error_exits_1_without_the_key(pg_engine, paths, capsys):
 
     assert run(pg_engine, paths, client) == 1
     shown = capsys.readouterr()
-    assert "API 오류" in shown.err and FAKE_OC not in shown.out + shown.err
+    assert "본문 대조 실패" in shown.err and FAKE_OC not in shown.out + shown.err
 
 
 def test_empty_oc_exits_1(pg_engine, paths, monkeypatch, capsys):
@@ -243,3 +248,59 @@ def test_empty_oc_exits_1(pg_engine, paths, monkeypatch, capsys):
 
     assert run(pg_engine, paths) == 1
     assert "LAW_OC" in capsys.readouterr().err
+
+
+def test_a_report_that_would_contain_the_key_is_not_written(pg_engine, paths, capsys):
+    _setup(pg_engine)
+
+    # 어긋난 공포번호가 리포트의 기대/받은 값 칸으로 간다. 거기에 키가 있으면 쓰지 않는다
+    assert run(pg_engine, paths, FakeService(leak=True).client()) == 1
+
+    assert not paths["run"].exists() and not paths["md"].exists()
+    shown = capsys.readouterr()
+    assert "인증값" in shown.err and FAKE_OC not in shown.out + shown.err
+
+
+def test_a_cached_body_that_disagrees_points_at_the_file(pg_engine, paths, capsys):
+    _setup(pg_engine)
+    paths["raw"].mkdir(parents=True)
+    body = {
+        "법령": {"기본정보": {"법령명_한글": LAW_NAME, "시행일자": "20260615", "공포번호": "old"}}
+    }
+    (paths["raw"] / "law-008243-20260615.json").write_text(json.dumps(body), encoding="utf-8")
+
+    assert run(pg_engine, paths) == 1
+
+    err = capsys.readouterr().err
+    assert "law-008243-20260615.json" in err and "지우고" in err
+
+
+def test_a_cached_file_of_another_law_is_an_error_not_a_match(pg_engine, paths):
+    _setup(pg_engine)
+    paths["raw"].mkdir(parents=True)
+    body = {
+        "법령": {
+            "기본정보": {"법령명_한글": "다른 법", "시행일자": "20260615", "공포번호": "no-286965"}
+        }
+    }
+    (paths["raw"] / "law-008243-20260615.json").write_text(json.dumps(body), encoding="utf-8")
+
+    assert run(pg_engine, paths) == 1
+
+    (c,) = json.loads(paths["run"].read_text(encoding="utf-8"))["compare"]
+    assert not c["ok"] and "법령명" in c["error"]
+
+
+def test_a_failed_version_is_recorded_and_the_report_is_still_written(pg_engine, paths):
+    _setup(pg_engine)
+
+    def boom(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, text="down")
+
+    client = httpx.Client(transport=httpx.MockTransport(boom))
+
+    assert run(pg_engine, paths, client) == 1
+
+    (c,) = json.loads(paths["run"].read_text(encoding="utf-8"))["compare"]
+    assert not c["ok"] and "HTTP 500" in c["error"]
+    assert "0/1건 일치" in paths["md"].read_text(encoding="utf-8").splitlines()[0]

@@ -60,6 +60,28 @@ def test_same_mst_and_date_twice_is_an_error():
         law_versions.fetch_versions(FAKE_OC, api.client())
 
 
+def test_a_page_with_an_unexpected_shape_is_an_error_not_the_end_of_the_list():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.params["page"] == "1":
+            return httpx.Response(
+                200, json={"LawSearch": {"totalCnt": "200", "law": make_rows(100)}}
+            )
+        return httpx.Response(200, json={})  # LawSearch가 없다
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    with pytest.raises(LawApiError, match="LawSearch"):
+        law_versions.fetch_versions(FAKE_OC, client)
+
+
+def test_fewer_rows_than_total_count_is_an_error():
+    # 101행뿐인데 totalCnt는 200이다. 일부만 넣고 성공으로 끝내지 않는다
+    api = FakeEflaw(make_rows(101), total_count=200)
+
+    with pytest.raises(LawApiError, match="totalCnt"):
+        law_versions.fetch_versions(FAKE_OC, api.client())
+
+
 def test_no_matching_row_is_an_error():
     api = FakeEflaw(make_rows(3, name="주택공급에 관한 규칙 일부개정령"))
 
@@ -70,7 +92,8 @@ def test_no_matching_row_is_an_error():
 def test_never_ending_pages_stop_with_an_error():
     def endless(request: httpx.Request) -> httpx.Response:
         page = int(request.url.params["page"])
-        return httpx.Response(200, json={"LawSearch": {"law": make_rows(100, page * 1000)}})
+        search = {"totalCnt": "100000", "law": make_rows(100, page * 1000)}
+        return httpx.Response(200, json={"LawSearch": search})
 
     client = httpx.Client(transport=httpx.MockTransport(endless))
 

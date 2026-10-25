@@ -17,7 +17,7 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 # 고르는 규칙은 설계 §1이다: 시행일 ≤ 모집공고일 중 시행일이 가장 늦은 것,
-# 같은 시행일이면 공포일이 늦은 것, 그래도 같으면 MST가 큰 것.
+# 같은 시행일이면 공포일이 늦은 것, 그래도 같으면 MST가 큰 것(text라 길이를 먼저 본다).
 # 맞는 행이 없으면 버전 열이 NULL이다. 공포일이 NULL인 행은 가장 뒤로 보낸다
 # (Postgres는 DESC에서 NULL을 맨 앞에 둔다)
 VIEW_SQL = """
@@ -29,7 +29,8 @@ LEFT JOIN LATERAL (
     SELECT lv.mst, lv.effective_date, lv.promulgation_date, lv.promulgation_no
     FROM law_versions lv
     WHERE lv.law_id = '008243' AND lv.effective_date <= n.rcrit_pblanc_de
-    ORDER BY lv.effective_date DESC, lv.promulgation_date DESC NULLS LAST, lv.mst DESC
+    ORDER BY lv.effective_date DESC, lv.promulgation_date DESC NULLS LAST,
+             length(lv.mst) DESC, lv.mst DESC
     LIMIT 1
 ) v ON true
 """

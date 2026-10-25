@@ -115,7 +115,7 @@
       "effective_date": "2026-06-15",
       "notices": 84,
       "source": "cache",
-      "file": "/Users/jw/prv/.wt/78-asof-resolve/data/raw/law-008243-20260615.json",
+      "file": "data/raw/law-008243-20260615.json",
       "ok": true,
       "expected": {
         "시행일자": "20260615",
@@ -124,12 +124,13 @@
       "actual": {
         "시행일자": "20260615",
         "공포번호": "01592"
-      }
+      },
+      "error": null
     }
   ],
   "calls": 0,
   "collection": {
-    "run_at": "2026-10-25T23:43:56+09:00",
+    "run_at": "2026-10-25T23:53:49+09:00",
     "received": 129,
     "pages": 2,
     "calls": 2,
@@ -193,11 +194,11 @@
       }
     ],
     "previous": {
-      "run_at": "2026-10-25T23:43:54+09:00",
+      "run_at": "2026-10-25T23:53:48+09:00",
       "rows_after": 129,
       "pk_digest": "bd1611817eb2260b8eb14c31d8c9cbb5c143e1d2",
       "inserted": 129
     }
   },
-  "run_at": "2026-10-25T23:44:19+09:00"
+  "run_at": "2026-10-25T23:54:51+09:00"
 }

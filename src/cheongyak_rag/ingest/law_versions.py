@@ -24,7 +24,14 @@ from sqlalchemy.engine import Engine
 
 from cheongyak_rag.config import settings
 from cheongyak_rag.ingest import notice
-from cheongyak_rag.ingest.law import LAW_NAME, SEARCH_URL, LawApiError, _get_json, _require_oc
+from cheongyak_rag.ingest.law import (
+    LAW_NAME,
+    SEARCH_URL,
+    LawApiError,
+    _get_json,
+    _require_oc,
+    _snippet,
+)
 
 DISPLAY = 100
 MAX_PAGES = 20  # 실측 2페이지. 페이지 넘김이 끝나지 않는 결함을 에러로 끊는다
@@ -54,13 +61,14 @@ def _key(raw: dict) -> tuple[str, str, str]:
 def fetch_versions(oc: str, client: httpx.Client | None = None) -> tuple[list[dict], int]:
     """목록을 끝까지 읽어 법령명이 정확히 일치하는 행만 돌려준다 → (행, 읽은 페이지 수).
 
-    totalCnt는 이름이 비슷한 다른 법령까지 센 값이라 쓰지 않는다. 한 페이지가 DISPLAY행보다
-    적으면 마지막이다.
+    totalCnt는 이름이 비슷한 다른 법령까지 센 값이라 우리 행 수 대신 읽은 전체 행 수와 맞춰 본다.
+    한 페이지가 DISPLAY행보다 적으면 마지막이다.
     """
     oc = _require_oc(oc)
     own = client is None
     client = client or httpx.Client(timeout=60)
     rows: list[dict] = []
+    seen = total = 0
     try:
         for page in range(1, MAX_PAGES + 1):
             params = {
@@ -71,8 +79,20 @@ def fetch_versions(oc: str, client: httpx.Client | None = None) -> tuple[list[di
                 "page": page,
                 "type": "JSON",
             }
-            found = _get_json(client, SEARCH_URL, params, oc).get("LawSearch", {}).get("law", [])
+            body = _get_json(client, SEARCH_URL, params, oc)
+            search = body.get("LawSearch")
+            if not isinstance(search, dict):
+                # 빈 페이지에서 조용히 끝내면 앞 페이지만 넣고 성공으로 보인다
+                detail = _snippet(json.dumps(body, ensure_ascii=False), oc)
+                raise LawApiError(f"{page}페이지 응답에 LawSearch가 없다: {detail}")
+            if page == 1:
+                try:
+                    total = int(search["totalCnt"])
+                except (KeyError, ValueError):
+                    raise LawApiError("1페이지 응답의 totalCnt를 읽지 못했다") from None
+            found = search.get("law", [])
             found = [found] if isinstance(found, dict) else found  # 결과가 하나면 dict로 온다
+            seen += len(found)
             rows += [r for r in found if r.get("법령명한글") == LAW_NAME]
             if len(found) < DISPLAY:
                 break
@@ -81,6 +101,10 @@ def fetch_versions(oc: str, client: httpx.Client | None = None) -> tuple[list[di
     finally:
         if own:
             client.close()
+    if seen != total:
+        # totalCnt는 이름이 비슷한 다른 법령까지 센 값이다.
+        # 우리 행 수가 아니라 읽은 전체 행 수와 같아야 한다
+        raise LawApiError(f"totalCnt {total}인데 {seen}행만 읽었다. 목록이 끊겼을 수 있다")
     if not rows:
         raise LawApiError(f"법령명이 {LAW_NAME!r}인 행이 하나도 없다. 검색 응답을 확인할 것")
     if len({_key(r) for r in rows}) != len(rows):
@@ -182,6 +206,8 @@ def main(argv=None, client: httpx.Client | None = None, engine: Engine | None = 
     own = engine is None
     engine = engine or sa.create_engine(settings.database_url)
     try:
+        # 지우지 않는다. 법제처가 기존 행의 시행일을 옮기면 옛 행이 남는데,
+        # asof의 본문 대조가 어긋남으로 잡는다
         inserted, updated = notice.upsert(engine, LAW_VERSIONS, rows)
         rows_after, digest = _table_state(engine)
     finally:

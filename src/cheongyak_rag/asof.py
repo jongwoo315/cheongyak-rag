@@ -23,6 +23,7 @@ from cheongyak_rag.config import settings
 from cheongyak_rag.ingest.law import (
     LAW_NAME,
     RAW_DIR,
+    ROOT,
     SERVICE_URL,
     LawApiError,
     _check_name,
@@ -36,7 +37,8 @@ RUN_PATH = Path("runs/78/last_run.json")
 VERSIONS_RUN = Path("runs/78/law_versions.json")
 OUT_PATH = Path("docs/78-asof.md")
 SAMPLES = 5
-# 착수 실측(2026-10-25): 공고 84건 전부 이 버전이다
+# 착수 시점(2026-10-25) 실측이다. 새 개정이나 새 공고가 나오면 구간 문구가 「다르다」를 낸다.
+# 결과가 틀렸다는 뜻은 아니다. 공고 84건 전부 이 버전이었다
 EXPECTED_VERSION = ("286965", "2026-06-15")
 EXPECTED_ROWS = 129  # 착수 실측: 법령명이 정확히 일치하는 행 수
 LATEST_AT_KICKOFF = "2026-06-15"
@@ -69,7 +71,8 @@ def gather(engine: Engine) -> dict:
         )[0]
         same_day = q(
             "SELECT effective_date, array_agg(mst ORDER BY mst),"
-            " (array_agg(mst ORDER BY promulgation_date DESC NULLS LAST, mst DESC))[1]"
+            " (array_agg(mst ORDER BY promulgation_date DESC NULLS LAST,"
+            " length(mst) DESC, mst DESC))[1]"
             " FROM law_versions WHERE law_id = :l GROUP BY effective_date"
             " HAVING count(DISTINCT mst) > 1 ORDER BY effective_date DESC",
             l=LAW_ID,
@@ -142,10 +145,11 @@ def gather(engine: Engine) -> dict:
 # ── 본문 대조 ────────────────────────────────────────────────────────────
 
 
-def _load_body(
-    oc: str, mst: str, effective: str, raw_dir: Path, client: httpx.Client
-) -> tuple[dict, str, Path]:
-    dest = raw_dir / f"law-{LAW_ID}-{effective.replace('-', '')}.json"
+def _dest(raw_dir: Path, effective: str) -> Path:
+    return raw_dir / f"law-{LAW_ID}-{effective.replace('-', '')}.json"
+
+
+def _load_body(oc: str, mst: str, effective: str, dest: Path, client: httpx.Client) -> dict:
     if dest.exists():
         try:
             cached = json.loads(dest.read_text(encoding="utf-8"))
@@ -153,10 +157,10 @@ def _load_body(
             raise LawApiError(f"캐시가 깨졌다. 지우고 다시 실행할 것: {dest} ({e})") from None
         if not isinstance(cached, dict):
             raise LawApiError(f"캐시가 법령 응답이 아니다. 지우고 다시 실행할 것: {dest}")
-        return cached, "cache", dest
+        return _check_name(cached, oc)
     params = {"OC": oc, "target": "eflaw", "MST": mst, "efYd": effective.replace("-", ""),
               "type": "JSON"}  # fmt: skip
-    return _check_name(_get_json(client, SERVICE_URL, params, oc), oc), "api", dest
+    return _check_name(_get_json(client, SERVICE_URL, params, oc), oc)
 
 
 def _save(body: dict, dest: Path) -> None:
@@ -169,34 +173,50 @@ def _save(body: dict, dest: Path) -> None:
         tmp.unlink(missing_ok=True)
 
 
+def _rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def compare(
     versions: list[dict], raw_dir: Path, oc: str, client: httpx.Client
 ) -> tuple[list[dict], int]:
     """고른 버전마다 본문의 시행일자·공포번호를 `law_versions` 행과 대조한다 → (결과, API 호출 수).
 
     일치한 본문만 파일로 둔다. 어긋난 본문을 두면 다음 실행이 같은 어긋남을 캐시에서 읽는다.
+    본문을 못 읽은 버전은 `error`를 적고 다음 버전으로 간다.
+    그래야 이미 읽은 결과가 리포트에 남는다.
     """
     results, calls = [], 0
     for v in versions:
-        body, source, dest = _load_body(oc, v["mst"], v["effective_date"], raw_dir, client)
-        calls += source == "api"
-        info = body.get("법령", {}).get("기본정보", {})
+        dest = _dest(raw_dir, v["effective_date"])
+        cached = dest.exists()
+        calls += not cached
         expected = {
             "시행일자": v["effective_date"].replace("-", ""),
             "공포번호": v["promulgation_no"],
         }
-        actual = {"시행일자": info.get("시행일자"), "공포번호": info.get("공포번호") or None}
-        ok = expected == actual
-        if ok and source == "api":
-            _save(body, dest)
+        actual = error = None
+        try:
+            body = _load_body(oc, v["mst"], v["effective_date"], dest, client)
+        except LawApiError as e:
+            error = str(e)
+        else:
+            info = body.get("법령", {}).get("기본정보", {})
+            actual = {"시행일자": info.get("시행일자"), "공포번호": info.get("공포번호") or None}
+            if expected == actual and not cached:
+                _save(body, dest)
         results.append(
             {
                 **{k: v[k] for k in ("mst", "effective_date", "notices")},
-                "source": source,
-                "file": str(dest),
-                "ok": ok,
+                "source": "cache" if cached else "api",
+                "file": _rel(dest),
+                "ok": error is None and expected == actual,
                 "expected": expected,
                 "actual": actual,
+                "error": error,
             }  # fmt: skip
         )
     return results, calls
@@ -249,6 +269,14 @@ def _rerun(c: dict | None) -> tuple[str, bool | None]:
     ok = same and c["inserted"] == 0
     state = "그대로" if same else "달라졌다"
     return f"행 수와 PK 집합이 {state}, 새로 들어간 행은 {c['inserted']}건", ok
+
+
+def _verdict(c: dict) -> str:
+    if c["ok"]:
+        return "일치"
+    if c["error"]:
+        return f"읽지 못했다: {c['error']}"
+    return f"어긋남: 기대 {c['expected']} / 받은 값 {c['actual']}"
 
 
 def render(run: dict) -> str:
@@ -318,7 +346,7 @@ def render(run: dict) -> str:
     lines += _table(["지표", "측정값", "해당 구간 (plan 문구)"], rows)
 
     lines += ["", "## 2. 버전별 공고 수와 본문 대조", ""]
-    ok_by_key = {(c["mst"], c["effective_date"]): c for c in cmp_}
+    by_key = {(c["mst"], c["effective_date"]): c for c in cmp_}
     lines += _table(
         ["MST", "시행일", "공고 수", "본문 출처", "본문 대조"],
         [
@@ -326,13 +354,8 @@ def render(run: dict) -> str:
                 e["mst"],
                 e["effective_date"],
                 e["notices"],
-                ok_by_key[(e["mst"], e["effective_date"])]["source"],
-                "일치"
-                if ok_by_key[(e["mst"], e["effective_date"])]["ok"]
-                else "어긋남: 기대 {} / 받은 값 {}".format(
-                    ok_by_key[(e["mst"], e["effective_date"])]["expected"],
-                    ok_by_key[(e["mst"], e["effective_date"])]["actual"],
-                ),
+                by_key[(e["mst"], e["effective_date"])]["source"],
+                _verdict(by_key[(e["mst"], e["effective_date"])]),
             )
             for e in run["by_version"]
         ],
@@ -446,11 +469,7 @@ def main(argv=None, client: httpx.Client | None = None, engine: Engine | None = 
                 file=sys.stderr,
             )
             return 1
-        try:
-            run["compare"], run["calls"] = compare(run["by_version"], args.raw_dir, oc, client)
-        except LawApiError as e:
-            print(f"API 오류: {e}", file=sys.stderr)
-            return 1
+        run["compare"], run["calls"] = compare(run["by_version"], args.raw_dir, oc, client)
     finally:
         if own_engine:
             engine.dispose()
@@ -475,8 +494,10 @@ def main(argv=None, client: httpx.Client | None = None, engine: Engine | None = 
     print(f"API 호출 {run['calls']}회 · 썼다: {args.run} · {args.out}")
     bad = [c for c in run["compare"] if not c["ok"]]
     for c in bad:
-        print(f"본문 대조 어긋남: MST {c['mst']} 시행 {c['effective_date']}"
-              f" 기대 {c['expected']} / 받은 값 {c['actual']}", file=sys.stderr)  # fmt: skip
+        what = c["error"] or f"기대 {c['expected']} / 받은 값 {c['actual']}"
+        print(f"본문 대조 실패: MST {c['mst']} 시행 {c['effective_date']}: {what}", file=sys.stderr)
+        if c["source"] == "cache":
+            print(f"  예전 본문일 수 있다. {c['file']}을 지우고 다시 돌려 볼 것", file=sys.stderr)
     if run["view_rows"] != run["notices"]:
         print(f"view 행 수 {run['view_rows']} ≠ 공고 수 {run['notices']}", file=sys.stderr)
         return 1
