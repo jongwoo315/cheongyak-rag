@@ -382,3 +382,37 @@ def test_a_failed_version_is_recorded_and_the_report_is_still_written(pg_engine,
     (c,) = json.loads(paths["run"].read_text(encoding="utf-8"))["compare"]
     assert not c["ok"] and "HTTP 500" in c["error"]
     assert "0/1건 일치" in paths["md"].read_text(encoding="utf-8").splitlines()[0]
+
+
+def test_band_rows_follows_the_plan_ranges():
+    assert asof._band_rows(129, 0) == "129행 → 통과"
+    assert "개정이 나온" in asof._band_rows(130, 0)
+    assert "128행 이하 → 미완" in asof._band_rows(128, 0)
+    assert "중복" in asof._band_rows(129, 1) and "미완" in asof._band_rows(129, 1)
+
+
+def test_band_versions_follows_the_plan_ranges():
+    expected = {asof.EXPECTED_VERSION}
+    assert asof._band_versions(0, 0, expected) == "두 값 모두 0 → 통과"
+    assert "1~3건" in asof._band_versions(3, 0, expected)
+    assert "4건 이상" in asof._band_versions(4, 0, expected)
+    assert "불일치 1건 이상" in asof._band_versions(0, 1, expected)
+    assert "착수 실측" in asof._band_versions(0, 0, {("1", "2026-12-01")})
+
+
+def test_band_calls_follows_the_plan_ranges():
+    assert asof._band_calls(5) == "5 이하 정상"
+    assert asof._band_calls(6).startswith("6~10") and asof._band_calls(10).startswith("6~10")
+    assert asof._band_calls(11).startswith("11 이상")
+
+
+def test_rerun_says_when_the_table_changed_or_there_is_no_previous_run():
+    prev = {"rows_after": 129, "pk_digest": "a", "inserted": 129}
+    same = {"rows_after": 129, "pk_digest": "a", "inserted": 0, "previous": prev}
+
+    assert asof._rerun(None)[1] is None
+    assert asof._rerun({"inserted": 0})[1] is None
+    assert asof._rerun(same) == ("행 수와 PK 집합이 그대로, 새로 들어간 행은 0건", True)
+    text_, ok = asof._rerun({**same, "pk_digest": "b"})
+    assert ok is False and "달라졌다" in text_
+    assert asof._rerun({**same, "inserted": 1})[1] is False
