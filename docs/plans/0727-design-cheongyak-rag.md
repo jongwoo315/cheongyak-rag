@@ -72,11 +72,11 @@ https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail
 
 > `api.data.go.kr/openapi/{카탈로그ID}` 는 존재하지 않는 경로 (`resultCode:12 NO OPENAPI SERVICE ERROR`). odcloud가 진짜.
 
-신청 페이지 (카탈로그 ID는 미검증 — 열어서 대조할 것):
+신청 페이지 (카탈로그 ID: 청약홈 분양정보는 2026-10-22 확인, 나머지는 미검증 — 열어서 대조할 것):
 
 | 데이터 | URL |
 |---|---|
-| 한국부동산원_APT분양정보 | https://www.data.go.kr/data/15061149/openapi.do |
+| 한국부동산원_청약홈 분양정보 조회 서비스 15098547 | https://www.data.go.kr/data/15098547/openapi.do |
 | 한국부동산원_오피스텔분양정보 | https://www.data.go.kr/data/15059223/openapi.do |
 | 국토교통부_청약경쟁률 | https://www.data.go.kr/data/15098906/openapi.do |
 | 국토교통부_분양권전매 | https://www.data.go.kr/data/15098780/openapi.do |
