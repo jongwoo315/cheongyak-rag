@@ -5,7 +5,8 @@ view `notice_law_versions`(마이그레이션 0003)가 공고마다 고른 버�
 같은지 대조한다.
 본문은 `data/raw/law-008243-<시행일>.json`에 두고, 파일이 있으면 받지 않는다.
 결과는 `runs/78/last_run.json`과 `docs/78-asof.md`다.
-구간 문구는 plan §실패 징후의 문장 그대로다.
+구간 문구는 plan §실패 징후의 문장을 따르되, 일부는 코드가 덧붙인다
+(착수 실측과 다르다, 어긋났다 → 미완).
 """
 
 import argparse
