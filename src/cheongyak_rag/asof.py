@@ -457,7 +457,7 @@ def main(argv=None, client: httpx.Client | None = None, engine: Engine | None = 
     ap.add_argument("--versions-run", type=Path, default=VERSIONS_RUN, help="수집 실행 요약 JSON")
     args = ap.parse_args(argv)
 
-    # 키가 비면 아래 노출 검사가 아무것도 찾지 못하고 통과한다
+    # 키가 비면 아래 노출 검사의 `'' in text`가 항상 참이라 매번 걸려서 검사가 의미 없어진다
     try:
         oc = _require_oc(settings.law_oc)
     except LawApiError as e:
