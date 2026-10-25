@@ -142,6 +142,17 @@ def test_all_models_empty_is_an_error_not_a_success(pg_engine, tmp_path, capsys)
         assert conn.execute(text("SELECT count(*) FROM notices")).scalar() == 0
 
 
+def test_a_retried_call_is_counted_in_total_and_retries(api, pg_engine, tmp_path):
+    api.fail_with = [httpx.Response(429, text="slow down")]  # 첫 호출(상세)이 한 번 막힌다
+    out = tmp_path / "last_run.json"
+
+    assert run(api, pg_engine, out) == 0
+
+    calls = json.loads(out.read_text(encoding="utf-8"))["calls"]
+    # 상세 2(재시도 1) + 공고별 3 + 재조회 1
+    assert calls["total"] == 6 and calls["retries"] == 1 and calls["detail"] == 2
+
+
 def test_failure_midway_through_fetching_leaves_tables_and_summary_untouched(
     api, pg_engine, tmp_path, capsys
 ):
