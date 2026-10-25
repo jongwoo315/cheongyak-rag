@@ -142,6 +142,34 @@ def test_all_models_empty_is_an_error_not_a_success(pg_engine, tmp_path, capsys)
         assert conn.execute(text("SELECT count(*) FROM notices")).scalar() == 0
 
 
+def test_failure_midway_through_fetching_leaves_tables_and_summary_untouched(
+    api, pg_engine, tmp_path, capsys
+):
+    # 상세는 받았고 두 번째 공고의 주택형 호출이 계속 500이다.
+    # 받기가 전부 끝나기 전에는 적재하지 않는다
+    second = api.notices[1]["HOUSE_MANAGE_NO"]
+    base = api.handler
+
+    def handler(request):
+        if request.url.params.get("cond[HOUSE_MANAGE_NO::EQ]") == second:
+            return httpx.Response(500, text="boom")
+        return base(request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    out = tmp_path / "last_run.json"
+
+    code = notice.main(
+        ["--out", str(out)], client=client, engine=pg_engine, sleep=lambda _s: None, today=TODAY
+    )
+
+    assert code == 1
+    assert "재시도 4회 뒤에도 실패" in capsys.readouterr().err
+    assert not out.exists()
+    with pg_engine.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM notices")).scalar() == 0
+        assert conn.execute(text("SELECT count(*) FROM notice_models")).scalar() == 0
+
+
 def test_duplicate_pk_across_pages_is_a_mismatch_not_a_success(pg_engine, tmp_path, capsys):
     # matchCount는 맞는데 같은 PK가 두 번 오면 upsert가 한 행으로 합쳐 한 행이 모자란다
     n1 = make_notice(1)
