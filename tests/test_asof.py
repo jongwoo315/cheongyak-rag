@@ -208,6 +208,39 @@ def test_same_day_report_names_the_mst_the_view_picks(pg_engine, paths):
     assert picked == "261483"
 
 
+def test_same_day_report_matches_the_view_on_ties_and_missing_dates(pg_engine, paths):
+    # 리포트의 picked는 view 정렬을 SQL로 다시 적은 것이다. 동률·NULL에서도 view와 같아야 한다
+    d1, d2 = date(2010, 1, 1), date(2011, 1, 1)
+    _load_versions(
+        pg_engine,
+        ("99999", d1, date(2009, 12, 1)),  # 공포일 동률 — 글자 순서로는 99999가 크다
+        ("100001", d1, date(2009, 12, 1)),
+        ("100", d2, date(2010, 12, 1)),
+    )
+    with pg_engine.begin() as conn:  # make_row는 공포일 None을 시행일로 채우므로 SQL로 넣는다
+        conn.execute(
+            text(
+                "INSERT INTO law_versions (law_id, mst, effective_date, raw)"
+                " VALUES ('008243', '900', :d, '{}')"
+            ),
+            {"d": d2},
+        )  # 공포일 NULL은 뒤로 간다
+    _load_notices(pg_engine, d1, d2)
+    with pg_engine.connect() as conn:
+        viewed = dict(
+            conn.execute(text("SELECT rcrit_pblanc_de, mst FROM notice_law_versions")).all()
+        )
+
+    run(pg_engine, paths)
+
+    s = json.loads(paths["run"].read_text(encoding="utf-8"))
+    assert {e["effective_date"]: e["picked"] for e in s["same_day_multi_mst"]} == {
+        d1.isoformat(): viewed[d1],
+        d2.isoformat(): viewed[d2],
+    }
+    assert (viewed[d1], viewed[d2]) == ("100001", "100")
+
+
 def test_without_collected_versions_it_stops(pg_engine, paths, capsys):
     _load_notices(pg_engine, date(2026, 8, 1))
 
