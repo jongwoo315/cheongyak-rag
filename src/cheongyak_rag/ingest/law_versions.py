@@ -206,8 +206,9 @@ def main(argv=None, client: httpx.Client | None = None, engine: Engine | None = 
     own = engine is None
     engine = engine or sa.create_engine(settings.database_url)
     try:
-        # 지우지 않는다. 법제처가 기존 행의 시행일을 옮기면 옛 행이 남는데,
-        # asof의 본문 대조가 어긋남으로 잡는다
+        # 지우지 않는다. 법제처가 기존 행의 시행일을 옮기면 옛 행이 남는다.
+        # 어떤 공고가 그 행을 고르면 asof의 본문 대조가 어긋남으로 잡고,
+        # 아니면 테이블 행 수가 받은 행 수보다 커지는 것으로만 드러난다
         inserted, updated = notice.upsert(engine, LAW_VERSIONS, rows)
         rows_after, digest = _table_state(engine)
     finally:
