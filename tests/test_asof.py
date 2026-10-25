@@ -310,6 +310,23 @@ def test_api_error_exits_1_without_the_key(pg_engine, paths, capsys):
     assert "본문 대조 실패" in shown.err and FAKE_OC not in shown.out + shown.err
 
 
+def test_a_connection_error_message_with_the_url_never_leaks_the_key(pg_engine, paths, capsys):
+    _setup(pg_engine)
+
+    def refuse(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError(f"connection refused: {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(refuse))
+
+    assert run(pg_engine, paths, client) == 1
+
+    shown = capsys.readouterr()
+    (c,) = json.loads(paths["run"].read_text(encoding="utf-8"))["compare"]
+    assert "ConnectError" in c["error"]
+    for blob in (shown.out, shown.err, paths["run"].read_text(), paths["md"].read_text()):
+        assert FAKE_OC not in blob
+
+
 def test_empty_oc_exits_1(pg_engine, paths, monkeypatch, capsys):
     monkeypatch.setattr(asof.settings, "law_oc", "")
     _setup(pg_engine)
