@@ -254,3 +254,13 @@ def test_faq170_band_is_incomplete_when_points_are_wrong_even_if_text_matches():
     assert "문자열만" in profile_score._band_faq170(
         [*[ok] * 5, {"text_ok": False, "points_ok": True}]
     )
+
+
+@pytest.mark.parametrize("flag", ["--soundness-n", "--tightness-bases"])
+@pytest.mark.parametrize("value", ["0", "-5", "x"])
+def test_report_rejects_non_positive_sample_counts(flag, value, capsys):
+    """리뷰 지적: -5건으로 「위반 0건」이 나오거나 0건에서 ZeroDivisionError가 나면 안 된다."""
+    with pytest.raises(SystemExit) as e:
+        profile_score.main(["--report", flag, value])
+    assert e.value.code == 2
+    assert "1 이상의 정수" in capsys.readouterr().err

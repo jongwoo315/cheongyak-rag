@@ -493,6 +493,16 @@ def _date(text: str) -> date:
         raise argparse.ArgumentTypeError(f"YYYY-MM-DD 날짜여야 한다: {text}") from None
 
 
+def _positive_int(text: str) -> int:
+    try:
+        n = int(text)
+    except ValueError:
+        n = 0
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"1 이상의 정수여야 한다: {text}")
+    return n
+
+
 def _score_command(args, engine: Engine | None) -> int:
     try:
         data = json.loads(args.profile.read_text(encoding="utf-8"))
@@ -628,8 +638,8 @@ def main(argv=None, engine: Engine | None = None) -> int:
     ap.add_argument("--samples", type=Path, default=SAMPLES_PATH)
     ap.add_argument("--run", type=Path, default=RUN_PATH, help="실행 요약 JSON 경로")
     ap.add_argument("--out", type=Path, default=OUT_PATH, help="리포트 경로")
-    ap.add_argument("--soundness-n", type=int, default=2000)
-    ap.add_argument("--tightness-bases", type=int, default=20)
+    ap.add_argument("--soundness-n", type=_positive_int, default=2000)
+    ap.add_argument("--tightness-bases", type=_positive_int, default=20)
     args = ap.parse_args(argv)
 
     if args.report:
