@@ -145,6 +145,20 @@ def test_missing_skips_fields_that_cannot_change_the_score():
     assert {"birth_date", "savings_join_date", "children_unmarried"} <= set(m)
 
 
+def test_missing_skips_ascendant_fields_when_ascendants_count_as_zero():
+    """리뷰 지적: 세대주가 아니거나 소유자가 있으면 직계존속은 몇 명이든 0명이다.
+
+    그때 ascendants_3y(와 소유자 있음 답 뒤의 is_household_head)는 ②를 바꾸지 못하므로 묻지 않는다.
+    """
+    not_head = profile.score(profile.Profile(is_household_head=False), T)
+    assert "ascendants_3y" not in not_head.missing
+    assert "ascendants_any_owner" not in not_head.missing
+
+    owned = profile.score(profile.Profile(ascendants_any_owner=True), T)
+    assert "ascendants_3y" not in owned.missing
+    assert "is_household_head" not in owned.missing
+
+
 @pytest.mark.parametrize("field", ["birth_date", "savings_join_date"])
 def test_missing_lists_the_blank_field(field):
     full = check.random_complete(random.Random(3), T)

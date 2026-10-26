@@ -323,6 +323,8 @@ def _missing(p: Profile) -> tuple[str, ...]:
     """점수를 한 값으로 정하려면 더 필요한 칸. `_resolve`를 거친 프로필을 받는다."""
     homeless_open = p.homeless_now is not False
     has_asc = p.ascendants_3y != 0  # None이거나 1 이상
+    # 세대주가 아니거나 소유자가 있으면 직계존속은 몇 명이든 0명으로 센다
+    asc_counted = p.is_household_head is not False and p.ascendants_any_owner is not True
     spouse_open = p.married is not False
     need = {
         "birth_date": True,
@@ -333,10 +335,10 @@ def _missing(p: Profile) -> tuple[str, ...]:
         "homeless_now": True,
         "ever_owned": homeless_open,
         "homeless_since": homeless_open and p.ever_owned is not False,
-        "is_household_head": has_asc,
+        "is_household_head": has_asc and p.ascendants_any_owner is not True,
         "children_unmarried": True,
         "children_30plus_1y": True,
-        "ascendants_3y": True,
+        "ascendants_3y": asc_counted,
         "ascendants_any_owner": has_asc and p.is_household_head is not False,
         "savings_join_date": True,
         "spouse_has_savings": spouse_open,
