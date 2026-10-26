@@ -231,6 +231,13 @@ def test_report_exits_one_when_faq_cases_disagree(pg_engine, paths, fast_tightne
     assert run["faq170"]["matched"] < run["faq170"]["rows"]
 
 
+def test_report_exits_one_when_no_notice_is_read(pg_engine, paths, fast_tightness):
+    """리뷰 지적: DB가 비었는데 「공고 0건 × 샘플 3개, 0/0건 성공」으로 exit 0이면 공허한 통과다."""
+    assert report(pg_engine, paths) == 1
+    run = json.loads(paths["run"].read_text(encoding="utf-8"))
+    assert run["calc"]["notices"] == 0
+
+
 def test_report_counts_notices_on_other_law_versions_as_failures(pg_engine, paths, fast_tightness):
     load(pg_engine, [CURRENT, OLD], date(2026, 3, 1), date(2026, 9, 1))
     assert report(pg_engine, paths) == 1
