@@ -251,11 +251,11 @@ def _band_tightness(ratio: float) -> str:
 
 
 def _band_faq170(items: list[dict]) -> str:
+    if not all(i["points_ok"] for i in items):
+        return "점수가 어긋남 → 미완"
     if all(i["text_ok"] for i in items):
         return "6/6 → 통과"
-    if all(i["points_ok"] for i in items):
-        return "점수는 6/6, 문자열만 어긋남 → 가입일 포함 여부를 다시 본다"
-    return "점수가 어긋남 → 미완"
+    return "점수는 6/6, 문자열만 어긋남 → 가입일 포함 여부를 다시 본다"
 
 
 def _cell_text(entry: dict) -> str:

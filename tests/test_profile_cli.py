@@ -244,3 +244,13 @@ def test_report_counts_notices_on_other_law_versions_as_failures(pg_engine, path
     run = json.loads(paths["run"].read_text(encoding="utf-8"))
     assert run["calc"]["failed"] == 3 and run["calc"]["ok"] == 3
     assert run["calc"]["failures"][0]["kind"] == "mst"
+
+
+def test_faq170_band_is_incomplete_when_points_are_wrong_even_if_text_matches():
+    """리뷰 지적: 문자열만 맞고 점수가 틀린 행이 있는데 「6/6 → 통과」로 찍히면 자기모순이다."""
+    ok = {"text_ok": True, "points_ok": True}
+    assert profile_score._band_faq170([ok] * 6) == "6/6 → 통과"
+    assert "미완" in profile_score._band_faq170([*[ok] * 5, {"text_ok": True, "points_ok": False}])
+    assert "문자열만" in profile_score._band_faq170(
+        [*[ok] * 5, {"text_ok": False, "points_ok": True}]
+    )
