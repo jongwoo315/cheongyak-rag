@@ -364,7 +364,11 @@ class Range:
 
 @dataclass(frozen=True)
 class Value:
-    """판정용 값과 그 근거. 입력이 모자라 못 정하면 `value`가 None이고 근거에 이유를 적는다."""
+    """판정용 값과 그 근거.
+
+    `value`가 None인 이유는 둘이다. 입력이 모자라 못 정했거나, 해당하지 않는다(무주택이 아니면
+    무주택 기산일이 없다). 호출하는 쪽이 둘을 가르려면 `basis`의 이유 문장을 읽어야 한다.
+    """
 
     value: object
     basis: str
