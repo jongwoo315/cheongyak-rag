@@ -143,6 +143,7 @@ def test_no_spouse_means_no_bonus():
 
 SINGLE = dict(
     married=False,
+    ever_married=False,
     marriage_date=None,
     spouse_has_savings=None,
     spouse_savings_join_date=None,

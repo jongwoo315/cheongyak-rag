@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-10-26T23:06:03+09:00",
+  "run_at": "2026-10-26T23:16:17+09:00",
   "table": {
     "rows": {
       "homeless": 16,
@@ -351,62 +351,62 @@
     "seed": 77,
     "violations": 0,
     "examples": [],
-    "avg_erased": 6.23
+    "avg_erased": 6.5945
   },
   "tightness": {
-    "bases": 12,
+    "bases": 20,
     "seed": 77,
-    "measured": 75,
-    "tight": 75,
+    "measured": 131,
+    "tight": 131,
     "ratio": 1.0,
     "pairs": [
       {
         "field": "ascendants_3y",
         "item": "dependents",
-        "measured": 5,
-        "tight": 5,
+        "measured": 7,
+        "tight": 7,
         "loose": []
       },
       {
         "field": "ascendants_any_owner",
         "item": "dependents",
-        "measured": 3,
-        "tight": 3,
+        "measured": 4,
+        "tight": 4,
         "loose": []
       },
       {
         "field": "birth_date",
         "item": "homeless",
-        "measured": 6,
-        "tight": 6,
-        "loose": []
-      },
-      {
-        "field": "birth_date",
-        "item": "savings",
-        "measured": 2,
-        "tight": 2,
-        "loose": []
-      },
-      {
-        "field": "children_30plus_1y",
-        "item": "dependents",
         "measured": 12,
         "tight": 12,
         "loose": []
       },
       {
+        "field": "birth_date",
+        "item": "savings",
+        "measured": 8,
+        "tight": 8,
+        "loose": []
+      },
+      {
+        "field": "children_30plus_1y",
+        "item": "dependents",
+        "measured": 18,
+        "tight": 18,
+        "loose": []
+      },
+      {
         "field": "children_unmarried",
         "item": "dependents",
-        "measured": 11,
-        "tight": 11,
+        "measured": 19,
+        "tight": 19,
         "loose": []
       },
       {
         "field": "homeless_now",
         "item": "homeless",
-        "measured": 10,
-        "tight": 10,
+        "measured": 18,
+        "tight": 18,
         "loose": []
       },
       {
@@ -419,44 +419,44 @@
       {
         "field": "is_household_head",
         "item": "dependents",
-        "measured": 4,
-        "tight": 4,
+        "measured": 7,
+        "tight": 7,
         "loose": []
       },
       {
         "field": "marriage_date",
         "item": "homeless",
-        "measured": 3,
-        "tight": 3,
+        "measured": 7,
+        "tight": 7,
         "loose": []
       },
       {
         "field": "married",
         "item": "dependents",
-        "measured": 3,
-        "tight": 3,
+        "measured": 4,
+        "tight": 4,
         "loose": []
       },
       {
         "field": "savings_join_date",
         "item": "savings",
-        "measured": 12,
-        "tight": 12,
+        "measured": 20,
+        "tight": 20,
         "loose": []
       },
       {
         "field": "spouse_savings_join_date",
         "item": "savings",
-        "measured": 2,
-        "tight": 2,
+        "measured": 5,
+        "tight": 5,
         "loose": []
       }
     ],
     "loose": [],
     "skipped": {
-      "ever_owned": 5,
-      "married": 2,
-      "spouse_has_savings": 2
+      "ever_owned": 14,
+      "ever_married": 5,
+      "spouse_has_savings": 3
     }
   },
   "calc": {

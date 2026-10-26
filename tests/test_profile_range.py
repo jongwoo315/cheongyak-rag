@@ -24,7 +24,8 @@ def test_empty_profile_range():
     assert pair(r.dependents) == (5, 35)
     assert pair(r.savings) == (1, 17)
     assert pair(r.total) == (6, 84)
-    assert r.missing == tuple(FIELDS)
+    # ever_married는 married가 False라고 답한 뒤에야 묻는다
+    assert r.missing == tuple(f for f in FIELDS if f != "ever_married")
 
 
 def test_complete_profiles_are_exact_and_match_the_oracle():
@@ -79,7 +80,11 @@ def test_homeless_hi_respects_homeless_since():
 
 def test_homeless_known_inputs_give_one_value():
     p = profile.Profile(
-        birth_date=date(1999, 5, 10), married=False, homeless_now=True, ever_owned=False
+        birth_date=date(1999, 5, 10),
+        married=False,
+        ever_married=False,
+        homeless_now=True,
+        ever_owned=False,
     )
     assert pair(profile.score(p, T).homeless) == (0, 0)  # 만 30세가 2029년이다
 
@@ -145,3 +150,57 @@ def test_missing_lists_the_blank_field(field):
     full = check.random_complete(random.Random(3), T)
     blank = dataclasses.replace(full, **{field: None})
     assert profile.score(blank, T).missing == (field,)
+
+
+# ── 이혼·사별: married=False만으로는 혼인 이력을 모른다 ───────────────────────
+
+DIVORCEE = dict(birth_date=date(1990, 1, 1), married=False, homeless_now=True, ever_owned=False)
+
+
+def test_unmarried_without_history_answer_is_a_range_not_a_wrong_exact_value():
+    """리뷰 지적: 지금 배우자가 없다는 답만으로는 ①이 한 값으로 정해지지 않는다.
+
+    1990-01-01생이 2012-03-01(만 22세)에 혼인했다가 이혼했으면 ① 30점, 혼인한 적이 없으면 14점이다.
+    """
+    r = profile.score(profile.Profile(**DIVORCEE), T)
+    assert pair(r.homeless) == (14, 32)  # hi: 만 18세(2008-01-01)에 혼인했다면
+    assert r.missing == (
+        "ever_married",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+    )
+
+
+def test_never_married_and_divorced_are_each_exact():
+    never = profile.score(profile.Profile(**DIVORCEE, ever_married=False), T)
+    assert pair(never.homeless) == (14, 14) and "ever_married" not in never.missing
+    divorced = profile.score(
+        profile.Profile(**DIVORCEE, ever_married=True, marriage_date=date(2012, 3, 1)), T
+    )
+    assert pair(divorced.homeless) == (30, 30) and "marriage_date" not in divorced.missing
+
+
+def test_divorced_without_date_asks_for_the_date():
+    r = profile.score(profile.Profile(**DIVORCEE, ever_married=True), T)
+    assert "marriage_date" in r.missing and "ever_married" not in r.missing
+
+
+@pytest.mark.parametrize(
+    "over",
+    [
+        dict(ever_married=False, marriage_date=date(2012, 3, 1)),
+        dict(ever_married=False, married=True),
+    ],
+)
+def test_ever_married_false_contradicts_marriage(over):
+    with pytest.raises(profile.ProfileError):
+        profile.score(profile.Profile(**{**DIVORCEE, **over}), T)
+
+
+def test_married_implies_ever_married():
+    p = profile.Profile(birth_date=date(1990, 1, 1), married=True)
+    assert profile.score(p, T).missing[0:2] == ("marriage_date", "homeless_now")

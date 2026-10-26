@@ -79,6 +79,12 @@ def test_bad_profile_exits_nonzero_with_message(tmp_path, capsys):
     assert "알 수 없는 입력 칸" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("as_of", ["0050-01-01", "9999-12-31"])
+def test_extreme_as_of_exits_two_without_traceback(profile_file, as_of, capsys):
+    assert profile_score.main(["--profile", str(profile_file), "--as-of", as_of]) == 2
+    assert "입력 오류" in capsys.readouterr().err
+
+
 def test_needs_a_date_source(profile_file):
     with pytest.raises(SystemExit):
         profile_score.main(["--profile", str(profile_file)])
@@ -137,7 +143,7 @@ def test_sample_profiles_are_complete_one_blank_and_empty():
     T = date(2026, 10, 23)
     assert profile.score(full, T).missing == ()
     assert profile.score(no_date, T).missing == ("savings_join_date",)
-    assert profile.score(empty, T).missing == check.FIELDS
+    assert profile.score(empty, T).missing == tuple(f for f in check.FIELDS if f != "ever_married")
 
 
 # ── 리포트 ───────────────────────────────────────────────────────────────

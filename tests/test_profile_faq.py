@@ -61,6 +61,7 @@ def test_faq151_naturalized_age_35_applies_at_40():
     p = profile.Profile(
         birth_date=date(1986, 5, 1),
         married=False,
+        ever_married=False,  # 미혼 — 혼인한 적이 없다
         homeless_now=True,
         ever_owned=False,
     )

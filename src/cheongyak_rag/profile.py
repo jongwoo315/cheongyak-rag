@@ -202,12 +202,17 @@ class Profile:
     """사용자 입력. 전부 optional이고 `None`은 모른다는 뜻이다 (설계 §2).
 
     제53조 무주택 간주는 판정하지 않는다 — `homeless_now`·`homeless_since`는 사용자가 그 판정을
-    끝낸 값이다. `spouse_has_savings`는 설계 §2에 없는 칸이다. `spouse_savings_join_date`가
-    비어 있을 때 「배우자 통장이 없다」와 「모른다」를 가르려고 더했다.
+    끝낸 값이다.
+
+    설계 §2에 없는 칸이 둘 있다. `spouse_has_savings`는 `spouse_savings_join_date`가 비어 있을 때
+    「배우자 통장이 없다」와 「모른다」를 가르려고 더했다. `ever_married`는 `married`(지금 배우자가
+    있다)만으로는 「혼인한 적이 없다」와 「이혼·사별했다」를 못 가르는데 ① 기산일이 후자에게
+    혼인신고일을 쓰기 때문에 더했다.
     """
 
     birth_date: date | None = None
     married: bool | None = None  # 공고일 현재 배우자가 있다
+    ever_married: bool | None = None  # 혼인한 적이 있다 (이혼·사별 포함)
     marriage_date: date | None = None  # 최초 혼인신고일 (이혼·사별했어도 적는다)
     homeless_now: bool | None = None
     ever_owned: bool | None = None
@@ -259,8 +264,8 @@ _KINDS = {
         ("birth_date", "marriage_date", "homeless_since", "savings_join_date",
          "spouse_savings_join_date"), "date"),
     **dict.fromkeys(
-        ("married", "homeless_now", "ever_owned", "is_household_head", "ascendants_any_owner",
-         "spouse_has_savings"), "bool"),
+        ("married", "ever_married", "homeless_now", "ever_owned", "is_household_head",
+         "ascendants_any_owner", "spouse_has_savings"), "bool"),
     **dict.fromkeys(("children_unmarried", "children_30plus_1y", "ascendants_3y"), "count"),
 }  # fmt: skip
 
@@ -268,6 +273,7 @@ _KINDS = {
 def _resolve(p: Profile, as_of: date) -> Profile:
     """입력끼리 모순을 잡고, 다른 칸이 정해 주는 값을 채운다 (소유 이력 · 배우자 통장)."""
     owned, married, spouse_has = p.ever_owned, p.married, p.spouse_has_savings
+    ever_married = p.ever_married
     if p.homeless_since is not None:
         if owned is False:
             raise ProfileError("소유 이력이 없다고 했는데 무주택자가 된 날이 있다")
@@ -280,7 +286,13 @@ def _resolve(p: Profile, as_of: date) -> Profile:
         if married is False:
             raise ProfileError("배우자가 없다고 했는데 배우자 통장이 있다")
         married = True
-    elif married is False:
+    if p.marriage_date is not None or married is True:
+        if ever_married is False:
+            raise ProfileError("혼인한 적이 없다고 했는데 배우자나 혼인신고일이 있다")
+        ever_married = True
+    elif ever_married is False and married is None:
+        married = False
+    if married is False and spouse_has is None:
         spouse_has = False
     for name, kind in _KINDS.items():
         v = getattr(p, name)
@@ -298,7 +310,13 @@ def _resolve(p: Profile, as_of: date) -> Profile:
             )
         if p.savings_join_date is not None and p.savings_join_date < b:
             raise ProfileError(f"통장 가입일 {p.savings_join_date}이 생년월일 {b}보다 빠르다")
-    return dataclasses.replace(p, ever_owned=owned, married=married, spouse_has_savings=spouse_has)
+    return dataclasses.replace(
+        p,
+        ever_owned=owned,
+        married=married,
+        ever_married=ever_married,
+        spouse_has_savings=spouse_has,
+    )
 
 
 def _missing(p: Profile) -> tuple[str, ...]:
@@ -309,7 +327,9 @@ def _missing(p: Profile) -> tuple[str, ...]:
     need = {
         "birth_date": True,
         "married": True,
-        "marriage_date": homeless_open and spouse_open,
+        "ever_married": homeless_open and p.married is False and p.ever_married is None,
+        "marriage_date": homeless_open
+        and (p.ever_married is True or (p.ever_married is None and p.married is not False)),
         "homeless_now": True,
         "ever_owned": homeless_open,
         "homeless_since": homeless_open and p.ever_owned is not False,
@@ -432,10 +452,11 @@ def _homeless_range(p: Profile, as_of: date) -> Range:
     for b in _births(p, as_of):
         if p.marriage_date is not None:
             marriages = [p.marriage_date]
-        elif p.married is False:
+        elif p.ever_married is False:
             marriages = [None]
         else:
-            marriages = [add_years(b, MARRIAGE_AGE), as_of] + ([None] if p.married is None else [])
+            marriages = [add_years(b, MARRIAGE_AGE), as_of]
+            marriages += [None] if p.ever_married is None else []
         for m in marriages:
             for owned in owned_opts:
                 if not owned:
@@ -495,7 +516,7 @@ def _homeless_values(p: Profile, as_of: date) -> tuple[Value, Value]:
     if p.homeless_now is False:
         why = Value(None, "세대원이 주택을 소유해 무주택기간이 없다 (FAQ 154)")
         return why, why
-    marriage_known = p.marriage_date is not None or p.married is False
+    marriage_known = p.marriage_date is not None or p.ever_married is False
     owned_known = p.ever_owned is not None and (not p.ever_owned or p.homeless_since is not None)
     if p.birth_date is None or not marriage_known or not owned_known:
         why = Value(None, "입력 부족 — 생년월일·혼인신고일·소유 이력이 있어야 기산일이 정해진다")

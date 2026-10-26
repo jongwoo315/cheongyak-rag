@@ -4,6 +4,7 @@
     "profile": {
       "birth_date": "1988-03-15",
       "married": true,
+      "ever_married": null,
       "marriage_date": "2016-05-20",
       "homeless_now": true,
       "ever_owned": false,
@@ -23,6 +24,7 @@
     "profile": {
       "birth_date": "1988-03-15",
       "married": true,
+      "ever_married": null,
       "marriage_date": "2016-05-20",
       "homeless_now": true,
       "ever_owned": false,
@@ -42,6 +44,7 @@
     "profile": {
       "birth_date": null,
       "married": null,
+      "ever_married": null,
       "marriage_date": null,
       "homeless_now": null,
       "ever_owned": null,

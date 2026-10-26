@@ -26,9 +26,9 @@ from cheongyak_rag.config import settings
 from cheongyak_rag.ingest.notice_report import _bullets, _table
 
 EXPECTED_MST = "286965"  # 별표 1을 읽은 법령 버전 (#78: 공고 84건 전부 이 버전이다)
-RUN_PATH = Path("runs/77/last_run.json")
-OUT_PATH = Path("docs/77-profile-score.md")
-SAMPLES_PATH = Path("runs/77/sample-profiles.json")
+RUN_PATH = check.ROOT / "runs/77/last_run.json"  # 어느 디렉터리에서 돌려도 repo 안에 쓴다
+OUT_PATH = check.ROOT / "docs/77-profile-score.md"
+SAMPLES_PATH = check.ROOT / "runs/77/sample-profiles.json"
 SEED = 77
 FAQ_AS_OF = date(2026, 10, 23)  # 부양가족 사례는 날짜와 무관하다. 계산에 필요해서 하나 정했다
 TIGHTNESS_AS_OF = date(2026, 10, 23)
@@ -65,7 +65,11 @@ def _dep_text(*points: int) -> str:
 
 def _faq151() -> str:
     p = profile.Profile(
-        birth_date=date(1986, 5, 1), married=False, homeless_now=True, ever_owned=False
+        birth_date=date(1986, 5, 1),
+        married=False,
+        ever_married=False,
+        homeless_now=True,
+        ever_owned=False,
     )
     r = profile.score(p, date(2026, 5, 1))
     return f"무주택기간 {r.values['homeless_period'].value.years}년 · ① {r.homeless.lo}점"
@@ -293,7 +297,7 @@ OPEN_QUESTIONS = """\
 ### 설계가 정하지 않았던 자리 (루프가 정했다)
 
 - 배우자 통장 유무: 입력 칸 `spouse_has_savings`를 더했다. `spouse_savings_join_date`가 비어 있을 때 「통장이 없다」와 「모른다」를 가르려는 것이다. 가입일을 적으면 통장이 있고 배우자도 있는 것으로 채운다.
-- `married`는 공고일 현재 배우자가 있느냐다. `marriage_date`는 최초 혼인신고일이고 이혼·사별했어도 적는다. `married`가 false이고 혼인신고일이 비었으면 혼인 이력이 없는 것으로 읽는다. 이혼·사별한 사람이 만 30세 전 혼인을 기산일에 반영하려면 날짜를 적어야 한다.
+- `married`는 공고일 현재 배우자가 있느냐다. `ever_married` 칸을 더했다(혼인한 적이 있다, 이혼·사별 포함). `married=false`만으로는 「혼인한 적이 없다」와 「이혼·사별했다」를 못 가르는데 ① 기산일은 후자에게 혼인신고일을 쓰기 때문이다. `ever_married`가 비어 있으면 ①은 범위로 나오고 `missing`에 올라온다. 배우자가 있거나 혼인신고일이 있으면 `ever_married`는 true로 채운다. 코드 리뷰가 이 자리를 잡았다(`married=false`만 받으면 ①이 16점 틀린 값으로 확정됐다).
 - 입력 범위: 공고일 현재 만 19세 이상, 혼인신고일은 만 18세 되는 날 이후, 통장 가입일은 출생일 이후. 어기면 `ProfileError`다. 모르는 날짜는 공고일 100년 전까지 본다.
 - 기간 계산: 개월 수를 먼저 채우고 남은 날을 센다. 시작일에 개월을 더했을 때 그 달에 같은 날이 없으면 말일로 맞춘다(1월 31일 + 1개월 = 2월 말일).
 - 제10조⑥은 공고일과 무관하게 모든 미성년 가입에 적용한다. 규칙이 2024-01-01을 경계로 정하기 때문이다.
@@ -384,7 +388,11 @@ def render(run: dict) -> str:
         f"무작위 완전 프로필 {snd['n']}개(시드 {snd['seed']})에서 칸을 무작위로 지운 프로필의"
         " 범위가"
         f" 지우기 전 실제 점수(항목별 · 합계)를 놓친 건수는 {snd['violations']}건이다."
-        f" 프로필마다 지운 칸은 평균 {snd['avg_erased']:.1f}개다.",
+        f" 프로필마다 지운 칸은 평균 {snd['avg_erased']:.1f}개다."
+        " 실제 점수를 세는 쪽(`profile_check.exact`)도 기산일 · 통장 시작일 · 배우자 가산 규칙은"
+        " `profile.py`와 같은 함수를 부른다."
+        " 이 측정이 잡는 것은 범위 계산의 오류이고, 규칙 자체의 오류는 FAQ 사례와 손으로 센"
+        " 테스트가 맡는다.",
         "",
     ]
     lines += _bullets(
@@ -533,7 +541,7 @@ def _score_command(args, engine: Engine | None) -> int:
             return 1
     try:
         result = profile.score(p, as_of)
-    except profile.ProfileError as e:
+    except (ValueError, OverflowError) as e:  # ProfileError와 극단적인 날짜(year 0·10000)
         print(f"입력 오류: {e}", file=sys.stderr)
         return 2
     print(json.dumps({**result.to_dict(), **extra}, ensure_ascii=False, indent=2))
@@ -613,7 +621,7 @@ def main(argv=None, engine: Engine | None = None) -> int:
     ap.add_argument("--run", type=Path, default=RUN_PATH, help="실행 요약 JSON 경로")
     ap.add_argument("--out", type=Path, default=OUT_PATH, help="리포트 경로")
     ap.add_argument("--soundness-n", type=int, default=2000)
-    ap.add_argument("--tightness-bases", type=int, default=12)
+    ap.add_argument("--tightness-bases", type=int, default=20)
     args = ap.parse_args(argv)
 
     if args.report:

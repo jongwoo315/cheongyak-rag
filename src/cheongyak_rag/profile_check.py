@@ -100,6 +100,7 @@ FIELDS = tuple(f.name for f in dataclasses.fields(Profile))
 DEPENDS = {
     "birth_date": ("homeless", "savings"),
     "married": ITEMS,
+    "ever_married": ("homeless",),
     "marriage_date": ("homeless",),
     "homeless_now": ("homeless",),
     "ever_owned": ("homeless",),
@@ -124,7 +125,7 @@ def random_complete(rng: random.Random, as_of: date, minimal: bool = False) -> P
 
     기본은 점수에 안 쓰이는 칸도 채운다. `minimal`이면 안 쓰이는 칸을 비워
     「missing이 비면 한 값으로 정해진다」를 같이 시험한다.
-    `married=False`면 혼인신고일을 비운다(혼인 이력 없음으로 읽는다 — profile.py `_missing`).
+    `married=False`인 사람의 3분의 1은 이혼·사별(`ever_married=True` + 혼인신고일)이다.
     """
     young = rng.random() < 0.35
     latest = profile._latest_birth(profile.MIN_AGE, as_of)
@@ -134,8 +135,9 @@ def random_complete(rng: random.Random, as_of: date, minimal: bool = False) -> P
     adult = profile.add_years(birth, 19)
 
     married = rng.random() < 0.55
+    ever_married = married or rng.random() < 0.33
     marriage = None
-    if married:
+    if ever_married:
         at = profile.add_years(birth, rng.randint(18, 45)) + timedelta(days=rng.randint(0, 364))
         marriage = min(as_of, at)
     homeless_now = rng.random() < 0.85
@@ -143,6 +145,8 @@ def random_complete(rng: random.Random, as_of: date, minimal: bool = False) -> P
     since = _pick(rng, adult, as_of) if owned else None
     if minimal and not homeless_now:
         marriage, owned, since = None, None, None
+    if minimal and married:
+        ever_married = None  # 배우자가 있으면 혼인한 적이 있다는 것이 정해져 있다
 
     asc = rng.randint(0, 3)
     head, owner = rng.random() < 0.6, rng.random() < 0.3
@@ -161,6 +165,7 @@ def random_complete(rng: random.Random, as_of: date, minimal: bool = False) -> P
     return Profile(
         birth_date=birth,
         married=married,
+        ever_married=ever_married,
         marriage_date=marriage,
         homeless_now=homeless_now,
         ever_owned=owned,
@@ -224,7 +229,7 @@ def soundness(n: int = 2000, seed: int = 77, shrink: bool = False) -> dict:
     rng = random.Random(seed)
     bad, erased = [], 0
     for i in range(n):
-        as_of = date(2024, 3, 1) + timedelta(days=rng.randint(0, 1035))
+        as_of = date(2022, 1, 1) + timedelta(days=rng.randint(0, 1850))
         full = random_complete(rng, as_of, minimal=rng.random() < 0.5)
         part = erase(rng, full)
         erased += sum(getattr(full, f) is not None and getattr(part, f) is None for f in FIELDS)
