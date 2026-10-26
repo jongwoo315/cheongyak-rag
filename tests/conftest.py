@@ -90,10 +90,10 @@ def alembic(url: str, *args: str) -> None:
 
 @pytest.fixture
 def pg_engine(pg_test_url):
-    """테스트마다 두 테이블을 비운 테스트 DB 엔진."""
+    """테스트마다 테이블을 비운 테스트 DB 엔진."""
     engine = create_engine(pg_test_url)
     assert make_url(pg_test_url).database.startswith(TEST_DB_PREFIX)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE notice_models, notices"))
+        conn.execute(text("TRUNCATE notice_models, notices, law_versions"))
     yield engine
     engine.dispose()
