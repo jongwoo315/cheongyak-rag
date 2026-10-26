@@ -193,7 +193,11 @@ def test_open_q4_spouse_savings_ignore_minor_cap():
 
 
 def test_homeless_zero_when_house_owned_even_if_everything_else_known():
-    assert pair(score(homeless_now=False).homeless) == (0, 0)
+    r = score(homeless_now=False)
+    assert pair(r.homeless) == (0, 0)
+    # 리뷰 지적: #79가 values를 읽으므로 주택 소유자에게 기산일·무주택기간을 내면 안 된다
+    for key in ("homeless_start", "homeless_period"):
+        assert r.values[key].value is None and "FAQ 154" in r.values[key].basis
 
 
 def test_ever_owned_moves_start_to_later_of_two():
