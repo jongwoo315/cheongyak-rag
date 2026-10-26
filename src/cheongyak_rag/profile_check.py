@@ -306,7 +306,7 @@ def tightness(bases: int = 10, seed: int = 77, as_of: date = date(2026, 10, 23))
             for item, pts in seen.items():
                 r = _range_of(got, item)
                 lo, hi = min(pts), max(pts)
-                if lo == hi and r.lo == r.hi:
+                if lo == hi == r.lo == r.hi:  # 둘 다 같은 한 값이면 잴 것이 없다
                     continue
                 cell = pairs.setdefault((name, item), {"measured": 0, "tight": 0, "loose": []})
                 cell["measured"] += 1

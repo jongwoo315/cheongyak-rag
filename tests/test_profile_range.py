@@ -218,3 +218,12 @@ def test_ever_married_false_contradicts_marriage(over):
 def test_married_implies_ever_married():
     p = profile.Profile(birth_date=date(1990, 1, 1), married=True)
     assert profile.score(p, T).missing[0:2] == ("marriage_date", "homeless_now")
+
+
+def test_tightness_counts_a_single_value_range_that_disagrees(monkeypatch):
+    """리뷰 지적: 범위도 전수 대입도 한 값이면 건너뛰는데, 두 값이 서로 다르면 건너뛰면 안 된다."""
+    real = check.tightness(bases=1, seed=5)
+    monkeypatch.setattr(check, "_range_of", lambda score, item: profile.Range(99, 99))
+    wrong = check.tightness(bases=1, seed=5)
+    assert wrong["tight"] == 0
+    assert wrong["measured"] > real["measured"]
