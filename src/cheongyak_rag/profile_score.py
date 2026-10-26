@@ -598,6 +598,11 @@ def _report_command(args, engine: Engine | None) -> int:
     if run["calc"]["failed"]:
         print(f"계산 실패 {run['calc']['failed']}건", file=sys.stderr)
         bad = True
+    faq, f170 = run["faq"], run["faq170"]
+    if faq["matched"] != faq["cases"] or f170["matched"] != f170["rows"]:
+        a, b = f"{faq['matched']}/{faq['cases']}", f"{f170['matched']}/{f170['rows']}"
+        print(f"FAQ 어긋남: 사례 {a}, 기간 예시 {b}", file=sys.stderr)
+        bad = True
     return 1 if bad else 0
 
 

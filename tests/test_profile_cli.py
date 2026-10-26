@@ -222,6 +222,15 @@ def test_report_exits_one_on_soundness_violation(pg_engine, paths, fast_tightnes
     assert report(pg_engine, paths) == 1
 
 
+def test_report_exits_one_when_faq_cases_disagree(pg_engine, paths, fast_tightness, monkeypatch):
+    """리뷰 지적: FAQ 사례 · FAQ 170 예시가 어긋나도 exit 0이면 실패 징후 1(a)·4가 안 드러난다."""
+    load(pg_engine, [CURRENT], date(2026, 9, 1))
+    monkeypatch.setattr(profile, "spouse_bonus", lambda *a, **kw: 0)
+    assert report(pg_engine, paths) == 1
+    run = json.loads(paths["run"].read_text(encoding="utf-8"))
+    assert run["faq170"]["matched"] < run["faq170"]["rows"]
+
+
 def test_report_counts_notices_on_other_law_versions_as_failures(pg_engine, paths, fast_tightness):
     load(pg_engine, [CURRENT, OLD], date(2026, 3, 1), date(2026, 9, 1))
     assert report(pg_engine, paths) == 1
