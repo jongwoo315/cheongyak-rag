@@ -1,0 +1,59 @@
+[
+  {
+    "name": "완전",
+    "profile": {
+      "birth_date": "1988-03-15",
+      "married": true,
+      "marriage_date": "2016-05-20",
+      "homeless_now": true,
+      "ever_owned": false,
+      "homeless_since": null,
+      "is_household_head": true,
+      "children_unmarried": 1,
+      "children_30plus_1y": 0,
+      "ascendants_3y": 1,
+      "ascendants_any_owner": false,
+      "savings_join_date": "2012-07-01",
+      "spouse_has_savings": true,
+      "spouse_savings_join_date": "2015-02-10"
+    }
+  },
+  {
+    "name": "통장 가입일만 모름",
+    "profile": {
+      "birth_date": "1988-03-15",
+      "married": true,
+      "marriage_date": "2016-05-20",
+      "homeless_now": true,
+      "ever_owned": false,
+      "homeless_since": null,
+      "is_household_head": true,
+      "children_unmarried": 1,
+      "children_30plus_1y": 0,
+      "ascendants_3y": 1,
+      "ascendants_any_owner": false,
+      "savings_join_date": null,
+      "spouse_has_savings": true,
+      "spouse_savings_join_date": "2015-02-10"
+    }
+  },
+  {
+    "name": "빈 프로필",
+    "profile": {
+      "birth_date": null,
+      "married": null,
+      "marriage_date": null,
+      "homeless_now": null,
+      "ever_owned": null,
+      "homeless_since": null,
+      "is_household_head": null,
+      "children_unmarried": null,
+      "children_30plus_1y": null,
+      "ascendants_3y": null,
+      "ascendants_any_owner": null,
+      "savings_join_date": null,
+      "spouse_has_savings": null,
+      "spouse_savings_join_date": null
+    }
+  }
+]

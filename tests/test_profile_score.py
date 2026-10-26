@@ -1,5 +1,6 @@
 """완전 프로필의 판정용 값과 항목 점수, 설계 §6 열린 질문 네 개의 고정 (#77 Task 4)."""
 
+import random
 from datetime import date
 
 import pytest
@@ -265,3 +266,17 @@ def test_profile_json_roundtrip_and_unknown_key():
         profile.Profile.from_dict({"birth_date": "1988-13-45"})
     with pytest.raises(profile.ProfileError):
         profile.Profile.from_dict({"married": "yes"})
+
+
+def test_spouse_bonus_same_with_or_without_minor_cap():
+    """§6-4의 영향: 제10조⑥을 배우자 통장에 적용해도 가산점이 안 달라진다.
+
+    상한은 기간을 2년 아래로 줄이지 못하고, 가산 3점은 2년이면 채워진다.
+    """
+    rng = random.Random(4)
+    first, last = date(1990, 1, 1).toordinal(), date(2007, 6, 1).toordinal()
+    for _ in range(3000):
+        birth = date.fromordinal(rng.randint(first, last))
+        join = date.fromordinal(rng.randint(birth.toordinal(), T.toordinal()))
+        capped = profile.savings_start(join, birth)
+        assert profile.spouse_bonus(capped, T) == profile.spouse_bonus(join, T), (birth, join)
