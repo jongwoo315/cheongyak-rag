@@ -264,3 +264,17 @@ def test_report_rejects_non_positive_sample_counts(flag, value, capsys):
         profile_score.main(["--report", flag, value])
     assert e.value.code == 2
     assert "1 이상의 정수" in capsys.readouterr().err
+
+
+def test_report_exits_one_when_the_parser_drops_a_row(
+    pg_engine, paths, fast_tightness, monkeypatch
+):
+    """리뷰 지적: 파서가 행을 빠뜨리면 대조가 공허하게 참이 된다 (실패 징후 5 → 미완)."""
+    load(pg_engine, [CURRENT], date(2026, 9, 1))
+    real = profile_score.table_check
+
+    def short():
+        return {**real(), "row_count_ok": False, "mismatches": [], "cells": 0}
+
+    monkeypatch.setattr(profile_score, "table_check", short)
+    assert report(pg_engine, paths) == 1
