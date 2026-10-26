@@ -278,3 +278,22 @@ def test_report_exits_one_when_the_parser_drops_a_row(
 
     monkeypatch.setattr(profile_score, "table_check", short)
     assert report(pg_engine, paths) == 1
+
+
+def test_report_counts_an_exception_in_score_as_a_failure(
+    pg_engine, paths, fast_tightness, monkeypatch
+):
+    """리뷰 지적: 계산 중 예외는 kind=error로 세고 exit 1이어야 한다 (실패 징후 1 (c))."""
+    load(pg_engine, [CURRENT], date(2026, 9, 1))
+    real = profile.score
+
+    def boom(p, as_of):
+        if as_of == date(2026, 9, 1):
+            raise ZeroDivisionError("stub")
+        return real(p, as_of)
+
+    monkeypatch.setattr(profile, "score", boom)
+    assert report(pg_engine, paths) == 1
+    run = json.loads(paths["run"].read_text(encoding="utf-8"))
+    assert run["calc"]["failed"] == 3 and run["calc"]["ok"] == 0
+    assert run["calc"]["failures"][0]["kind"] == "error"
