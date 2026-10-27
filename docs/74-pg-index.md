@@ -2,7 +2,7 @@
 
 # #74 검색 색인 적재 결과
 
-실행 2026-10-28T00:10:44+09:00 · 청킹 후보 `article` · 임베딩 모델 `text-embedding-3-small`
+실행 2026-10-28T00:13:38+09:00 · 청킹 후보 `article` · 임베딩 모델 `text-embedding-3-small`
 
 ## 1. 실패 징후 측정값
 
@@ -32,36 +32,34 @@
 ### law · 기본 설정
 
 ```
-Limit  (cost=299.16..299.17 rows=5 width=16)
-  ->  Sort  (cost=299.16..299.49 rows=132 width=16)
-        Sort Key: ((embedding <=> '[…]'::vector))
-        ->  Seq Scan on chunks  (cost=0.00..296.97 rows=132 width=16)
-              Filter: (source = 'law'::text)
+Limit  (cost=356.66..375.36 rows=5 width=16)
+  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..685.76 rows=88 width=16)
+        Order By: (embedding <=> '[…]'::vector)
 ```
 
 ### law · enable_seqscan=off
 
 ```
-Limit  (cost=356.66..373.09 rows=5 width=16)
-  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..790.31 rows=132 width=16)
+Limit  (cost=356.66..375.36 rows=5 width=16)
+  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..685.76 rows=88 width=16)
         Order By: (embedding <=> '[…]'::vector)
 ```
 
 ### faq · 기본 설정
 
 ```
-Limit  (cost=307.73..307.74 rows=3 width=16)
-  ->  Sort  (cost=307.73..309.53 rows=719 width=16)
+Limit  (cost=581.50..581.51 rows=3 width=16)
+  ->  Sort  (cost=581.50..582.70 rows=480 width=16)
         Sort Key: ((embedding <=> '[…]'::vector))
-        ->  Seq Scan on chunks  (cost=0.00..298.44 rows=719 width=16)
+        ->  Seq Scan on chunks  (cost=0.00..575.30 rows=480 width=16)
               Filter: (source = 'faq'::text)
 ```
 
 ### faq · enable_seqscan=off
 
 ```
-Limit  (cost=1471.10..1477.82 rows=3 width=16)
-  ->  Index Scan using chunks_embedding_faq_hnsw on chunks  (cost=1471.10..3080.59 rows=719 width=16)
+Limit  (cost=1471.10..1482.44 rows=3 width=16)
+  ->  Index Scan using chunks_embedding_faq_hnsw on chunks  (cost=1471.10..3285.60 rows=480 width=16)
         Order By: (embedding <=> '[…]'::vector)
 ```
 
