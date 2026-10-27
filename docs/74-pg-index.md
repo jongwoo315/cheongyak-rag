@@ -76,5 +76,5 @@ Limit  (cost=1471.10..1480.52 rows=3 width=16)
 
 - HNSW `m`·`ef_construction`: pgvector 기본값(16·64) 그대로. `ef_search`는 기본 40이고 올리지 않았다
 - `law_mst`: 286965 — `law_versions`에서 시행일 2026-06-15 행의 MST
-- pgvector 0.8.5 · kiwipiepy 0.24.0 — `tokens`를 다시 만들어야 하는지 볼 때 쓰는 버전
+- pgvector 0.8.5(HNSW 동작 기준) · kiwipiepy 0.24.0(`tokens`를 다시 만들어야 하는지 볼 때 쓰는 버전)
 - 임베딩 API 호출 0회

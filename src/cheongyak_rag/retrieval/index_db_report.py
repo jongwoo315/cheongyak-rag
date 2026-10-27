@@ -390,8 +390,8 @@ def render(run: dict) -> str:
             f" `ef_search`는 기본 40이고 {'올려서 다시 쟀다' if ef else '올리지 않았다'}",
             f"`law_mst`: {run['law_mst'] or '없음(null)'}"
             f" — `law_versions`에서 시행일 {index_db.LAW_EFFECTIVE} 행의 MST",
-            f"pgvector {ver['pgvector']} · kiwipiepy {ver['kiwipiepy']}"
-            " — `tokens`를 다시 만들어야 하는지 볼 때 쓰는 버전",
+            f"pgvector {ver['pgvector']}(HNSW 동작 기준) · kiwipiepy {ver['kiwipiepy']}"
+            "(`tokens`를 다시 만들어야 하는지 볼 때 쓰는 버전)",
             f"임베딩 API 호출 {cache['api_calls']}회",
         ]
     )
