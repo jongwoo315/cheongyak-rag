@@ -135,3 +135,58 @@ def test_cache_miss_count_uses_the_cache_before_this_run(pg_engine, tmp_path):
     assert run["cache"]["missing_chunks"] == 1
     assert run["cache"]["missing_ids"] == [warm[0]["chunk_id"]]
     assert np.isclose(run["cache"]["golden_misses"], 4)  # golden 질문 4개는 캐시에 없었다
+
+
+def test_main_exits_3_without_selected_json(pg_engine, tmp_path, capsys):
+    code = index_db.main([], engine=pg_engine, embedder=FakeEmbedder(dim=1536), runs_dir=tmp_path)
+    assert code == 3
+    assert "selected.json" in capsys.readouterr().err
+
+
+def test_lexemes_reads_tsvector_text():
+    assert rep.lexemes("'가':1 '나':2,3 'it''s':4") == {"가", "나", "it's"}
+
+
+def test_kiwi_forms_ignores_trailing_dot_but_not_split_tokens(monkeypatch):
+    monkeypatch.setattr(rep, "tokenize", lambda _: ["2.", "시·도", "Abc"])
+    assert rep.kiwi_forms("x") == {"2", "시·도", "abc"}
+    assert rep.kiwi_forms("x") != rep.lexemes("'2':1 '시':2 '도':3 'abc':4")
+
+
+def test_tokens_resplit_is_zero_for_plain_words(pg_engine, tmp_path):
+    assert _run(pg_engine, tmp_path, "--report") == 0
+    run = json.loads((tmp_path / "runs" / "74" / "last_run.json").read_text(encoding="utf-8"))
+    assert run["tokens"]["resplit"] == 0
+
+
+def test_render_covers_retry_and_problem_branches(pg_engine, tmp_path):
+    assert _run(pg_engine, tmp_path, "--report") == 0
+    run = json.loads((tmp_path / "runs" / "74" / "last_run.json").read_text(encoding="utf-8"))
+    ratio = {"same": 118, "n": 123, "ratio": 118 / 123}
+    run["topk"]["default"] = {"law": ratio, "faq": ratio}
+    run["topk"]["zone"] = "다시 잰다"
+    run["topk"]["ef100"] = {"law": ratio, "faq": ratio}
+    run["topk"]["zone_ef100"] = "다시 잰다"
+    run["topk"]["diffs"] = [
+        {
+            "qid": "faq-1",
+            "question": "q|질문",
+            "source": "law",
+            "missing": ["law:제1조"],
+            "extra": [],
+        }
+    ]
+    run["short"].update(count=2, law=2, qids=["faq-1", "faq-2"], zone="다시 잰다")
+    run["load"].update(missing=["law:제9조"], vec_diff=1, vec_diff_ids=["law:제1조"])
+    run["cache"].update(missing_chunks=1, missing_ids=["faq:1"])
+    md = rep.render(run)
+    assert "hnsw.ef_search = 100" in md
+    assert "law:제1조" in md and "q\\|질문" in md
+    assert "k개보다 적게 돌아온 문항" in md and "캐시에 없던 청크" in md
+
+
+def test_nearest_default_path_works_without_forcing_the_index(pg_engine):
+    rows = index_db.build_rows(FakeEmbedder(dim=1536), None, "article", law_rows=LAW, faq_rows=FAQ)
+    index_db.load(pg_engine, rows)
+    got = index_db.nearest(pg_engine, rows[0]["embedding"], "law", 3)
+    assert got[0][0] == rows[0]["chunk_id"] and len(got) == 3

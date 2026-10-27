@@ -204,7 +204,7 @@ def main(
             args, engine, embedder, law_rows, faq_rows, runs_dir, golden_path, out_md, out_json
         )
     except OperationalError as e:
-        print(f"DB에 연결할 수 없다: {type(e).__name__}", file=sys.stderr)
+        print(f"DB 오류: {type(e).__name__}: {e.orig}", file=sys.stderr)
         return 2
     finally:
         if own:
@@ -221,7 +221,7 @@ def _run(args, engine, embedder, law_rows, faq_rows, runs_dir, golden_path, out_
         candidate = selected_candidate(runs_dir)
     except FileNotFoundError as e:
         print(e, file=sys.stderr)
-        return 1
+        return 3  # 1은 실패 징후 1 미완, 2는 DB 준비 안 됨
     embedder = embedder or Embedder(settings.openai_embed_model)
     mst = law_mst(engine)
     cache_before = set(embedder.cache)

@@ -6,6 +6,7 @@ plan §실패 징후의 것이다.
 """
 
 import json
+import re
 from datetime import datetime
 from importlib.metadata import version
 from pathlib import Path
@@ -17,7 +18,7 @@ from sqlalchemy.engine import Engine
 from cheongyak_rag.ingest.notice_report import _bullets, _table
 from cheongyak_rag.retrieval import index_db
 from cheongyak_rag.retrieval.embed import text_key
-from cheongyak_rag.retrieval.search import dense_rank
+from cheongyak_rag.retrieval.search import dense_rank, tokenize
 
 LAW_K, FAQ_K = 5, 3
 VEC_TOL = 1e-6  # float4 저장 vs float64 캐시
@@ -50,11 +51,13 @@ def zone_load(
 # ── 읽기 ─────────────────────────────────────────────────────────────────
 
 
-def snapshot(engine: Engine) -> dict[str, tuple[str, str]]:
-    """chunk_id → (text, embedding 원문). 재실행 때 바뀐 것이 있는지 본다."""
+def snapshot(engine: Engine) -> dict[str, tuple[str, str, str]]:
+    """chunk_id → (text, embedding 원문, tokens 원문). 재실행 때 바뀐 것이 있는지 본다."""
     with engine.connect() as conn:
-        rows = conn.execute(sa.text("SELECT chunk_id, text, embedding::text FROM chunks")).all()
-    return {r[0]: (r[1], r[2]) for r in rows}
+        rows = conn.execute(
+            sa.text("SELECT chunk_id, text, embedding::text, tokens::text FROM chunks")
+        ).all()
+    return {r[0]: (r[1], r[2], r[3]) for r in rows}
 
 
 def _vec(text: str) -> np.ndarray:
@@ -201,15 +204,38 @@ def measure_rerun(before: dict, after: dict) -> dict:
     }
 
 
+LEXEME = re.compile(r"'((?:[^']|'')*)'")
+
+
+def lexemes(tsvector_text: str) -> set[str]:
+    """`'가':1 '나':2` 꼴의 tsvector 원문에서 낱말만."""
+    return {m.replace("''", "'") for m in LEXEME.findall(tsvector_text)}
+
+
+def kiwi_forms(text: str) -> set[str]:
+    """kiwi 토큰을 tsvector 낱말과 견주는 꼴로. 소문자로, 끝의 점(`2.`)은 뗀다.
+
+    Postgres `simple` 파서가 `2.`를 `2`로 줄이는 것은 같은 낱말로 본다. 공백이나 `·`가 든 토큰
+    (`시·도`)은 파서가 둘로 쪼개므로 달라진 것으로 센다.
+    """
+    return {t.lower().rstrip(".") for t in tokenize(text)}
+
+
 def measure_tokens(engine) -> dict:
-    """실패 징후 6 — 빈 `tokens` 행."""
+    """실패 징후 6 — 빈 `tokens` 행. 참고로 kiwi 토큰이 tsvector에서 달라진 행도 센다."""
     with engine.connect() as conn:
-        ids = list(
-            conn.execute(
-                sa.text("SELECT chunk_id FROM chunks WHERE tokens = '' ORDER BY chunk_id")
-            ).scalars()
-        )
-    return {"empty": len(ids), "ids": ids[:SHOW], "zone": zone_count(len(ids), retry_max=3)}
+        rows = conn.execute(
+            sa.text("SELECT chunk_id, text, tokens::text FROM chunks ORDER BY chunk_id")
+        ).all()
+    ids = [r[0] for r in rows if r[2] == ""]
+    resplit = [r[0] for r in rows if r[2] and kiwi_forms(r[1]) != lexemes(r[2])]
+    return {
+        "empty": len(ids),
+        "ids": ids[:SHOW],
+        "resplit": len(resplit),  # 판정에 안 쓴다
+        "resplit_ids": resplit[:SHOW],
+        "zone": zone_count(len(ids), retry_max=3),
+    }
 
 
 def versions(engine) -> dict:
@@ -295,6 +321,23 @@ def render(run: dict) -> str:
         ],
     )
     lines += ["", "구간 기준과 경계는 plan §실패 징후와 같다.", ""]
+    lines += ["### 읽는 법", ""]
+    lines += _bullets(
+        [
+            "2·3번의 top-k는 `enable_seqscan=off`로 HNSW를 강제해서 쟀다. 기본 설정의 planner는"
+            " 전수 스캔을 고를 수 있고 그 결과는 정확하므로, 기본 경로의 일치 비율은 따로"
+            " 재지 않았다",
+            "1번 벡터 대조의 기준은 `Embedder` 캐시(실행 때 읽은 `embed-<모델>.jsonl`)다."
+            " float4 저장과 문자열 직렬화로 값이 달라졌는지만 본다. 청크 텍스트는 `query.Index`와"
+            " 같은 함수로 만들었으므로 `text` 대조도 저장 과정에서 바뀌었는지만 본다",
+            "5번 재실행은 한 프로세스 안에서 같은 입력으로 두 번 적재해 `text`·벡터·`tokens`를"
+            " 비교한다. 프로세스를 따로 두 번 돌린 비교는 PR 본문에 있다",
+            f"참고(판정에 안 쓴다): kiwi 토큰과 tsvector 낱말이 다른 청크 {tokens['resplit']}개."
+            " Postgres `simple` 파서가 `시·도`나 공백이 든 토큰을 둘로 쪼개서다."
+            " 끝의 점(`2.` → `2`)은 같은 낱말로 셌다",
+        ]
+    )
+    lines.append("")
     lines += ["## 2. 어긋난 곳", ""]
     problems = []
     if load["missing"] or load["extra"]:
@@ -334,7 +377,7 @@ def render(run: dict) -> str:
         lines.append("- 없다")
     lines += ["", "## 3. EXPLAIN 원문", ""]
     lines.append(
-        "568행이면 planner가 인덱스 대신 전수 스캔을 고를 수 있다. 위 표의 top-k는"
+        "행이 적으면 planner가 인덱스 대신 전수 스캔을 고를 수 있다. 위 표의 top-k는"
         " `enable_seqscan=off`에서 쟀다(`nearest(force_index=True)`)."
     )
     for source in ("law", "faq"):
