@@ -214,6 +214,29 @@ def test_nearest_rejects_unknown_source(pg_engine):
         index_db.nearest(pg_engine, [0.5] * 1536, "notice", 3)
 
 
+def test_nearest_applies_force_index_and_ef_search_inside_its_transaction(pg_engine, monkeypatch):
+    from sqlalchemy import text
+
+    index_db.load(pg_engine, _many_rows())
+    seen = []
+    real = index_db._session_settings
+
+    def spy(conn, **kw):
+        real(conn, **kw)
+        seen.append(
+            (
+                conn.execute(text("SHOW enable_seqscan")).scalar(),
+                conn.execute(text("SHOW hnsw.ef_search")).scalar(),
+            )
+        )
+
+    monkeypatch.setattr(index_db, "_session_settings", spy)
+    q = [0.5] * 1536
+    index_db.nearest(pg_engine, q, "law", 5, ef_search=100, force_index=True)
+    index_db.nearest(pg_engine, q, "law", 5)
+    assert seen == [("off", "100"), ("on", "40")]
+
+
 def test_explain_shows_the_partial_index_when_seqscan_is_off(pg_engine):
     index_db.load(pg_engine, _many_rows())
     q = [0.5] * 1536
