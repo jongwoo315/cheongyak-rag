@@ -70,3 +70,29 @@ def build_rows(
         }
         for c, vec in zip(chunks, vecs, strict=True)
     ]
+
+
+def vec_literal(vec) -> str:
+    """pgvector 텍스트 형식 `[0.1,0.2,…]`. SQL에서 `CAST(… AS vector)`로 받는다."""
+    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
+
+
+INSERT = sa.text(
+    "INSERT INTO chunks (chunk_id, source, label, path, title, text, text_sha256, law_mst,"
+    " embed_model, embedding, tokens) VALUES (:chunk_id, :source, :label, :path, :title, :text,"
+    " :text_sha256, :law_mst, :embed_model, CAST(:embedding AS vector),"
+    " to_tsvector('simple', :tokens))"
+)
+
+
+def load(engine: Engine, rows: list[dict]) -> int:
+    """한 트랜잭션에서 `chunks`를 비우고 rows를 전부 넣는다 → 넣은 행 수.
+
+    중간에 실패하면 롤백되어 이전 행이 그대로 남는다.
+    """
+    params = [{**r, "embedding": vec_literal(r["embedding"])} for r in rows]
+    with engine.begin() as conn:
+        conn.execute(sa.text("DELETE FROM chunks"))
+        if params:
+            conn.execute(INSERT, params)
+    return len(rows)

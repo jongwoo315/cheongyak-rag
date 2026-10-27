@@ -73,3 +73,71 @@ def test_law_mst_same_day_picks_later_promulgation(pg_engine):
     _insert_version(pg_engine, "111", "2026-06-15", "2026-05-01")
     _insert_version(pg_engine, "222", "2026-06-15", "2026-06-01")
     assert index_db.law_mst(pg_engine) == "222"
+
+
+def _rows(emb=None):
+    return index_db.build_rows(
+        emb or FakeEmbedder(dim=1536), "286965", "article", law_rows=LAW, faq_rows=FAQ
+    )
+
+
+def _state(engine):
+    from sqlalchemy import text
+
+    with engine.connect() as conn:
+        return conn.execute(
+            text("SELECT chunk_id, embedding::text, tokens::text FROM chunks ORDER BY chunk_id")
+        ).all()
+
+
+def test_load_twice_gives_the_same_rows(pg_engine):
+    rows = _rows()
+    assert index_db.load(pg_engine, rows) == len(rows)
+    first = _state(pg_engine)
+    assert len(first) == len(rows)
+    index_db.load(pg_engine, _rows())
+    assert _state(pg_engine) == first
+
+
+def test_load_has_no_empty_tokens(pg_engine):
+    from sqlalchemy import text
+
+    index_db.load(pg_engine, _rows())
+    with pg_engine.connect() as conn:
+        empty = conn.execute(text("SELECT count(*) FROM chunks WHERE tokens = ''")).scalar()
+    assert empty == 0
+
+
+def test_load_drops_rows_that_are_no_longer_in_the_input(pg_engine):
+    rows = _rows()
+    index_db.load(pg_engine, rows)
+    index_db.load(pg_engine, rows[:2])
+    assert [r[0] for r in _state(pg_engine)] == sorted(r["chunk_id"] for r in rows[:2])
+
+
+def test_failed_load_keeps_previous_rows(pg_engine):
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    rows = _rows()
+    index_db.load(pg_engine, rows)
+    before = _state(pg_engine)
+    bad = [*rows[:3], {**rows[3], "source": "notice"}]  # CHECK에 걸려 마지막 행에서 실패한다
+    with pytest.raises(IntegrityError):
+        index_db.load(pg_engine, bad)
+    assert _state(pg_engine) == before
+
+
+def test_loaded_vector_matches_input_within_float4(pg_engine):
+    import numpy as np
+    from sqlalchemy import text
+
+    rows = _rows()
+    index_db.load(pg_engine, rows)
+    with pg_engine.connect() as conn:
+        got = conn.execute(
+            text("SELECT embedding::text FROM chunks WHERE chunk_id = :i"),
+            {"i": rows[0]["chunk_id"]},
+        ).scalar()
+    vec = np.array([float(x) for x in got.strip("[]").split(",")])
+    assert np.abs(vec - np.array(rows[0]["embedding"])).max() < 1e-6
