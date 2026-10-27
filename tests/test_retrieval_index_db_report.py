@@ -269,3 +269,15 @@ def test_measure_topk_retry_zone_and_short_results(monkeypatch):
     assert [d["extra"] for d in topk["diffs"]] == [[], ["law:없음"], ["law:없음"]]
     assert all(len(d["missing"]) == 1 for d in topk["diffs"])
     assert short["count"] == 1 and short["qids"] == ["q0"] and short["zone"] == "다시 잰다"
+
+
+def test_measure_tokens_finds_a_row_whose_tsvector_is_empty(pg_engine):
+    _, rows, _ = _loaded(pg_engine)
+    with pg_engine.begin() as conn:
+        conn.execute(
+            text("UPDATE chunks SET tokens = to_tsvector('simple', '') WHERE chunk_id = :i"),
+            {"i": rows[0]["chunk_id"]},
+        )
+    got = rep.measure_tokens(pg_engine)
+    assert got["empty"] == 1 and got["ids"] == [rows[0]["chunk_id"]]
+    assert got["zone"] == "다시 잰다"
