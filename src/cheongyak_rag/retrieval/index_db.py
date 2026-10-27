@@ -100,13 +100,15 @@ INSERT = sa.text(
 def load(engine: Engine, rows: list[dict]) -> int:
     """한 트랜잭션에서 `chunks`를 비우고 rows를 전부 넣는다 → 넣은 행 수.
 
-    중간에 실패하면 롤백되어 이전 행이 그대로 남는다.
+    중간에 실패하면 롤백되어 이전 행이 그대로 남는다. rows가 비면 비우기 전에 거절한다 —
+    입력이 비었는데 테이블만 비워져 성공으로 보이는 것을 막는다.
     """
+    if not rows:
+        raise ValueError("적재할 청크가 0개다. 법령·FAQ 입력을 확인한다")
     params = [{**r, "embedding": vec_literal(r["embedding"])} for r in rows]
     with engine.begin() as conn:
         conn.execute(sa.text("DELETE FROM chunks"))
-        if params:
-            conn.execute(INSERT, params)
+        conn.execute(INSERT, params)
         # 비우고 다시 넣으면 planner 통계가 이전 적재의 것으로 남아 실행마다 계획이 달라진다
         conn.execute(sa.text("ANALYZE chunks"))
     return len(rows)

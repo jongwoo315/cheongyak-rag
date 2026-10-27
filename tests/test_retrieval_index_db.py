@@ -108,6 +108,17 @@ def test_load_has_no_empty_tokens(pg_engine):
     assert empty == 0
 
 
+def test_load_rejects_empty_input_and_keeps_previous_rows(pg_engine):
+    import pytest
+
+    rows = _rows()
+    index_db.load(pg_engine, rows)
+    before = _state(pg_engine)
+    with pytest.raises(ValueError):
+        index_db.load(pg_engine, [])
+    assert _state(pg_engine) == before
+
+
 def test_load_drops_rows_that_are_no_longer_in_the_input(pg_engine):
     rows = _rows()
     index_db.load(pg_engine, rows)
