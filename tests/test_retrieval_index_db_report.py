@@ -235,3 +235,37 @@ def test_measure_load_counts_what_is_missing_changed_or_unindexed(pg_engine):
     assert got["no_index"] == ["chunks_embedding_law_hnsw"]
     assert got["uses_index"]["law"] is False
     assert got["zone"] == "미완"
+
+
+def test_measure_topk_retry_zone_and_short_results(monkeypatch):
+    from cheongyak_rag.retrieval.query import Index
+    from cheongyak_rag.retrieval.search import dense_rank
+
+    emb = FakeEmbedder()
+    index = Index("article", emb, law_rows=LAW, faq_rows=FAQ)
+    golden = [{"qid": f"q{i}", "question": f"질문 {i}"} for i in range(50)]
+    qvecs = emb.embed([g["question"] for g in golden])
+    law_calls = []
+
+    def fake_nearest(engine, qv, source, k, *, ef_search=None, force_index=False):
+        chunks, vecs = (
+            (index.law, index.law_vecs) if source == "law" else (index.faq, index.faq_vecs)
+        )
+        got = dense_rank(qv, vecs, [c.chunk_id for c in chunks])[:k]
+        if source == "law" and ef_search is None:
+            law_calls.append(1)
+            if len(law_calls) <= 3:  # 앞 세 문항: 한 개가 다른 청크로 바뀐다
+                got = [*got[:-1], "law:없음"]
+            if len(law_calls) == 1:  # 첫 문항은 k개보다 적게 돌아온다
+                got = got[:-1]
+        return [(c, 0.0) for c in got]
+
+    monkeypatch.setattr(index_db, "nearest", fake_nearest)
+    topk, short = rep.measure_topk(None, index, golden, qvecs)
+
+    assert topk["default"]["law"]["same"] == 47 and topk["zone"] == "다시 잰다"
+    assert topk["ef100"]["law"]["ratio"] == 1.0 and topk["zone_ef100"] == "통과"
+    assert [d["qid"] for d in topk["diffs"]] == ["q0", "q1", "q2"]
+    assert [d["extra"] for d in topk["diffs"]] == [[], ["law:없음"], ["law:없음"]]
+    assert all(len(d["missing"]) == 1 for d in topk["diffs"])
+    assert short["count"] == 1 and short["qids"] == ["q0"] and short["zone"] == "다시 잰다"
