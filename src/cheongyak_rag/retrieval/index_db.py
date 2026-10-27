@@ -119,9 +119,9 @@ VECTOR_LITERAL = re.compile(r"'\[[-0-9.e,]+\]'")
 
 
 def nearest_sql(source: str) -> sa.TextClause:
-    """코사인 거리 순 상위 k개. `WHERE source = '…'`는 부분 인덱스 조건과 글자 그대로 같아야 한다.
+    """코사인 거리 순 상위 k개. `WHERE source = '…'`는 부분 인덱스의 WHERE 조건을 함축해야 한다.
 
-    인덱스를 타려면 planner가 조건을 증명해야 해서 값을 바인드 변수가 아니라 리터럴로 쓴다.
+    인덱스를 타려면 planner가 그 함축을 증명해야 해서 값을 바인드 변수가 아니라 리터럴로 쓴다.
     그래서 source는 허용 목록에서만 받는다.
     """
     if source not in SOURCES:
