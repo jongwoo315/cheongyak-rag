@@ -1,0 +1,5038 @@
+{
+  "run_at": "2026-10-26T23:16:17+09:00",
+  "table": {
+    "rows": {
+      "homeless": 16,
+      "dependents": 7,
+      "savings": 17
+    },
+    "expected_rows": {
+      "homeless": 16,
+      "dependents": 7,
+      "savings": 17
+    },
+    "row_count_ok": true,
+    "mismatches": [],
+    "cells": 0
+  },
+  "constants": {
+    "homeless": [
+      [
+        "homeless",
+        0,
+        12,
+        2
+      ],
+      [
+        "homeless",
+        12,
+        24,
+        4
+      ],
+      [
+        "homeless",
+        24,
+        36,
+        6
+      ],
+      [
+        "homeless",
+        36,
+        48,
+        8
+      ],
+      [
+        "homeless",
+        48,
+        60,
+        10
+      ],
+      [
+        "homeless",
+        60,
+        72,
+        12
+      ],
+      [
+        "homeless",
+        72,
+        84,
+        14
+      ],
+      [
+        "homeless",
+        84,
+        96,
+        16
+      ],
+      [
+        "homeless",
+        96,
+        108,
+        18
+      ],
+      [
+        "homeless",
+        108,
+        120,
+        20
+      ],
+      [
+        "homeless",
+        120,
+        132,
+        22
+      ],
+      [
+        "homeless",
+        132,
+        144,
+        24
+      ],
+      [
+        "homeless",
+        144,
+        156,
+        26
+      ],
+      [
+        "homeless",
+        156,
+        168,
+        28
+      ],
+      [
+        "homeless",
+        168,
+        180,
+        30
+      ],
+      [
+        "homeless",
+        180,
+        null,
+        32
+      ]
+    ],
+    "dependents": [
+      [
+        "dependents",
+        0,
+        1,
+        5
+      ],
+      [
+        "dependents",
+        1,
+        2,
+        10
+      ],
+      [
+        "dependents",
+        2,
+        3,
+        15
+      ],
+      [
+        "dependents",
+        3,
+        4,
+        20
+      ],
+      [
+        "dependents",
+        4,
+        5,
+        25
+      ],
+      [
+        "dependents",
+        5,
+        6,
+        30
+      ],
+      [
+        "dependents",
+        6,
+        null,
+        35
+      ]
+    ],
+    "savings": [
+      [
+        "savings",
+        0,
+        6,
+        1
+      ],
+      [
+        "savings",
+        6,
+        12,
+        2
+      ],
+      [
+        "savings",
+        12,
+        24,
+        3
+      ],
+      [
+        "savings",
+        24,
+        36,
+        4
+      ],
+      [
+        "savings",
+        36,
+        48,
+        5
+      ],
+      [
+        "savings",
+        48,
+        60,
+        6
+      ],
+      [
+        "savings",
+        60,
+        72,
+        7
+      ],
+      [
+        "savings",
+        72,
+        84,
+        8
+      ],
+      [
+        "savings",
+        84,
+        96,
+        9
+      ],
+      [
+        "savings",
+        96,
+        108,
+        10
+      ],
+      [
+        "savings",
+        108,
+        120,
+        11
+      ],
+      [
+        "savings",
+        120,
+        132,
+        12
+      ],
+      [
+        "savings",
+        132,
+        144,
+        13
+      ],
+      [
+        "savings",
+        144,
+        156,
+        14
+      ],
+      [
+        "savings",
+        156,
+        168,
+        15
+      ],
+      [
+        "savings",
+        168,
+        180,
+        16
+      ],
+      [
+        "savings",
+        180,
+        null,
+        17
+      ]
+    ]
+  },
+  "faq": {
+    "cases": 11,
+    "matched": 11,
+    "items": [
+      {
+        "q_no": 46,
+        "case": "2024-01-01 전 미성년 가입 5년 + 이후 2년",
+        "expected": "미성년 기간 인정 4년0월0일",
+        "actual": "미성년 기간 인정 4년0월0일",
+        "match": true
+      },
+      {
+        "q_no": 151,
+        "case": "35세 귀화, 40세 청약, 무주택 (1986-05-01생, 공고일 2026-05-01)",
+        "expected": "무주택기간 10년 · ① 22점",
+        "actual": "무주택기간 10년 · ① 22점",
+        "match": true
+      },
+      {
+        "q_no": 153,
+        "case": "기산일 네 칸 (1980-03-01생, 혼인신고일 2008-06-01, 무주택자가 된 날 2014-09-01)",
+        "expected": "2010-03-01 · 2008-06-01 · 2014-09-01 · 2014-09-01",
+        "actual": "2010-03-01 · 2008-06-01 · 2014-09-01 · 2014-09-01",
+        "match": true
+      },
+      {
+        "q_no": 154,
+        "case": "세대 내 1주택 소유",
+        "expected": "① 0점",
+        "actual": "① 0점",
+        "match": true
+      },
+      {
+        "q_no": 156,
+        "case": "30세 전 최초 혼인 후 이혼·재혼",
+        "expected": "2012-03-01 · 2018-06-01",
+        "actual": "2012-03-01 · 2018-06-01",
+        "match": true
+      },
+      {
+        "q_no": 157,
+        "case": "본인은 부양가족이 아니다 (세대원 없음)",
+        "expected": "② 5점",
+        "actual": "② 5점",
+        "match": true
+      },
+      {
+        "q_no": 158,
+        "case": "배우자는 같은 등본에 없어도 부양가족",
+        "expected": "② 10점",
+        "actual": "② 10점",
+        "match": true
+      },
+      {
+        "q_no": 159,
+        "case": "미혼 자녀 2 + 30세 이상 미혼 1 (혼인한 자녀는 입력 칸이 없다)",
+        "expected": "② 20점",
+        "actual": "② 20점",
+        "match": true
+      },
+      {
+        "q_no": 161,
+        "case": "직계존속 2명, 소유자 있음 · 없음",
+        "expected": "② 5점 · ② 15점",
+        "actual": "② 5점 · ② 15점",
+        "match": true
+      },
+      {
+        "q_no": 162,
+        "case": "직계존속 2명, 세대주 아님 · 세대주",
+        "expected": "② 5점 · ② 15점",
+        "actual": "② 5점 · ② 15점",
+        "match": true
+      },
+      {
+        "q_no": 170,
+        "case": "배우자 통장 기간 산정 예시 6행",
+        "expected": "2년4월0일 3점, 8년1월25일 3점, 1년2월0일 2점, 4년0월21일 3점, 0년4월10일 1점, 0년10월0일 1점",
+        "actual": "2년4월0일 3점, 8년1월25일 3점, 1년2월0일 2점, 4년0월21일 3점, 0년4월10일 1점, 0년10월0일 1점",
+        "match": true
+      }
+    ]
+  },
+  "soundness": {
+    "n": 2000,
+    "seed": 77,
+    "violations": 0,
+    "examples": [],
+    "avg_erased": 6.5945
+  },
+  "tightness": {
+    "bases": 20,
+    "seed": 77,
+    "measured": 131,
+    "tight": 131,
+    "ratio": 1.0,
+    "pairs": [
+      {
+        "field": "ascendants_3y",
+        "item": "dependents",
+        "measured": 7,
+        "tight": 7,
+        "loose": []
+      },
+      {
+        "field": "ascendants_any_owner",
+        "item": "dependents",
+        "measured": 4,
+        "tight": 4,
+        "loose": []
+      },
+      {
+        "field": "birth_date",
+        "item": "homeless",
+        "measured": 12,
+        "tight": 12,
+        "loose": []
+      },
+      {
+        "field": "birth_date",
+        "item": "savings",
+        "measured": 8,
+        "tight": 8,
+        "loose": []
+      },
+      {
+        "field": "children_30plus_1y",
+        "item": "dependents",
+        "measured": 18,
+        "tight": 18,
+        "loose": []
+      },
+      {
+        "field": "children_unmarried",
+        "item": "dependents",
+        "measured": 19,
+        "tight": 19,
+        "loose": []
+      },
+      {
+        "field": "homeless_now",
+        "item": "homeless",
+        "measured": 18,
+        "tight": 18,
+        "loose": []
+      },
+      {
+        "field": "homeless_since",
+        "item": "homeless",
+        "measured": 2,
+        "tight": 2,
+        "loose": []
+      },
+      {
+        "field": "is_household_head",
+        "item": "dependents",
+        "measured": 7,
+        "tight": 7,
+        "loose": []
+      },
+      {
+        "field": "marriage_date",
+        "item": "homeless",
+        "measured": 7,
+        "tight": 7,
+        "loose": []
+      },
+      {
+        "field": "married",
+        "item": "dependents",
+        "measured": 4,
+        "tight": 4,
+        "loose": []
+      },
+      {
+        "field": "savings_join_date",
+        "item": "savings",
+        "measured": 20,
+        "tight": 20,
+        "loose": []
+      },
+      {
+        "field": "spouse_savings_join_date",
+        "item": "savings",
+        "measured": 5,
+        "tight": 5,
+        "loose": []
+      }
+    ],
+    "loose": [],
+    "skipped": {
+      "ever_owned": 14,
+      "ever_married": 5,
+      "spouse_has_savings": 3
+    }
+  },
+  "calc": {
+    "notices": 84,
+    "samples": 3,
+    "ok": 252,
+    "failed": 0,
+    "failures": []
+  },
+  "by_sample": [
+    {
+      "sample": "완전",
+      "ok": 84,
+      "failed": 0,
+      "total_lo": [
+        59,
+        59
+      ],
+      "total_hi": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "sample": "통장 가입일만 모름",
+      "ok": 84,
+      "failed": 0,
+      "total_lo": [
+        46,
+        46
+      ],
+      "total_hi": [
+        59,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "sample": "빈 프로필",
+      "ok": 84,
+      "failed": 0,
+      "total_lo": [
+        6,
+        6
+      ],
+      "total_hi": [
+        84,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "house_manage_no": "2026820012",
+      "pblanc_no": "2026820012",
+      "sample": "완전",
+      "house_nm": "시흥하중지구 A1블록 신혼희망타운(공공분양) 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026820012",
+      "pblanc_no": "2026820012",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "시흥하중지구 A1블록 신혼희망타운(공공분양) 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820012",
+      "pblanc_no": "2026820012",
+      "sample": "빈 프로필",
+      "house_nm": "시흥하중지구 A1블록 신혼희망타운(공공분양) 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000532",
+      "pblanc_no": "2026000532",
+      "sample": "완전",
+      "house_nm": "계양신도시 카이브 유보라(AC4BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000532",
+      "pblanc_no": "2026000532",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "계양신도시 카이브 유보라(AC4BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000532",
+      "pblanc_no": "2026000532",
+      "sample": "빈 프로필",
+      "house_nm": "계양신도시 카이브 유보라(AC4BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000531",
+      "pblanc_no": "2026000531",
+      "sample": "완전",
+      "house_nm": "시흥거모지구 S-1블록 공공분양(본청약)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000531",
+      "pblanc_no": "2026000531",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "시흥거모지구 S-1블록 공공분양(본청약)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000531",
+      "pblanc_no": "2026000531",
+      "sample": "빈 프로필",
+      "house_nm": "시흥거모지구 S-1블록 공공분양(본청약)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000530",
+      "pblanc_no": "2026000530",
+      "sample": "완전",
+      "house_nm": "계양신도시 카이브 유보라(AC3BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000530",
+      "pblanc_no": "2026000530",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "계양신도시 카이브 유보라(AC3BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000530",
+      "pblanc_no": "2026000530",
+      "sample": "빈 프로필",
+      "house_nm": "계양신도시 카이브 유보라(AC3BL)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000518",
+      "pblanc_no": "2026000518",
+      "sample": "완전",
+      "house_nm": "GTX운정중앙역 시티프라디움 4단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000518",
+      "pblanc_no": "2026000518",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "GTX운정중앙역 시티프라디움 4단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000518",
+      "pblanc_no": "2026000518",
+      "sample": "빈 프로필",
+      "house_nm": "GTX운정중앙역 시티프라디움 4단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000517",
+      "pblanc_no": "2026000517",
+      "sample": "완전",
+      "house_nm": "GTX운정중앙역 시티프라디움 3단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000517",
+      "pblanc_no": "2026000517",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "GTX운정중앙역 시티프라디움 3단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000517",
+      "pblanc_no": "2026000517",
+      "sample": "빈 프로필",
+      "house_nm": "GTX운정중앙역 시티프라디움 3단지(후속사업)",
+      "rcrit_pblanc_de": "2026-10-23",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000496",
+      "pblanc_no": "2026000496",
+      "sample": "완전",
+      "house_nm": "청라 아크원 푸르지오",
+      "rcrit_pblanc_de": "2026-10-22",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000496",
+      "pblanc_no": "2026000496",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "청라 아크원 푸르지오",
+      "rcrit_pblanc_de": "2026-10-22",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000496",
+      "pblanc_no": "2026000496",
+      "sample": "빈 프로필",
+      "house_nm": "청라 아크원 푸르지오",
+      "rcrit_pblanc_de": "2026-10-22",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000502",
+      "pblanc_no": "2026000502",
+      "sample": "완전",
+      "house_nm": "화성 향남 롯데캐슬 시그니처",
+      "rcrit_pblanc_de": "2026-10-21",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000502",
+      "pblanc_no": "2026000502",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "화성 향남 롯데캐슬 시그니처",
+      "rcrit_pblanc_de": "2026-10-21",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000502",
+      "pblanc_no": "2026000502",
+      "sample": "빈 프로필",
+      "house_nm": "화성 향남 롯데캐슬 시그니처",
+      "rcrit_pblanc_de": "2026-10-21",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000514",
+      "pblanc_no": "2026000514",
+      "sample": "완전",
+      "house_nm": "트리븐센텀 2단지",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000514",
+      "pblanc_no": "2026000514",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "트리븐센텀 2단지",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000514",
+      "pblanc_no": "2026000514",
+      "sample": "빈 프로필",
+      "house_nm": "트리븐센텀 2단지",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000513",
+      "pblanc_no": "2026000513",
+      "sample": "완전",
+      "house_nm": "트리븐센텀 1단지",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000513",
+      "pblanc_no": "2026000513",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "트리븐센텀 1단지",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000513",
+      "pblanc_no": "2026000513",
+      "sample": "빈 프로필",
+      "house_nm": "트리븐센텀 1단지",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000509",
+      "pblanc_no": "2026000509",
+      "sample": "완전",
+      "house_nm": "아크메르 동탄 99",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000509",
+      "pblanc_no": "2026000509",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "아크메르 동탄 99",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000509",
+      "pblanc_no": "2026000509",
+      "sample": "빈 프로필",
+      "house_nm": "아크메르 동탄 99",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000508",
+      "pblanc_no": "2026000508",
+      "sample": "완전",
+      "house_nm": "아크메르 동탄 95",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000508",
+      "pblanc_no": "2026000508",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "아크메르 동탄 95",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000508",
+      "pblanc_no": "2026000508",
+      "sample": "빈 프로필",
+      "house_nm": "아크메르 동탄 95",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000507",
+      "pblanc_no": "2026000507",
+      "sample": "완전",
+      "house_nm": "광안센텀 비스타동원(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000507",
+      "pblanc_no": "2026000507",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "광안센텀 비스타동원(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000507",
+      "pblanc_no": "2026000507",
+      "sample": "빈 프로필",
+      "house_nm": "광안센텀 비스타동원(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000495",
+      "pblanc_no": "2026000495",
+      "sample": "완전",
+      "house_nm": "연산 센텀 월드메르디앙",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000495",
+      "pblanc_no": "2026000495",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "연산 센텀 월드메르디앙",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000495",
+      "pblanc_no": "2026000495",
+      "sample": "빈 프로필",
+      "house_nm": "연산 센텀 월드메르디앙",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000373",
+      "pblanc_no": "2026000373",
+      "sample": "완전",
+      "house_nm": "고덕강일지구 3단지 토지임대부(본청약)",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000373",
+      "pblanc_no": "2026000373",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "고덕강일지구 3단지 토지임대부(본청약)",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000373",
+      "pblanc_no": "2026000373",
+      "sample": "빈 프로필",
+      "house_nm": "고덕강일지구 3단지 토지임대부(본청약)",
+      "rcrit_pblanc_de": "2026-10-16",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000455",
+      "pblanc_no": "2026000455",
+      "sample": "완전",
+      "house_nm": "신분평 에피트 더웨이시티",
+      "rcrit_pblanc_de": "2026-10-15",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000455",
+      "pblanc_no": "2026000455",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "신분평 에피트 더웨이시티",
+      "rcrit_pblanc_de": "2026-10-15",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000455",
+      "pblanc_no": "2026000455",
+      "sample": "빈 프로필",
+      "house_nm": "신분평 에피트 더웨이시티",
+      "rcrit_pblanc_de": "2026-10-15",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000492",
+      "pblanc_no": "2026000492",
+      "sample": "완전",
+      "house_nm": "청주 가경 아이파크 8단지",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000492",
+      "pblanc_no": "2026000492",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "청주 가경 아이파크 8단지",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000492",
+      "pblanc_no": "2026000492",
+      "sample": "빈 프로필",
+      "house_nm": "청주 가경 아이파크 8단지",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000491",
+      "pblanc_no": "2026000491",
+      "sample": "완전",
+      "house_nm": "청주 가경 아이파크 7단지",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000491",
+      "pblanc_no": "2026000491",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "청주 가경 아이파크 7단지",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000491",
+      "pblanc_no": "2026000491",
+      "sample": "빈 프로필",
+      "house_nm": "청주 가경 아이파크 7단지",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000471",
+      "pblanc_no": "2026000471",
+      "sample": "완전",
+      "house_nm": "한양립스 에듀포레(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000471",
+      "pblanc_no": "2026000471",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "한양립스 에듀포레(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000471",
+      "pblanc_no": "2026000471",
+      "sample": "빈 프로필",
+      "house_nm": "한양립스 에듀포레(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000469",
+      "pblanc_no": "2026000469",
+      "sample": "완전",
+      "house_nm": "연제갤러리자이",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000469",
+      "pblanc_no": "2026000469",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "연제갤러리자이",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000469",
+      "pblanc_no": "2026000469",
+      "sample": "빈 프로필",
+      "house_nm": "연제갤러리자이",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000466",
+      "pblanc_no": "2026000466",
+      "sample": "완전",
+      "house_nm": "진도 승원팰리체 더 테라스",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000466",
+      "pblanc_no": "2026000466",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "진도 승원팰리체 더 테라스",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000466",
+      "pblanc_no": "2026000466",
+      "sample": "빈 프로필",
+      "house_nm": "진도 승원팰리체 더 테라스",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000464",
+      "pblanc_no": "2026000464",
+      "sample": "완전",
+      "house_nm": "힐스테이트 거제시그니처(1회차)",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000464",
+      "pblanc_no": "2026000464",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "힐스테이트 거제시그니처(1회차)",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000464",
+      "pblanc_no": "2026000464",
+      "sample": "빈 프로필",
+      "house_nm": "힐스테이트 거제시그니처(1회차)",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000458",
+      "pblanc_no": "2026000458",
+      "sample": "완전",
+      "house_nm": "산곡역자이힐스테이트앤하늘채",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000458",
+      "pblanc_no": "2026000458",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "산곡역자이힐스테이트앤하늘채",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000458",
+      "pblanc_no": "2026000458",
+      "sample": "빈 프로필",
+      "house_nm": "산곡역자이힐스테이트앤하늘채",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000402",
+      "pblanc_no": "2026000402",
+      "sample": "완전",
+      "house_nm": "익산 부송에코르 10년 공공임대주택",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000402",
+      "pblanc_no": "2026000402",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "익산 부송에코르 10년 공공임대주택",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000402",
+      "pblanc_no": "2026000402",
+      "sample": "빈 프로필",
+      "house_nm": "익산 부송에코르 10년 공공임대주택",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000267",
+      "pblanc_no": "2026000267",
+      "sample": "완전",
+      "house_nm": "아산 그랑시티필하우스",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000267",
+      "pblanc_no": "2026000267",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "아산 그랑시티필하우스",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000267",
+      "pblanc_no": "2026000267",
+      "sample": "빈 프로필",
+      "house_nm": "아산 그랑시티필하우스",
+      "rcrit_pblanc_de": "2026-10-08",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000498",
+      "pblanc_no": "2026000498",
+      "sample": "완전",
+      "house_nm": "천안 아이파크 시티 2단지(2회차)",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000498",
+      "pblanc_no": "2026000498",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "천안 아이파크 시티 2단지(2회차)",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000498",
+      "pblanc_no": "2026000498",
+      "sample": "빈 프로필",
+      "house_nm": "천안 아이파크 시티 2단지(2회차)",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000494",
+      "pblanc_no": "2026000494",
+      "sample": "완전",
+      "house_nm": "더샵 동인센트리체",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000494",
+      "pblanc_no": "2026000494",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "더샵 동인센트리체",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000494",
+      "pblanc_no": "2026000494",
+      "sample": "빈 프로필",
+      "house_nm": "더샵 동인센트리체",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000468",
+      "pblanc_no": "2026000468",
+      "sample": "완전",
+      "house_nm": "쌍용 더 플래티넘 한강",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000468",
+      "pblanc_no": "2026000468",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "쌍용 더 플래티넘 한강",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000468",
+      "pblanc_no": "2026000468",
+      "sample": "빈 프로필",
+      "house_nm": "쌍용 더 플래티넘 한강",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000463",
+      "pblanc_no": "2026000463",
+      "sample": "완전",
+      "house_nm": "향남역 그로브 스위첸",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000463",
+      "pblanc_no": "2026000463",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "향남역 그로브 스위첸",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000463",
+      "pblanc_no": "2026000463",
+      "sample": "빈 프로필",
+      "house_nm": "향남역 그로브 스위첸",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "sample": "완전",
+      "house_nm": "제주시 이도이동 아이린8차 아파트",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "제주시 이도이동 아이린8차 아파트",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "sample": "빈 프로필",
+      "house_nm": "제주시 이도이동 아이린8차 아파트",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000386",
+      "pblanc_no": "2026000386",
+      "sample": "완전",
+      "house_nm": "용인 양지 서희스타힐스 하이뷰 (조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000386",
+      "pblanc_no": "2026000386",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "용인 양지 서희스타힐스 하이뷰 (조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000386",
+      "pblanc_no": "2026000386",
+      "sample": "빈 프로필",
+      "house_nm": "용인 양지 서희스타힐스 하이뷰 (조합원 취소분)",
+      "rcrit_pblanc_de": "2026-10-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820010",
+      "pblanc_no": "2026820010",
+      "sample": "완전",
+      "house_nm": "인천계양 A17블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-09-30",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026820010",
+      "pblanc_no": "2026820010",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "인천계양 A17블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-09-30",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820010",
+      "pblanc_no": "2026820010",
+      "sample": "빈 프로필",
+      "house_nm": "인천계양 A17블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-09-30",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820011",
+      "pblanc_no": "2026820011",
+      "sample": "완전",
+      "house_nm": "시흥하중지구 A-4블록 신혼희망타운(공공분양) 추가입주자모집",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026820011",
+      "pblanc_no": "2026820011",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "시흥하중지구 A-4블록 신혼희망타운(공공분양) 추가입주자모집",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820011",
+      "pblanc_no": "2026820011",
+      "sample": "빈 프로필",
+      "house_nm": "시흥하중지구 A-4블록 신혼희망타운(공공분양) 추가입주자모집",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000453",
+      "pblanc_no": "2026000453",
+      "sample": "완전",
+      "house_nm": "광명 시티프라디움 에듀하임",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000453",
+      "pblanc_no": "2026000453",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "광명 시티프라디움 에듀하임",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000453",
+      "pblanc_no": "2026000453",
+      "sample": "빈 프로필",
+      "house_nm": "광명 시티프라디움 에듀하임",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000448",
+      "pblanc_no": "2026000448",
+      "sample": "완전",
+      "house_nm": "숭의역 노르웨이숲 더 스카이",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000448",
+      "pblanc_no": "2026000448",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "숭의역 노르웨이숲 더 스카이",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000448",
+      "pblanc_no": "2026000448",
+      "sample": "빈 프로필",
+      "house_nm": "숭의역 노르웨이숲 더 스카이",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000446",
+      "pblanc_no": "2026000446",
+      "sample": "완전",
+      "house_nm": "진주 판문지구 레이크써밋 웰가",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000446",
+      "pblanc_no": "2026000446",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "진주 판문지구 레이크써밋 웰가",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000446",
+      "pblanc_no": "2026000446",
+      "sample": "빈 프로필",
+      "house_nm": "진주 판문지구 레이크써밋 웰가",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000445",
+      "pblanc_no": "2026000445",
+      "sample": "완전",
+      "house_nm": "삼천 하늘채 라비엘",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000445",
+      "pblanc_no": "2026000445",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "삼천 하늘채 라비엘",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000445",
+      "pblanc_no": "2026000445",
+      "sample": "빈 프로필",
+      "house_nm": "삼천 하늘채 라비엘",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000443",
+      "pblanc_no": "2026000443",
+      "sample": "완전",
+      "house_nm": "에코델타시티 금강펜테리움 에코리버",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000443",
+      "pblanc_no": "2026000443",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "에코델타시티 금강펜테리움 에코리버",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000443",
+      "pblanc_no": "2026000443",
+      "sample": "빈 프로필",
+      "house_nm": "에코델타시티 금강펜테리움 에코리버",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000436",
+      "pblanc_no": "2026000436",
+      "sample": "완전",
+      "house_nm": "더샵 시에르네(조합원취소분)(2회차)",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000436",
+      "pblanc_no": "2026000436",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "더샵 시에르네(조합원취소분)(2회차)",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000436",
+      "pblanc_no": "2026000436",
+      "sample": "빈 프로필",
+      "house_nm": "더샵 시에르네(조합원취소분)(2회차)",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000424",
+      "pblanc_no": "2026000424",
+      "sample": "완전",
+      "house_nm": "쌍용 더 플래티넘 센텀",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000424",
+      "pblanc_no": "2026000424",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "쌍용 더 플래티넘 센텀",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000424",
+      "pblanc_no": "2026000424",
+      "sample": "빈 프로필",
+      "house_nm": "쌍용 더 플래티넘 센텀",
+      "rcrit_pblanc_de": "2026-09-18",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000454",
+      "pblanc_no": "2026000454",
+      "sample": "완전",
+      "house_nm": "천안 용곡 두산위브(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-17",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000454",
+      "pblanc_no": "2026000454",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "천안 용곡 두산위브(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-17",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000454",
+      "pblanc_no": "2026000454",
+      "sample": "빈 프로필",
+      "house_nm": "천안 용곡 두산위브(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-17",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000449",
+      "pblanc_no": "2026000449",
+      "sample": "완전",
+      "house_nm": "화서역 호수공원 아너스빌",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000449",
+      "pblanc_no": "2026000449",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "화서역 호수공원 아너스빌",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000449",
+      "pblanc_no": "2026000449",
+      "sample": "빈 프로필",
+      "house_nm": "화서역 호수공원 아너스빌",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000441",
+      "pblanc_no": "2026000441",
+      "sample": "완전",
+      "house_nm": "문수로 비스타 더파크",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000441",
+      "pblanc_no": "2026000441",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "문수로 비스타 더파크",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000441",
+      "pblanc_no": "2026000441",
+      "sample": "빈 프로필",
+      "house_nm": "문수로 비스타 더파크",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000438",
+      "pblanc_no": "2026000438",
+      "sample": "완전",
+      "house_nm": "힐스테이트 고덕엘리스트 A65BL 공공분양주택",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000438",
+      "pblanc_no": "2026000438",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "힐스테이트 고덕엘리스트 A65BL 공공분양주택",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000438",
+      "pblanc_no": "2026000438",
+      "sample": "빈 프로필",
+      "house_nm": "힐스테이트 고덕엘리스트 A65BL 공공분양주택",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000437",
+      "pblanc_no": "2026000437",
+      "sample": "완전",
+      "house_nm": "힐스테이트 고덕엘리스트 A12BL 공공분양주택",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000437",
+      "pblanc_no": "2026000437",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "힐스테이트 고덕엘리스트 A12BL 공공분양주택",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000437",
+      "pblanc_no": "2026000437",
+      "sample": "빈 프로필",
+      "house_nm": "힐스테이트 고덕엘리스트 A12BL 공공분양주택",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "sample": "완전",
+      "house_nm": "더샵 분당하이스트",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "더샵 분당하이스트",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "sample": "빈 프로필",
+      "house_nm": "더샵 분당하이스트",
+      "rcrit_pblanc_de": "2026-09-11",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "sample": "완전",
+      "house_nm": "중동역 다채로움 더원",
+      "rcrit_pblanc_de": "2026-09-10",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "중동역 다채로움 더원",
+      "rcrit_pblanc_de": "2026-09-10",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "sample": "빈 프로필",
+      "house_nm": "중동역 다채로움 더원",
+      "rcrit_pblanc_de": "2026-09-10",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000431",
+      "pblanc_no": "2026000431",
+      "sample": "완전",
+      "house_nm": "오남역 서희스타힐스 여의재 3단지 (조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-09",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000431",
+      "pblanc_no": "2026000431",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "오남역 서희스타힐스 여의재 3단지 (조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-09",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000431",
+      "pblanc_no": "2026000431",
+      "sample": "빈 프로필",
+      "house_nm": "오남역 서희스타힐스 여의재 3단지 (조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-09",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000426",
+      "pblanc_no": "2026000426",
+      "sample": "완전",
+      "house_nm": "천안 아이파크 시티 4단지",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000426",
+      "pblanc_no": "2026000426",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "천안 아이파크 시티 4단지",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000426",
+      "pblanc_no": "2026000426",
+      "sample": "빈 프로필",
+      "house_nm": "천안 아이파크 시티 4단지",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000423",
+      "pblanc_no": "2026000423",
+      "sample": "완전",
+      "house_nm": "두정역 푸르지오 그랑피크",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000423",
+      "pblanc_no": "2026000423",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "두정역 푸르지오 그랑피크",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000423",
+      "pblanc_no": "2026000423",
+      "sample": "빈 프로필",
+      "house_nm": "두정역 푸르지오 그랑피크",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000422",
+      "pblanc_no": "2026000422",
+      "sample": "완전",
+      "house_nm": "천안 아이파크 시티 3단지",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000422",
+      "pblanc_no": "2026000422",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "천안 아이파크 시티 3단지",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000422",
+      "pblanc_no": "2026000422",
+      "sample": "빈 프로필",
+      "house_nm": "천안 아이파크 시티 3단지",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000420",
+      "pblanc_no": "2026000420",
+      "sample": "완전",
+      "house_nm": "남울산 노르웨이숲(조합원 취소분)(2회차)",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000420",
+      "pblanc_no": "2026000420",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "남울산 노르웨이숲(조합원 취소분)(2회차)",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000420",
+      "pblanc_no": "2026000420",
+      "sample": "빈 프로필",
+      "house_nm": "남울산 노르웨이숲(조합원 취소분)(2회차)",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000393",
+      "pblanc_no": "2026000393",
+      "sample": "완전",
+      "house_nm": "시흥 은계 에피트(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000393",
+      "pblanc_no": "2026000393",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "시흥 은계 에피트(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000393",
+      "pblanc_no": "2026000393",
+      "sample": "빈 프로필",
+      "house_nm": "시흥 은계 에피트(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-09-04",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000394",
+      "pblanc_no": "2026000394",
+      "sample": "완전",
+      "house_nm": "더샵 여주역더퍼스트",
+      "rcrit_pblanc_de": "2026-09-03",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000394",
+      "pblanc_no": "2026000394",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "더샵 여주역더퍼스트",
+      "rcrit_pblanc_de": "2026-09-03",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000394",
+      "pblanc_no": "2026000394",
+      "sample": "빈 프로필",
+      "house_nm": "더샵 여주역더퍼스트",
+      "rcrit_pblanc_de": "2026-09-03",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "sample": "완전",
+      "house_nm": "대전 경남아너스빌 센텀스카이",
+      "rcrit_pblanc_de": "2026-09-03",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "대전 경남아너스빌 센텀스카이",
+      "rcrit_pblanc_de": "2026-09-03",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "sample": "빈 프로필",
+      "house_nm": "대전 경남아너스빌 센텀스카이",
+      "rcrit_pblanc_de": "2026-09-03",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000419",
+      "pblanc_no": "2026000419",
+      "sample": "완전",
+      "house_nm": "올 뉴 챔피언스시티 1차",
+      "rcrit_pblanc_de": "2026-09-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000419",
+      "pblanc_no": "2026000419",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "올 뉴 챔피언스시티 1차",
+      "rcrit_pblanc_de": "2026-09-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000419",
+      "pblanc_no": "2026000419",
+      "sample": "빈 프로필",
+      "house_nm": "올 뉴 챔피언스시티 1차",
+      "rcrit_pblanc_de": "2026-09-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000403",
+      "pblanc_no": "2026000403",
+      "sample": "완전",
+      "house_nm": "그랑라크 에일린의 뜰",
+      "rcrit_pblanc_de": "2026-09-02",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000403",
+      "pblanc_no": "2026000403",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "그랑라크 에일린의 뜰",
+      "rcrit_pblanc_de": "2026-09-02",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000403",
+      "pblanc_no": "2026000403",
+      "sample": "빈 프로필",
+      "house_nm": "그랑라크 에일린의 뜰",
+      "rcrit_pblanc_de": "2026-09-02",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820009",
+      "pblanc_no": "2026820009",
+      "sample": "완전",
+      "house_nm": "남양주진접2지구 A-4블록 신혼희망타운(공공분양) 잔여세대 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-08-31",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026820009",
+      "pblanc_no": "2026820009",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "남양주진접2지구 A-4블록 신혼희망타운(공공분양) 잔여세대 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-08-31",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820009",
+      "pblanc_no": "2026820009",
+      "sample": "빈 프로필",
+      "house_nm": "남양주진접2지구 A-4블록 신혼희망타운(공공분양) 잔여세대 추가입주자모집공고",
+      "rcrit_pblanc_de": "2026-08-31",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000414",
+      "pblanc_no": "2026000414",
+      "sample": "완전",
+      "house_nm": "인천계양지구 A6블록 공공분양주택(본청약)",
+      "rcrit_pblanc_de": "2026-08-31",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000414",
+      "pblanc_no": "2026000414",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "인천계양지구 A6블록 공공분양주택(본청약)",
+      "rcrit_pblanc_de": "2026-08-31",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000414",
+      "pblanc_no": "2026000414",
+      "sample": "빈 프로필",
+      "house_nm": "인천계양지구 A6블록 공공분양주택(본청약)",
+      "rcrit_pblanc_de": "2026-08-31",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "sample": "완전",
+      "house_nm": "문수데시앙2단지 공가세대 일반공급",
+      "rcrit_pblanc_de": "2026-08-28",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "문수데시앙2단지 공가세대 일반공급",
+      "rcrit_pblanc_de": "2026-08-28",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "sample": "빈 프로필",
+      "house_nm": "문수데시앙2단지 공가세대 일반공급",
+      "rcrit_pblanc_de": "2026-08-28",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000399",
+      "pblanc_no": "2026000399",
+      "sample": "완전",
+      "house_nm": "브라운스톤 월곡 센트럴",
+      "rcrit_pblanc_de": "2026-08-28",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000399",
+      "pblanc_no": "2026000399",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "브라운스톤 월곡 센트럴",
+      "rcrit_pblanc_de": "2026-08-28",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000399",
+      "pblanc_no": "2026000399",
+      "sample": "빈 프로필",
+      "house_nm": "브라운스톤 월곡 센트럴",
+      "rcrit_pblanc_de": "2026-08-28",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000416",
+      "pblanc_no": "2026000416",
+      "sample": "완전",
+      "house_nm": "양주회천지구 A-26블록 공공분양주택",
+      "rcrit_pblanc_de": "2026-08-27",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000416",
+      "pblanc_no": "2026000416",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "양주회천지구 A-26블록 공공분양주택",
+      "rcrit_pblanc_de": "2026-08-27",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000416",
+      "pblanc_no": "2026000416",
+      "sample": "빈 프로필",
+      "house_nm": "양주회천지구 A-26블록 공공분양주택",
+      "rcrit_pblanc_de": "2026-08-27",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000409",
+      "pblanc_no": "2026000409",
+      "sample": "완전",
+      "house_nm": "의정부우정 A2블록 공공분양주택(본청약)",
+      "rcrit_pblanc_de": "2026-08-26",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000409",
+      "pblanc_no": "2026000409",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "의정부우정 A2블록 공공분양주택(본청약)",
+      "rcrit_pblanc_de": "2026-08-26",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000409",
+      "pblanc_no": "2026000409",
+      "sample": "빈 프로필",
+      "house_nm": "의정부우정 A2블록 공공분양주택(본청약)",
+      "rcrit_pblanc_de": "2026-08-26",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000404",
+      "pblanc_no": "2026000404",
+      "sample": "완전",
+      "house_nm": "검암역 푸르지오 프라베뉴 (B-1BL) 공공분양주택",
+      "rcrit_pblanc_de": "2026-08-21",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000404",
+      "pblanc_no": "2026000404",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "검암역 푸르지오 프라베뉴 (B-1BL) 공공분양주택",
+      "rcrit_pblanc_de": "2026-08-21",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000404",
+      "pblanc_no": "2026000404",
+      "sample": "빈 프로필",
+      "house_nm": "검암역 푸르지오 프라베뉴 (B-1BL) 공공분양주택",
+      "rcrit_pblanc_de": "2026-08-21",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000388",
+      "pblanc_no": "2026000388",
+      "sample": "완전",
+      "house_nm": "시티오씨엘 9단지 오션파크뷰",
+      "rcrit_pblanc_de": "2026-08-21",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000388",
+      "pblanc_no": "2026000388",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "시티오씨엘 9단지 오션파크뷰",
+      "rcrit_pblanc_de": "2026-08-21",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000388",
+      "pblanc_no": "2026000388",
+      "sample": "빈 프로필",
+      "house_nm": "시티오씨엘 9단지 오션파크뷰",
+      "rcrit_pblanc_de": "2026-08-21",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000383",
+      "pblanc_no": "2026000383",
+      "sample": "완전",
+      "house_nm": "포레나힐스테이트 진주",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000383",
+      "pblanc_no": "2026000383",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "포레나힐스테이트 진주",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000383",
+      "pblanc_no": "2026000383",
+      "sample": "빈 프로필",
+      "house_nm": "포레나힐스테이트 진주",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000372",
+      "pblanc_no": "2026000372",
+      "sample": "완전",
+      "house_nm": "쌍용 더 플래티넘 서대문",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000372",
+      "pblanc_no": "2026000372",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "쌍용 더 플래티넘 서대문",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000372",
+      "pblanc_no": "2026000372",
+      "sample": "빈 프로필",
+      "house_nm": "쌍용 더 플래티넘 서대문",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000368",
+      "pblanc_no": "2026000368",
+      "sample": "완전",
+      "house_nm": "아르티엠 라 테라스",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000368",
+      "pblanc_no": "2026000368",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "아르티엠 라 테라스",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000368",
+      "pblanc_no": "2026000368",
+      "sample": "빈 프로필",
+      "house_nm": "아르티엠 라 테라스",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000354",
+      "pblanc_no": "2026000354",
+      "sample": "완전",
+      "house_nm": "상동역 롯데캐슬 시그니처",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000354",
+      "pblanc_no": "2026000354",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "상동역 롯데캐슬 시그니처",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000354",
+      "pblanc_no": "2026000354",
+      "sample": "빈 프로필",
+      "house_nm": "상동역 롯데캐슬 시그니처",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000342",
+      "pblanc_no": "2026000342",
+      "sample": "완전",
+      "house_nm": "제일풍경채 첨단3지구(A6BL)",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000342",
+      "pblanc_no": "2026000342",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "제일풍경채 첨단3지구(A6BL)",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000342",
+      "pblanc_no": "2026000342",
+      "sample": "빈 프로필",
+      "house_nm": "제일풍경채 첨단3지구(A6BL)",
+      "rcrit_pblanc_de": "2026-08-14",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000377",
+      "pblanc_no": "2026000377",
+      "sample": "완전",
+      "house_nm": "의왕역 한신더휴",
+      "rcrit_pblanc_de": "2026-08-13",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000377",
+      "pblanc_no": "2026000377",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "의왕역 한신더휴",
+      "rcrit_pblanc_de": "2026-08-13",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000377",
+      "pblanc_no": "2026000377",
+      "sample": "빈 프로필",
+      "house_nm": "의왕역 한신더휴",
+      "rcrit_pblanc_de": "2026-08-13",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000365",
+      "pblanc_no": "2026000365",
+      "sample": "완전",
+      "house_nm": "오남역 서희스타힐스 여의재 1단지",
+      "rcrit_pblanc_de": "2026-08-13",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000365",
+      "pblanc_no": "2026000365",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "오남역 서희스타힐스 여의재 1단지",
+      "rcrit_pblanc_de": "2026-08-13",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000365",
+      "pblanc_no": "2026000365",
+      "sample": "빈 프로필",
+      "house_nm": "오남역 서희스타힐스 여의재 1단지",
+      "rcrit_pblanc_de": "2026-08-13",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000382",
+      "pblanc_no": "2026000382",
+      "sample": "완전",
+      "house_nm": "두산위브더제니스 부천",
+      "rcrit_pblanc_de": "2026-08-12",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000382",
+      "pblanc_no": "2026000382",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "두산위브더제니스 부천",
+      "rcrit_pblanc_de": "2026-08-12",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000382",
+      "pblanc_no": "2026000382",
+      "sample": "빈 프로필",
+      "house_nm": "두산위브더제니스 부천",
+      "rcrit_pblanc_de": "2026-08-12",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820008",
+      "pblanc_no": "2026820008",
+      "sample": "완전",
+      "house_nm": "성남복정2 A1블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-08-10",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026820008",
+      "pblanc_no": "2026820008",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "성남복정2 A1블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-08-10",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820008",
+      "pblanc_no": "2026820008",
+      "sample": "빈 프로필",
+      "house_nm": "성남복정2 A1블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-08-10",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820006",
+      "pblanc_no": "2026820006",
+      "sample": "완전",
+      "house_nm": "시흥거모 A-5블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026820006",
+      "pblanc_no": "2026820006",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "시흥거모 A-5블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026820006",
+      "pblanc_no": "2026820006",
+      "sample": "빈 프로필",
+      "house_nm": "시흥거모 A-5블록 신혼희망타운(공공분양)(본청약)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000374",
+      "pblanc_no": "2026000374",
+      "sample": "완전",
+      "house_nm": "더샵 신길센트럴시티(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000374",
+      "pblanc_no": "2026000374",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "더샵 신길센트럴시티(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000374",
+      "pblanc_no": "2026000374",
+      "sample": "빈 프로필",
+      "house_nm": "더샵 신길센트럴시티(조합원 취소분)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000371",
+      "pblanc_no": "2026000371",
+      "sample": "완전",
+      "house_nm": "용인반도체클러스터 동일하이빌 파크밸리(D1-1블록)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000371",
+      "pblanc_no": "2026000371",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "용인반도체클러스터 동일하이빌 파크밸리(D1-1블록)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000371",
+      "pblanc_no": "2026000371",
+      "sample": "빈 프로필",
+      "house_nm": "용인반도체클러스터 동일하이빌 파크밸리(D1-1블록)",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000364",
+      "pblanc_no": "2026000364",
+      "sample": "완전",
+      "house_nm": "써밋 클라비온",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000364",
+      "pblanc_no": "2026000364",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "써밋 클라비온",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000364",
+      "pblanc_no": "2026000364",
+      "sample": "빈 프로필",
+      "house_nm": "써밋 클라비온",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000358",
+      "pblanc_no": "2026000358",
+      "sample": "완전",
+      "house_nm": "충정로역자이르네",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000358",
+      "pblanc_no": "2026000358",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "충정로역자이르네",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000358",
+      "pblanc_no": "2026000358",
+      "sample": "빈 프로필",
+      "house_nm": "충정로역자이르네",
+      "rcrit_pblanc_de": "2026-08-07",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000376",
+      "pblanc_no": "2026000376",
+      "sample": "완전",
+      "house_nm": "달서자이 제니크",
+      "rcrit_pblanc_de": "2026-08-06",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000376",
+      "pblanc_no": "2026000376",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "달서자이 제니크",
+      "rcrit_pblanc_de": "2026-08-06",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000376",
+      "pblanc_no": "2026000376",
+      "sample": "빈 프로필",
+      "house_nm": "달서자이 제니크",
+      "rcrit_pblanc_de": "2026-08-06",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000323",
+      "pblanc_no": "2026000323",
+      "sample": "완전",
+      "house_nm": "세종 우미 린 센터파크(행정중심복합도시 5-2생활권 S1블록, 글미마을 9단지)",
+      "rcrit_pblanc_de": "2026-07-31",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000323",
+      "pblanc_no": "2026000323",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "세종 우미 린 센터파크(행정중심복합도시 5-2생활권 S1블록, 글미마을 9단지)",
+      "rcrit_pblanc_de": "2026-07-31",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000323",
+      "pblanc_no": "2026000323",
+      "sample": "빈 프로필",
+      "house_nm": "세종 우미 린 센터파크(행정중심복합도시 5-2생활권 S1블록, 글미마을 9단지)",
+      "rcrit_pblanc_de": "2026-07-31",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000367",
+      "pblanc_no": "2026000367",
+      "sample": "완전",
+      "house_nm": "한강 푸르지오 리버프론트",
+      "rcrit_pblanc_de": "2026-07-30",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000367",
+      "pblanc_no": "2026000367",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "한강 푸르지오 리버프론트",
+      "rcrit_pblanc_de": "2026-07-30",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000367",
+      "pblanc_no": "2026000367",
+      "sample": "빈 프로필",
+      "house_nm": "한강 푸르지오 리버프론트",
+      "rcrit_pblanc_de": "2026-07-30",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000356",
+      "pblanc_no": "2026000356",
+      "sample": "완전",
+      "house_nm": "두산위브더제니스 대연",
+      "rcrit_pblanc_de": "2026-07-30",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000356",
+      "pblanc_no": "2026000356",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "두산위브더제니스 대연",
+      "rcrit_pblanc_de": "2026-07-30",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000356",
+      "pblanc_no": "2026000356",
+      "sample": "빈 프로필",
+      "house_nm": "두산위브더제니스 대연",
+      "rcrit_pblanc_de": "2026-07-30",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000295",
+      "pblanc_no": "2026000295",
+      "sample": "완전",
+      "house_nm": "아산테크노밸리 더원 7차 (Ab4BL)",
+      "rcrit_pblanc_de": "2026-07-27",
+      "total": [
+        59,
+        59
+      ],
+      "missing": []
+    },
+    {
+      "house_manage_no": "2026000295",
+      "pblanc_no": "2026000295",
+      "sample": "통장 가입일만 모름",
+      "house_nm": "아산테크노밸리 더원 7차 (Ab4BL)",
+      "rcrit_pblanc_de": "2026-07-27",
+      "total": [
+        46,
+        59
+      ],
+      "missing": [
+        "savings_join_date"
+      ]
+    },
+    {
+      "house_manage_no": "2026000295",
+      "pblanc_no": "2026000295",
+      "sample": "빈 프로필",
+      "house_nm": "아산테크노밸리 더원 7차 (Ab4BL)",
+      "rcrit_pblanc_de": "2026-07-27",
+      "total": [
+        6,
+        84
+      ],
+      "missing": [
+        "birth_date",
+        "married",
+        "marriage_date",
+        "homeless_now",
+        "ever_owned",
+        "homeless_since",
+        "is_household_head",
+        "children_unmarried",
+        "children_30plus_1y",
+        "ascendants_3y",
+        "ascendants_any_owner",
+        "savings_join_date",
+        "spouse_has_savings",
+        "spouse_savings_join_date"
+      ]
+    }
+  ],
+  "faq170": {
+    "rows": 6,
+    "matched": 6,
+    "items": [
+      {
+        "join": "2001-01-15",
+        "notice": "2003-05-14",
+        "expected": "2년4월0일 3점",
+        "actual": "2년4월0일 3점",
+        "text_ok": true,
+        "points_ok": true
+      },
+      {
+        "join": "2006-07-07",
+        "notice": "2014-08-31",
+        "expected": "8년1월25일 3점",
+        "actual": "8년1월25일 3점",
+        "text_ok": true,
+        "points_ok": true
+      },
+      {
+        "join": "2014-09-01",
+        "notice": "2015-10-31",
+        "expected": "1년2월0일 2점",
+        "actual": "1년2월0일 2점",
+        "text_ok": true,
+        "points_ok": true
+      },
+      {
+        "join": "2015-04-01",
+        "notice": "2019-04-21",
+        "expected": "4년0월21일 3점",
+        "actual": "4년0월21일 3점",
+        "text_ok": true,
+        "points_ok": true
+      },
+      {
+        "join": "2019-04-22",
+        "notice": "2019-08-31",
+        "expected": "0년4월10일 1점",
+        "actual": "0년4월10일 1점",
+        "text_ok": true,
+        "points_ok": true
+      },
+      {
+        "join": "2019-09-01",
+        "notice": "2020-06-30",
+        "expected": "0년10월0일 1점",
+        "actual": "0년10월0일 1점",
+        "text_ok": true,
+        "points_ok": true
+      }
+    ]
+  }
+}
