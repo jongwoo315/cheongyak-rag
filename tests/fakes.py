@@ -8,7 +8,8 @@ class FakeEmbedder:
 
     model = "fake"
 
-    def __init__(self):
+    def __init__(self, dim=16):
+        self.dim = dim  # 16 초과면 해시를 시드로 한 난수 벡터. DB의 vector(1536) 칸에 넣을 때 쓴다
         self.api_calls = 0
         self.cache = {}
         self.calls = []
@@ -19,7 +20,11 @@ class FakeEmbedder:
         for t in texts:
             if t not in self.cache:
                 h = hashlib.sha256(t.encode()).digest()
-                self.cache[t] = [(b + 1) / 256 for b in h[:16]]
+                if self.dim <= 16:
+                    self.cache[t] = [(b + 1) / 256 for b in h[: self.dim]]
+                else:
+                    rng = np.random.default_rng(int.from_bytes(h[:8], "big"))
+                    self.cache[t] = list(rng.random(self.dim) + 0.01)
             out.append(self.cache[t])
         return np.array(out, dtype=np.float64)
 
