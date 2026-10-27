@@ -183,7 +183,7 @@ def test_nearest_order_matches_numpy_cosine(pg_engine):
 def test_nearest_filters_by_source_and_returns_k(pg_engine):
     index_db.load(pg_engine, _many_rows())
     q = [0.5] * 1536
-    for source, n in (("law", 12), ("faq", 6)):
+    for source in ("law", "faq"):
         got = index_db.nearest(pg_engine, q, source, 5, force_index=True)
         assert len(got) == 5
         assert all(cid.startswith(f"{source}:") for cid, _ in got)
