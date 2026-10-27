@@ -190,3 +190,48 @@ def test_nearest_default_path_works_without_forcing_the_index(pg_engine):
     index_db.load(pg_engine, rows)
     got = index_db.nearest(pg_engine, rows[0]["embedding"], "law", 3)
     assert got[0][0] == rows[0]["chunk_id"] and len(got) == 3
+
+
+def _loaded(pg_engine):
+    from cheongyak_rag.retrieval.query import Index
+
+    emb = FakeEmbedder(dim=1536)
+    rows = index_db.build_rows(emb, None, "article", law_rows=LAW, faq_rows=FAQ)
+    index_db.load(pg_engine, rows)
+    index = Index("article", emb, law_rows=LAW, faq_rows=FAQ)
+    return emb, rows, index.law + index.faq
+
+
+def test_measure_load_counts_what_is_missing_changed_or_unindexed(pg_engine):
+    emb, rows, chunks = _loaded(pg_engine)
+    probe = rows[0]["embedding"]
+    assert rep.measure_load(pg_engine, emb, chunks, probe)["zone"] == "통과"
+
+    with pg_engine.begin() as conn:
+        conn.execute(text("DELETE FROM chunks WHERE chunk_id = :i"), {"i": rows[0]["chunk_id"]})
+        conn.execute(
+            text("UPDATE chunks SET text = 'x' WHERE chunk_id = :i"), {"i": rows[1]["chunk_id"]}
+        )
+        conn.execute(
+            text("INSERT INTO chunks SELECT 'law:없음', source, label, path, title, text,"
+                 " text_sha256, law_mst, embed_model, embedding, tokens FROM chunks"
+                 " WHERE chunk_id = :i"),
+            {"i": rows[2]["chunk_id"]},
+        )  # fmt: skip
+        conn.execute(text("DROP INDEX chunks_embedding_law_hnsw"))
+    try:
+        got = rep.measure_load(pg_engine, emb, chunks, probe)
+    finally:  # 세션 공용 DB라 지운 인덱스를 되돌린다
+        with pg_engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE INDEX chunks_embedding_law_hnsw ON chunks"
+                    " USING hnsw (embedding vector_cosine_ops) WHERE source = 'law'"
+                )
+            )
+    assert got["missing"] == [rows[0]["chunk_id"]]
+    assert got["extra"] == ["law:없음"]
+    assert got["text_diff"] == 1 and got["text_diff_ids"] == [rows[1]["chunk_id"]]
+    assert got["no_index"] == ["chunks_embedding_law_hnsw"]
+    assert got["uses_index"]["law"] is False
+    assert got["zone"] == "미완"
