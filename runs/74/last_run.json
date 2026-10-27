@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-10-28T00:13:38+09:00",
+  "run_at": "2026-10-28T00:15:51+09:00",
   "candidate": "article",
   "embed_model": "text-embedding-3-small",
   "law_mst": "286965",
@@ -21,12 +21,12 @@
     "no_index": [],
     "explain": {
       "law": {
-        "default": "Limit  (cost=356.66..375.36 rows=5 width=16)\n  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..685.76 rows=88 width=16)\n        Order By: (embedding <=> '[…]'::vector)",
-        "seqscan_off": "Limit  (cost=356.66..375.36 rows=5 width=16)\n  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..685.76 rows=88 width=16)\n        Order By: (embedding <=> '[…]'::vector)"
+        "default": "Limit  (cost=294.78..294.79 rows=5 width=16)\n  ->  Sort  (cost=294.78..295.00 rows=88 width=16)\n        Sort Key: ((embedding <=> '[…]'::vector))\n        ->  Seq Scan on chunks  (cost=0.00..293.32 rows=88 width=16)\n              Filter: (source = 'law'::text)",
+        "seqscan_off": "Limit  (cost=356.66..374.22 rows=5 width=16)\n  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..665.76 rows=88 width=16)\n        Order By: (embedding <=> '[…]'::vector)"
       },
       "faq": {
-        "default": "Limit  (cost=581.50..581.51 rows=3 width=16)\n  ->  Sort  (cost=581.50..582.70 rows=480 width=16)\n        Sort Key: ((embedding <=> '[…]'::vector))\n        ->  Seq Scan on chunks  (cost=0.00..575.30 rows=480 width=16)\n              Filter: (source = 'faq'::text)",
-        "seqscan_off": "Limit  (cost=1471.10..1482.44 rows=3 width=16)\n  ->  Index Scan using chunks_embedding_faq_hnsw on chunks  (cost=1471.10..3285.60 rows=480 width=16)\n        Order By: (embedding <=> '[…]'::vector)"
+        "default": "Limit  (cost=300.50..300.51 rows=3 width=16)\n  ->  Sort  (cost=300.50..301.70 rows=480 width=16)\n        Sort Key: ((embedding <=> '[…]'::vector))\n        ->  Seq Scan on chunks  (cost=0.00..294.30 rows=480 width=16)\n              Filter: (source = 'faq'::text)",
+        "seqscan_off": "Limit  (cost=1471.10..1480.52 rows=3 width=16)\n  ->  Index Scan using chunks_embedding_faq_hnsw on chunks  (cost=1471.10..2977.60 rows=480 width=16)\n        Order By: (embedding <=> '[…]'::vector)"
       }
     },
     "uses_index": {
@@ -77,6 +77,19 @@
   "tokens": {
     "empty": 0,
     "ids": [],
+    "resplit": 14,
+    "resplit_ids": [
+      "faq:115",
+      "faq:20",
+      "faq:243",
+      "faq:258",
+      "faq:261",
+      "faq:30",
+      "faq:325",
+      "faq:33",
+      "faq:335",
+      "faq:38"
+    ],
     "zone": "통과"
   },
   "versions": {

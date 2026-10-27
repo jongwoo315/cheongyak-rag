@@ -2,7 +2,7 @@
 
 # #74 검색 색인 적재 결과
 
-실행 2026-10-28T00:13:38+09:00 · 청킹 후보 `article` · 임베딩 모델 `text-embedding-3-small`
+실행 2026-10-28T00:15:51+09:00 · 청킹 후보 `article` · 임베딩 모델 `text-embedding-3-small`
 
 ## 1. 실패 징후 측정값
 
@@ -17,6 +17,13 @@
 
 구간 기준과 경계는 plan §실패 징후와 같다.
 
+### 읽는 법
+
+- 2·3번의 top-k는 `enable_seqscan=off`로 HNSW를 강제해서 쟀다. 기본 설정의 planner는 전수 스캔을 고를 수 있고 그 결과는 정확하므로, 기본 경로의 일치 비율은 따로 재지 않았다
+- 1번 벡터 대조의 기준은 `Embedder` 캐시(실행 때 읽은 `embed-<모델>.jsonl`)다. float4 저장과 문자열 직렬화로 값이 달라졌는지만 본다. 청크 텍스트는 `query.Index`와 같은 함수로 만들었으므로 `text` 대조도 저장 과정에서 바뀌었는지만 본다
+- 5번 재실행은 한 프로세스 안에서 같은 입력으로 두 번 적재해 `text`·벡터·`tokens`를 비교한다. 프로세스를 따로 두 번 돌린 비교는 PR 본문에 있다
+- 참고(판정에 안 쓴다): kiwi 토큰과 tsvector 낱말이 다른 청크 14개. Postgres `simple` 파서가 `시·도`나 공백이 든 토큰을 둘로 쪼개서다. 끝의 점(`2.` → `2`)은 같은 낱말로 셌다
+
 ## 2. 어긋난 곳
 
 - 없다
@@ -27,39 +34,41 @@
 
 ## 3. EXPLAIN 원문
 
-568행이면 planner가 인덱스 대신 전수 스캔을 고를 수 있다. 위 표의 top-k는 `enable_seqscan=off`에서 쟀다(`nearest(force_index=True)`).
+행이 적으면 planner가 인덱스 대신 전수 스캔을 고를 수 있다. 위 표의 top-k는 `enable_seqscan=off`에서 쟀다(`nearest(force_index=True)`).
 
 ### law · 기본 설정
 
 ```
-Limit  (cost=356.66..375.36 rows=5 width=16)
-  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..685.76 rows=88 width=16)
-        Order By: (embedding <=> '[…]'::vector)
+Limit  (cost=294.78..294.79 rows=5 width=16)
+  ->  Sort  (cost=294.78..295.00 rows=88 width=16)
+        Sort Key: ((embedding <=> '[…]'::vector))
+        ->  Seq Scan on chunks  (cost=0.00..293.32 rows=88 width=16)
+              Filter: (source = 'law'::text)
 ```
 
 ### law · enable_seqscan=off
 
 ```
-Limit  (cost=356.66..375.36 rows=5 width=16)
-  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..685.76 rows=88 width=16)
+Limit  (cost=356.66..374.22 rows=5 width=16)
+  ->  Index Scan using chunks_embedding_law_hnsw on chunks  (cost=356.66..665.76 rows=88 width=16)
         Order By: (embedding <=> '[…]'::vector)
 ```
 
 ### faq · 기본 설정
 
 ```
-Limit  (cost=581.50..581.51 rows=3 width=16)
-  ->  Sort  (cost=581.50..582.70 rows=480 width=16)
+Limit  (cost=300.50..300.51 rows=3 width=16)
+  ->  Sort  (cost=300.50..301.70 rows=480 width=16)
         Sort Key: ((embedding <=> '[…]'::vector))
-        ->  Seq Scan on chunks  (cost=0.00..575.30 rows=480 width=16)
+        ->  Seq Scan on chunks  (cost=0.00..294.30 rows=480 width=16)
               Filter: (source = 'faq'::text)
 ```
 
 ### faq · enable_seqscan=off
 
 ```
-Limit  (cost=1471.10..1482.44 rows=3 width=16)
-  ->  Index Scan using chunks_embedding_faq_hnsw on chunks  (cost=1471.10..3285.60 rows=480 width=16)
+Limit  (cost=1471.10..1480.52 rows=3 width=16)
+  ->  Index Scan using chunks_embedding_faq_hnsw on chunks  (cost=1471.10..2977.60 rows=480 width=16)
         Order By: (embedding <=> '[…]'::vector)
 ```
 
