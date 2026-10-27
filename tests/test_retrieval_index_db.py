@@ -190,6 +190,12 @@ def test_nearest_filters_by_source_and_returns_k(pg_engine):
     assert len(index_db.nearest(pg_engine, q, "faq", 10, force_index=True)) == 6  # 행이 6개뿐이다
 
 
+def test_nearest_returns_k_rows_even_when_k_exceeds_default_ef_search(pg_engine):
+    index_db.load(pg_engine, _many_rows(n_law=60, n_faq=1))
+    got = index_db.nearest(pg_engine, [0.5] * 1536, "law", 50, force_index=True)
+    assert len(got) == 50  # ef_search 기본 40이면 40개에서 멈춘다
+
+
 def test_nearest_rejects_unknown_source(pg_engine):
     import pytest
 

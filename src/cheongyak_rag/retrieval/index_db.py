@@ -130,6 +130,16 @@ def nearest_sql(source: str) -> sa.TextClause:
     )
 
 
+HNSW_EF_DEFAULT = 40  # pgvector `hnsw.ef_search` 기본값
+
+
+def _ef_for(k: int, ef_search: int | None) -> int | None:
+    """HNSW 스캔은 `ef_search`개까지만 돌려주므로 k가 그보다 크면 k까지 올린다. 아니면 None."""
+    if ef_search is None and k <= HNSW_EF_DEFAULT:
+        return None
+    return max(ef_search or 0, k)
+
+
 def _session_settings(conn, *, ef_search: int | None, seqscan_off: bool) -> None:
     """트랜잭션 안에서만 적용된다(`SET LOCAL`)."""
     if ef_search is not None:
@@ -153,7 +163,7 @@ def nearest(
     """
     params = {"q": vec_literal(query_vec), "k": k}
     with engine.begin() as conn:
-        _session_settings(conn, ef_search=ef_search, seqscan_off=force_index)
+        _session_settings(conn, ef_search=_ef_for(k, ef_search), seqscan_off=force_index)
         return [(r.chunk_id, float(r.dist)) for r in conn.execute(nearest_sql(source), params)]
 
 
@@ -169,7 +179,7 @@ def explain(
     """`nearest`와 같은 쿼리의 EXPLAIN 원문. 질문 벡터 리터럴(1536개 숫자)은 `'[…]'`로 줄인다."""
     sql = sa.text("EXPLAIN " + nearest_sql(source).text)
     with engine.begin() as conn:
-        _session_settings(conn, ef_search=ef_search, seqscan_off=seqscan_off)
+        _session_settings(conn, ef_search=_ef_for(k, ef_search), seqscan_off=seqscan_off)
         rows = conn.execute(sql, {"q": vec_literal(query_vec), "k": k}).scalars()
         return VECTOR_LITERAL.sub("'[…]'", "\n".join(rows))
 
