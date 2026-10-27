@@ -96,3 +96,64 @@ def load(engine: Engine, rows: list[dict]) -> int:
         if params:
             conn.execute(INSERT, params)
     return len(rows)
+
+
+SOURCES = ("law", "faq")
+
+
+def nearest_sql(source: str) -> sa.TextClause:
+    """코사인 거리 순 상위 k개. `WHERE source = '…'`는 부분 인덱스 조건과 글자 그대로 같아야 한다.
+
+    인덱스를 타려면 planner가 조건을 증명해야 해서 값을 바인드 변수가 아니라 리터럴로 쓴다.
+    그래서 source는 허용 목록에서만 받는다.
+    """
+    if source not in SOURCES:
+        raise ValueError(f"source {source!r} 없음. {SOURCES} 중 하나")
+    return sa.text(
+        f"SELECT chunk_id, embedding <=> CAST(:q AS vector) AS dist FROM chunks"
+        f" WHERE source = '{source}' ORDER BY embedding <=> CAST(:q AS vector) LIMIT :k"
+    )
+
+
+def _session_settings(conn, *, ef_search: int | None, seqscan_off: bool) -> None:
+    """트랜잭션 안에서만 적용된다(`SET LOCAL`)."""
+    if ef_search is not None:
+        conn.execute(sa.text(f"SET LOCAL hnsw.ef_search = {int(ef_search)}"))
+    if seqscan_off:
+        conn.execute(sa.text("SET LOCAL enable_seqscan = off"))
+
+
+def nearest(
+    engine: Engine,
+    query_vec,
+    source: str,
+    k: int,
+    *,
+    ef_search: int | None = None,
+    force_index: bool = False,
+) -> list[tuple[str, float]]:
+    """source의 청크 중 질문 벡터와 코사인 거리가 가까운 k개 → (chunk_id, 거리). #79가 쓴다.
+
+    행이 568개면 planner가 인덱스 대신 전수 스캔을 고를 수 있다. `force_index`는 HNSW를 쓰게 한다.
+    """
+    params = {"q": vec_literal(query_vec), "k": k}
+    with engine.begin() as conn:
+        _session_settings(conn, ef_search=ef_search, seqscan_off=force_index)
+        return [(r.chunk_id, float(r.dist)) for r in conn.execute(nearest_sql(source), params)]
+
+
+def explain(
+    engine: Engine,
+    query_vec,
+    source: str,
+    k: int,
+    *,
+    seqscan_off: bool = False,
+    ef_search: int | None = None,
+) -> str:
+    """`nearest`와 같은 쿼리의 EXPLAIN 원문."""
+    sql = sa.text("EXPLAIN " + nearest_sql(source).text)
+    with engine.begin() as conn:
+        _session_settings(conn, ef_search=ef_search, seqscan_off=seqscan_off)
+        rows = conn.execute(sql, {"q": vec_literal(query_vec), "k": k}).scalars()
+        return "\n".join(rows)

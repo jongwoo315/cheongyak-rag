@@ -141,3 +141,73 @@ def test_loaded_vector_matches_input_within_float4(pg_engine):
         ).scalar()
     vec = np.array([float(x) for x in got.strip("[]").split(",")])
     assert np.abs(vec - np.array(rows[0]["embedding"])).max() < 1e-6
+
+
+def _many_rows(n_law=12, n_faq=6):
+    """vector(1536) 칸에 들어가는 합성 행. 청크 텍스트는 의미 없고 벡터만 다르다."""
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    base = _rows()[0]
+    rows = []
+    for source, n in (("law", n_law), ("faq", n_faq)):
+        for i in range(n):
+            rows.append(
+                {
+                    **base,
+                    "chunk_id": f"{source}:{i}",
+                    "source": source,
+                    "text": f"{source} {i}",
+                    "embedding": list(rng.random(1536) + 0.01),
+                }
+            )
+    return rows
+
+
+def test_nearest_order_matches_numpy_cosine(pg_engine):
+    import numpy as np
+
+    from cheongyak_rag.retrieval.search import dense_rank
+
+    rows = _many_rows()
+    index_db.load(pg_engine, rows)
+    q = np.random.default_rng(1).random(1536) + 0.01
+    law = [r for r in rows if r["source"] == "law"]
+    want = dense_rank(q, np.array([r["embedding"] for r in law]), [r["chunk_id"] for r in law])[:5]
+    got = index_db.nearest(pg_engine, q, "law", 5, force_index=True)
+    assert [cid for cid, _ in got] == want
+    assert all(0 <= d <= 2 for _, d in got)
+    assert [d for _, d in got] == sorted(d for _, d in got)
+
+
+def test_nearest_filters_by_source_and_returns_k(pg_engine):
+    index_db.load(pg_engine, _many_rows())
+    q = [0.5] * 1536
+    for source, n in (("law", 12), ("faq", 6)):
+        got = index_db.nearest(pg_engine, q, source, 5, force_index=True)
+        assert len(got) == 5
+        assert all(cid.startswith(f"{source}:") for cid, _ in got)
+    assert len(index_db.nearest(pg_engine, q, "faq", 10, force_index=True)) == 6  # 행이 6개뿐이다
+
+
+def test_nearest_rejects_unknown_source(pg_engine):
+    import pytest
+
+    with pytest.raises(ValueError):
+        index_db.nearest(pg_engine, [0.5] * 1536, "notice", 3)
+
+
+def test_explain_shows_the_partial_index_when_seqscan_is_off(pg_engine):
+    index_db.load(pg_engine, _many_rows())
+    q = [0.5] * 1536
+    assert "chunks_embedding_law_hnsw" in index_db.explain(pg_engine, q, "law", 5, seqscan_off=True)
+    assert "chunks_embedding_faq_hnsw" in index_db.explain(pg_engine, q, "faq", 3, seqscan_off=True)
+
+
+def test_ef_search_is_set_per_transaction_only(pg_engine):
+    from sqlalchemy import text
+
+    index_db.load(pg_engine, _many_rows())
+    index_db.nearest(pg_engine, [0.5] * 1536, "law", 5, ef_search=100)
+    with pg_engine.connect() as conn:
+        assert conn.execute(text("SHOW hnsw.ef_search")).scalar() == "40"
