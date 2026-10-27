@@ -107,6 +107,8 @@ def load(engine: Engine, rows: list[dict]) -> int:
         conn.execute(sa.text("DELETE FROM chunks"))
         if params:
             conn.execute(INSERT, params)
+        # 비우고 다시 넣으면 planner 통계가 이전 적재의 것으로 남아 실행마다 계획이 달라진다
+        conn.execute(sa.text("ANALYZE chunks"))
     return len(rows)
 
 

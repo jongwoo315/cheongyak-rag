@@ -218,3 +218,15 @@ def test_explain_elides_the_query_vector_literal(pg_engine):
     plan = index_db.explain(pg_engine, [0.5] * 1536, "law", 5, seqscan_off=True)
     assert "'[…]'" in plan
     assert len(plan) < 2000
+
+
+def test_load_refreshes_planner_statistics(pg_engine):
+    from sqlalchemy import text
+
+    rows = _many_rows()
+    index_db.load(pg_engine, rows)
+    with pg_engine.connect() as conn:
+        reltuples = conn.execute(
+            text("SELECT reltuples FROM pg_class WHERE relname = 'chunks'")
+        ).scalar()
+    assert reltuples == len(rows)  # ANALYZE가 돌았다. 안 돌면 -1이거나 이전 적재의 값이다
