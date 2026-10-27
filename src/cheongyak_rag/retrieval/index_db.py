@@ -7,6 +7,7 @@
 """
 
 import argparse
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -110,6 +111,7 @@ def load(engine: Engine, rows: list[dict]) -> int:
 
 
 SOURCES = ("law", "faq")
+VECTOR_LITERAL = re.compile(r"'\[[-0-9.e,]+\]'")
 
 
 def nearest_sql(source: str) -> sa.TextClause:
@@ -162,12 +164,12 @@ def explain(
     seqscan_off: bool = False,
     ef_search: int | None = None,
 ) -> str:
-    """`nearest`와 같은 쿼리의 EXPLAIN 원문."""
+    """`nearest`와 같은 쿼리의 EXPLAIN 원문. 질문 벡터 리터럴(1536개 숫자)은 `'[…]'`로 줄인다."""
     sql = sa.text("EXPLAIN " + nearest_sql(source).text)
     with engine.begin() as conn:
         _session_settings(conn, ef_search=ef_search, seqscan_off=seqscan_off)
         rows = conn.execute(sql, {"q": vec_literal(query_vec), "k": k}).scalars()
-        return "\n".join(rows)
+        return VECTOR_LITERAL.sub("'[…]'", "\n".join(rows))
 
 
 def _table_ready(engine: Engine) -> bool:

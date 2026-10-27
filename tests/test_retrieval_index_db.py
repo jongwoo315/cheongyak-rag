@@ -211,3 +211,10 @@ def test_ef_search_is_set_per_transaction_only(pg_engine):
     index_db.nearest(pg_engine, [0.5] * 1536, "law", 5, ef_search=100)
     with pg_engine.connect() as conn:
         assert conn.execute(text("SHOW hnsw.ef_search")).scalar() == "40"
+
+
+def test_explain_elides_the_query_vector_literal(pg_engine):
+    index_db.load(pg_engine, _many_rows())
+    plan = index_db.explain(pg_engine, [0.5] * 1536, "law", 5, seqscan_off=True)
+    assert "'[…]'" in plan
+    assert len(plan) < 2000
