@@ -205,3 +205,11 @@ def test_report_lists_the_mst_the_notices_point_to(pg_engine, tmp_path):
     run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
     assert run["msts"] == ["286965"]
     assert "286965" in (tmp_path / "r.md").read_text(encoding="utf-8")
+
+
+def test_report_ignores_a_broken_previous_run(pg_engine, tmp_path, capsys):
+    emb, index = _setup(pg_engine)
+    (tmp_path / "r.json").write_text("{깨진 json", encoding="utf-8")
+    assert _main(pg_engine, tmp_path, emb, index) == 0
+    assert "직전 실행 기록을 못 읽었다" in capsys.readouterr().err
+    assert "직전 실행 기록이 없다" in (tmp_path / "r.md").read_text(encoding="utf-8")

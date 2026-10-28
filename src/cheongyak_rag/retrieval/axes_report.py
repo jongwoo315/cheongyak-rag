@@ -561,6 +561,17 @@ OPEN_QUESTIONS = [
 ]
 
 
+def _read_prev(path: Path) -> dict | None:
+    """직전 실행 기록. 고치기 전·후 표에만 쓰므로 깨졌어도 측정은 계속한다."""
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        print(f"직전 실행 기록을 못 읽었다({path}): {e}", file=sys.stderr)
+        return None
+
+
 def dump(run: dict) -> str:
     return json.dumps(run, ensure_ascii=False, indent=2) + "\n"
 
@@ -596,7 +607,7 @@ def main(
         index = index or Index(
             selected_candidate(runs_dir), embedder, law_rows=law_rows, faq_rows=faq_rows
         )
-        prev = json.loads(out_json.read_text(encoding="utf-8")) if out_json.exists() else None
+        prev = _read_prev(out_json)
         run = measure(engine, embedder, index, api_start=api_start)
         write(out_md, render(run, prev))
         write(out_json, dump(run))
