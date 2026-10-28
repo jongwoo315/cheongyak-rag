@@ -13,6 +13,11 @@ from typing import NamedTuple
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
+from cheongyak_rag.retrieval import index_db
+from cheongyak_rag.retrieval.chunk import Chunk
+from cheongyak_rag.retrieval.chunk_eval import _Doc, article_view
+from cheongyak_rag.retrieval.search import BM25, rrf
+
 # `notice_models.raw`의 유형별 특별공급 세대수 키 → 하위 질의에 끼우는 유형 이름
 SPECIAL_TYPES = (
     ("MNYCH_HSHLDCO", "다자녀가구"),
@@ -200,4 +205,117 @@ def plan_from_facts(facts: Facts) -> list[AxisPlan]:
     for axis in AXES:
         on, reason, queries = _decide(axis.id, facts)
         out.append(AxisPlan(axis.id, axis.name, on, reason, queries, facts.law_mst))
+    return out
+
+
+# ── 축별 검색 ────────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class QueryHits:
+    """하위 질의 하나의 검색 결과. `law_pool`은 조문 후보 행 수, `law_dense`는 dense가 낸 행 수."""
+
+    query: str
+    law: list[Chunk]
+    faq: list[Chunk]
+    law_pool: int = 0
+    law_dense: int = 0
+
+
+@dataclass(frozen=True)
+class AxisResult:
+    id: str
+    name: str
+    hits: list[QueryHits]
+
+
+@dataclass
+class _Corpus:
+    """(source, MST) 하나의 청크와 BM25. 만드는 데 형태소 분석이 들어서 한 번만 만든다."""
+
+    by_id: dict[str, Chunk]
+    bm25: BM25 | None  # 행이 없으면 None
+
+
+Cache = dict[tuple[str, str | None], _Corpus]
+
+
+def _corpus(engine: Engine, source: str, mst: str | None, cache: Cache) -> _Corpus:
+    key = (source, mst)
+    if key not in cache:
+        sql = "SELECT chunk_id, label, path, title, text FROM chunks WHERE source = :s"
+        params = {"s": source}
+        if mst is not None:
+            sql += " AND law_mst = :m"
+            params["m"] = mst
+        with engine.connect() as conn:
+            rows = conn.execute(sa.text(sql + " ORDER BY chunk_id"), params).all()
+        chunks = [
+            Chunk(r.chunk_id, r.label, r.path, r.text, source, {"title": r.title}) for r in rows
+        ]
+        bm25 = BM25([_Doc(c.chunk_id, c.text) for c in chunks]) if chunks else None
+        cache[key] = _Corpus({c.chunk_id: c for c in chunks}, bm25)
+    return cache[key]
+
+
+def _law_top(corpus: _Corpus, dense_ids: list[str], query: str, k: int) -> list[Chunk]:
+    """`query.Index.search`와 같다: 청크 순위를 조 순위로 줄여 RRF로 합치고 조마다 한 청크."""
+    by_id = corpus.by_id
+    bm_labels, bm_paths = article_view([by_id[x] for x in corpus.bm25.rank(query)])
+    dn_labels, dn_paths = article_view([by_id[x] for x in dense_ids])
+    by_path = {c.path: c for c in by_id.values()}
+    out = []
+    for label, _ in rrf([bm_labels, dn_labels])[:k]:
+        bm_rank = bm_labels.index(label) if label in bm_paths else len(by_id)
+        dn_rank = dn_labels.index(label) if label in dn_paths else len(by_id)
+        out.append(by_path[bm_paths[label] if bm_rank <= dn_rank else dn_paths[label]])
+    return out
+
+
+def _faq_top(corpus: _Corpus, dense_ids: list[str], query: str, k: int) -> list[Chunk]:
+    hybrid = [x for x, _ in rrf([corpus.bm25.rank(query), dense_ids])]
+    return [corpus.by_id[x] for x in hybrid[:k]]
+
+
+def search(
+    engine: Engine,
+    embedder,
+    house_manage_no: str,
+    pblanc_no: str | None = None,
+    *,
+    k: int = 5,
+    faq_k: int = 3,
+    plans: list[AxisPlan] | None = None,
+    cache: Cache | None = None,
+) -> list[AxisResult]:
+    """켜진 축마다 하위 질의별 조문 상위 k개·FAQ 상위 faq_k개. `plans`·`cache`는 반복 호출용이다.
+
+    조문은 공고의 법령 버전(MST) 행만 후보로 삼는다. MST를 못 정했으면 조문은 비어 있다.
+    """
+    plans = plans or plan(engine, house_manage_no, pblanc_no)
+    cache = {} if cache is None else cache
+    on = [p for p in plans if p.on]
+    queries = list(dict.fromkeys(q for p in on for q in p.queries))
+    if not queries:
+        return []
+    vecs = dict(zip(queries, embedder.embed(queries), strict=True))  # 한 번에 묶어 임베딩한다
+    mst = plans[0].law_mst
+    law = _corpus(engine, "law", mst, cache) if mst is not None else None
+    faq = _corpus(engine, "faq", None, cache)
+    out = []
+    for p in on:
+        hits = []
+        for q in p.queries:
+            law_hits, pool, n_dense = [], 0, 0
+            if law is not None and law.bm25 is not None:
+                pool = len(law.by_id)
+                dense = [c for c, _ in index_db.nearest(engine, vecs[q], "law", pool, law_mst=mst)]
+                n_dense = len(dense)
+                law_hits = _law_top(law, dense, q, k)
+            faq_hits = []
+            if faq.bm25 is not None:
+                dense = [c for c, _ in index_db.nearest(engine, vecs[q], "faq", len(faq.by_id))]
+                faq_hits = _faq_top(faq, dense, q, faq_k)
+            hits.append(QueryHits(q, law_hits, faq_hits, pool, n_dense))
+        out.append(AxisResult(p.id, p.name, hits))
     return out

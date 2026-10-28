@@ -3,7 +3,10 @@ import json
 import pytest
 from sqlalchemy import text
 
-from cheongyak_rag.retrieval import axes
+from cheongyak_rag.retrieval import axes, index_db
+from cheongyak_rag.retrieval.query import Index
+from tests.fakes import FakeEmbedder
+from tests.test_retrieval_query import FAQ, LAW
 
 IDS = [a.id for a in axes.AXES]
 
@@ -175,3 +178,88 @@ def test_law_mst_is_none_when_no_version_covers_the_notice(pg_engine):
 def test_unknown_notice_raises_lookup_error(pg_engine):
     with pytest.raises(LookupError):
         axes.plan(pg_engine, "no-such")
+
+
+# ── search ───────────────────────────────────────────────────────────────
+
+
+def _load_chunks(engine, *, other_mst=True):
+    """공고 MST(286965) 조문 3개 + FAQ, 그리고 다른 MST(999) 조문 3개."""
+    emb = FakeEmbedder(dim=1536)
+    rows = index_db.build_rows(emb, "286965", "article", law_rows=LAW, faq_rows=FAQ)
+    if other_mst:
+        old = [
+            {**r, "chunk_id": "old-" + r["chunk_id"], "law_mst": "999"}
+            for r in rows
+            if r["source"] == "law"
+        ]
+        rows += old
+    index_db.load(engine, rows)
+    return emb
+
+
+def _setup(engine, **kw):
+    _version(engine)
+    hmn = _notice(engine, models=[(4, {"MNYCH_HSHLDCO": 4})], speclt_rdn_earth_at=True, **kw)
+    return hmn, _load_chunks(engine)
+
+
+def test_search_returns_only_on_axes(pg_engine):
+    hmn, emb = _setup(pg_engine)
+    res = axes.search(pg_engine, emb, hmn)
+    assert [r.id for r in res] == IDS  # 이 공고는 7축이 다 켜진다
+    hmn2 = _notice(pg_engine, 2, models=[(0, {})])
+    res2 = axes.search(pg_engine, emb, hmn2)
+    assert [r.id for r in res2] == ["homeless", "account", "residence"]
+
+
+def test_search_law_hits_come_only_from_the_notice_mst(pg_engine):
+    hmn, emb = _setup(pg_engine)
+    for r in axes.search(pg_engine, emb, hmn):
+        for h in r.hits:
+            assert h.law and all(not c.chunk_id.startswith("old-") for c in h.law)
+            assert h.law_pool == 3 and h.law_dense == 3
+
+
+def test_search_counts_follow_k_and_faq_k(pg_engine):
+    hmn, emb = _setup(pg_engine)
+    for r in axes.search(pg_engine, emb, hmn, k=2, faq_k=1):
+        for h in r.hits:
+            assert len(h.law) == 2 and len(h.faq) == 1
+            assert all(c.source == "law" for c in h.law) and all(c.source == "faq" for c in h.faq)
+
+
+def test_search_chunk_has_the_same_fields_as_index(pg_engine):
+    hmn, emb = _setup(pg_engine)
+    c = axes.search(pg_engine, emb, hmn)[0].hits[0].law[0]
+    assert c.label.startswith("제") and c.path and c.text and c.meta["title"]
+
+
+def test_search_matches_the_in_memory_index(pg_engine):
+    hmn, emb = _setup(pg_engine)
+    index = Index("article", emb, law_rows=LAW, faq_rows=FAQ)
+    for r in axes.search(pg_engine, emb, hmn, k=3, faq_k=3):
+        for h in r.hits:
+            want = index.search(h.query, 3, faq_k=3)
+            assert [c.chunk_id for c in h.law] == [c.chunk_id for c in want["law"]]
+            assert [c.chunk_id for c in h.faq] == [c.chunk_id for c in want["faq"]]
+
+
+def test_search_embeds_all_queries_in_one_call_and_reuses_the_cache(pg_engine):
+    hmn, emb = _setup(pg_engine)
+    emb.calls.clear()
+    cache = {}
+    axes.search(pg_engine, emb, hmn, cache=cache)
+    assert len(emb.calls) == 1
+    assert set(cache) == {("law", "286965"), ("faq", None)}
+    bm25 = cache[("law", "286965")].bm25
+    axes.search(pg_engine, emb, hmn, cache=cache)
+    assert cache[("law", "286965")].bm25 is bm25
+
+
+def test_search_without_mst_has_no_law_hits(pg_engine):
+    _version(pg_engine, effective="2027-01-01")
+    hmn = _notice(pg_engine, models=[(0, {})])
+    emb = _load_chunks(pg_engine)
+    res = axes.search(pg_engine, emb, hmn)
+    assert res and all(not h.law and h.faq for r in res for h in r.hits)
