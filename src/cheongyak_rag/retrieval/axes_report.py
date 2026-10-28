@@ -335,7 +335,7 @@ def _per_query(results: dict, plans_by: dict, index: Index) -> tuple[list[dict],
 
 def expected_text(axis: axes.AxisDef) -> str:
     if axis.id == "special_type":
-        return "제35조~제47조(의N 포함) 중 하나"
+        return "제35조~제47조 중 특별공급 조 15개(제47조의3 제외)"
     return " · ".join(axis.expected)
 
 
@@ -454,7 +454,7 @@ def render(run: dict, prev: dict | None = None) -> str:
             f"공고가 가리킨 법령 버전(MST)은 {', '.join(run['msts'])}이다. 3번의 메모리 `Index`는"
             " 법령 파일 하나(시행 2026-06-15)로 만들어서, 버전이 둘 이상이면 다른 버전 공고는"
             " 견주지 못한다",
-            "2번 `special_type`의 기대 조는 제35조~제47조 16개라 특별공급 질의가 들기 쉽다."
+            "2번 `special_type`의 기대 조는 제35조~제47조 특별공급 조 15개(제35조의2·제35조의3 포함, 제47조의3 제외)라 특별공급 질의가 들기 쉽다."
             " 8/9는 검색 품질의 증거가 아니라 질의가 특별공급 조로 간다는 확인이다",
             f"5번 시간은 공고마다 `load_facts`부터 `search`까지다. BM25 색인은 (source, MST)마다"
             f" 처음 한 번 만들고 그 시간({t['warmup']:.3f}초)은 공고별 시간에서 뺐다."
