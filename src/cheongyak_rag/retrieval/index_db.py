@@ -118,17 +118,19 @@ SOURCES = ("law", "faq")
 VECTOR_LITERAL = re.compile(r"'\[[-0-9.e,]+\]'")
 
 
-def nearest_sql(source: str) -> sa.TextClause:
+def nearest_sql(source: str, *, law_mst: bool = False) -> sa.TextClause:
     """코사인 거리 순 상위 k개. `WHERE source = '…'`는 부분 인덱스의 WHERE 조건을 함축해야 한다.
 
     인덱스를 타려면 planner가 그 함축을 증명해야 해서 값을 바인드 변수가 아니라 리터럴로 쓴다.
-    그래서 source는 허용 목록에서만 받는다.
+    그래서 source는 허용 목록에서만 받는다. `law_mst=True`면 `:mst` 바인드 변수로 그 버전의
+    행만 남긴다(인덱스 조건은 그대로 `source`뿐이라 HNSW가 후보를 고른 뒤 거른다).
     """
     if source not in SOURCES:
         raise ValueError(f"source {source!r} 없음. {SOURCES} 중 하나")
+    mst = " AND law_mst = :mst" if law_mst else ""
     return sa.text(
         f"SELECT chunk_id, embedding <=> CAST(:q AS vector) AS dist FROM chunks"
-        f" WHERE source = '{source}' ORDER BY embedding <=> CAST(:q AS vector) LIMIT :k"
+        f" WHERE source = '{source}'{mst} ORDER BY embedding <=> CAST(:q AS vector) LIMIT :k"
     )
 
 
@@ -158,15 +160,20 @@ def nearest(
     *,
     ef_search: int | None = None,
     force_index: bool = False,
+    law_mst: str | None = None,
 ) -> list[tuple[str, float]]:
     """source의 청크 중 질문 벡터와 코사인 거리가 가까운 k개 → (chunk_id, 거리). #79가 쓴다.
 
     행이 568개면 planner가 인덱스 대신 전수 스캔을 고를 수 있다. `force_index`는 HNSW를 쓰게 한다.
+    `law_mst`를 주면 그 법령 버전의 행만 센다.
     """
     params = {"q": vec_literal(query_vec), "k": k}
+    if law_mst is not None:
+        params["mst"] = law_mst
+    sql = nearest_sql(source, law_mst=law_mst is not None)
     with engine.begin() as conn:
         _session_settings(conn, ef_search=_ef_for(k, ef_search), seqscan_off=force_index)
-        return [(r.chunk_id, float(r.dist)) for r in conn.execute(nearest_sql(source), params)]
+        return [(r.chunk_id, float(r.dist)) for r in conn.execute(sql, params)]
 
 
 def explain(
@@ -177,12 +184,16 @@ def explain(
     *,
     seqscan_off: bool = False,
     ef_search: int | None = None,
+    law_mst: str | None = None,
 ) -> str:
     """`nearest`와 같은 쿼리의 EXPLAIN 원문. 질문 벡터 리터럴(1536개 숫자)은 `'[…]'`로 줄인다."""
-    sql = sa.text("EXPLAIN " + nearest_sql(source).text)
+    sql = sa.text("EXPLAIN " + nearest_sql(source, law_mst=law_mst is not None).text)
+    params = {"q": vec_literal(query_vec), "k": k}
+    if law_mst is not None:
+        params["mst"] = law_mst
     with engine.begin() as conn:
         _session_settings(conn, ef_search=_ef_for(k, ef_search), seqscan_off=seqscan_off)
-        rows = conn.execute(sql, {"q": vec_literal(query_vec), "k": k}).scalars()
+        rows = conn.execute(sql, params).scalars()
         return VECTOR_LITERAL.sub("'[…]'", "\n".join(rows))
 
 
