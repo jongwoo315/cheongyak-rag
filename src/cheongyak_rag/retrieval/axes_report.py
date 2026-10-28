@@ -16,11 +16,11 @@ from pathlib import Path
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from cheongyak_rag.config import settings
 from cheongyak_rag.ingest.notice_report import _bullets, _table
-from cheongyak_rag.retrieval import axes
+from cheongyak_rag.retrieval import axes, index_db
 from cheongyak_rag.retrieval.chunk_eval import RUNS73
 from cheongyak_rag.retrieval.embed import Embedder
 from cheongyak_rag.retrieval.index_db_report import now, write
@@ -179,13 +179,14 @@ def measure(engine: Engine, embedder, index: Index, *, api_start: int) -> dict:
             bad = [h for h in r.hits if len(h.law) < LAW_K or len(h.faq) < FAQ_K]
             if bad:
                 h = bad[0]
-                cause = (
-                    "MST 없음"
-                    if plans[0].law_mst is None
-                    else "필터 × ANN — dense가 후보를 덜 돌려줬다"
-                    if h.law_dense < h.law_pool
-                    else "행이 모자란다"
-                )
+                if plans[0].law_mst is None:
+                    cause = "MST 없음"
+                elif len(h.law) >= LAW_K:
+                    cause = "FAQ가 faq_k개보다 적게 돌아왔다"
+                elif h.law_dense < h.law_pool:
+                    cause = "필터 × ANN — dense가 후보를 덜 돌려줬다"
+                else:
+                    cause = "행이 모자란다"
                 short.append(
                     {
                         "notice": key[0],
@@ -215,12 +216,17 @@ def measure(engine: Engine, embedder, index: Index, *, api_start: int) -> dict:
         ),
         "rewin_off": sum(not p.on for ps in plans_by.values() for p in ps if p.id == "rewin"),
     }
-    sample_ok = len(samples) == len(kinds)
+    # 종류마다 표본이 하나이고, 표본마다 켜진 축 전부의 결과가 실려 있어야 한다
+    sample_ok = len(samples) == len(kinds) and all(
+        [a["id"] for a in s["axes"]] == s["on"] for s in samples
+    )
+    msts = sorted({ps[0].law_mst or "없음" for ps in plans_by.values()})
     run = {
         "run_at": now(),
         "notices": len(keys),
         "errors": errors,
         "no_mst": no_mst,
+        "msts": msts,
         "list_diff": list_diff,
         "short": short,
         "kinds": len(kinds),
@@ -439,6 +445,11 @@ def render(run: dict, prev: dict | None = None) -> str:
             "3번은 DB 경로(dense=`nearest`, BM25=앱, 합치기=`rrf`)와 메모리 경로"
             f"(`query.Index`)가 같은 하위 질의에서 조문 상위 {LAW_K}개·FAQ 상위 {FAQ_K}개 집합이"
             " 같은지다. 순서는 보지 않는다",
+            f"공고가 가리킨 법령 버전(MST)은 {', '.join(run['msts'])}이다. 3번의 메모리 `Index`는"
+            " 법령 파일 하나(시행 2026-06-15)로 만들어서, 버전이 둘 이상이면 다른 버전 공고는"
+            " 견주지 못한다",
+            "2번 `special_type`의 기대 조는 제35조~제47조 16개라 특별공급 질의가 들기 쉽다."
+            " 8/9는 검색 품질의 증거가 아니라 질의가 특별공급 조로 간다는 확인이다",
             f"5번 시간은 공고마다 `load_facts`부터 `search`까지다. BM25 색인은 (source, MST)마다"
             f" 처음 한 번 만들고 그 시간({t['warmup']:.3f}초)은 공고별 시간에서 뺐다."
             " 하위 질의 임베딩은 시간 재기 전에 한 번에 보냈다",
@@ -571,6 +582,9 @@ def main(
     own = engine is None
     engine = engine or sa.create_engine(settings.database_url)
     try:
+        if not index_db._table_ready(engine):
+            print("chunks 테이블이 없다. 먼저 uv run alembic upgrade head", file=sys.stderr)
+            return 2
         embedder = embedder or Embedder(settings.openai_embed_model)
         api_start = embedder.api_calls
         index = index or Index(
@@ -587,8 +601,8 @@ def main(
     except FileNotFoundError as e:
         print(e, file=sys.stderr)
         return 3  # 1은 징후 1 미완, 2는 DB 오류
-    except OperationalError as e:
-        print(f"DB 오류: {type(e).__name__}: {e.orig}", file=sys.stderr)
+    except SQLAlchemyError as e:
+        print(f"DB 오류: {type(e).__name__}: {getattr(e, 'orig', e)}", file=sys.stderr)
         return 2
     finally:
         if own:

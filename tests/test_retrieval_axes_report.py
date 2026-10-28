@@ -188,3 +188,19 @@ def test_report_records_previous_run_when_queries_change(pg_engine, tmp_path):
 def test_report_requires_the_flag():
     with pytest.raises(SystemExit):
         rep.main([])
+
+
+def test_report_exits_2_when_chunks_table_is_missing(pg_engine, tmp_path, monkeypatch, capsys):
+    emb, index = _setup(pg_engine)
+    monkeypatch.setattr(index_db, "_table_ready", lambda engine: False)
+    assert _main(pg_engine, tmp_path, emb, index) == 2
+    assert "alembic upgrade head" in capsys.readouterr().err
+    assert not (tmp_path / "r.md").exists()
+
+
+def test_report_lists_the_mst_the_notices_point_to(pg_engine, tmp_path):
+    emb, index = _setup(pg_engine)
+    _main(pg_engine, tmp_path, emb, index)
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert run["msts"] == ["286965"]
+    assert "286965" in (tmp_path / "r.md").read_text(encoding="utf-8")

@@ -8,13 +8,14 @@
 """
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from cheongyak_rag.config import settings
 from cheongyak_rag.retrieval import index_db
@@ -120,6 +121,10 @@ class AxisPlan:
         return f"{self.name}: {'켜짐' if self.on else '꺼짐'} — {self.reason}"
 
 
+class NoticeNotFound(LookupError):
+    """공고가 없다. 다른 `LookupError`(`KeyError` 등)와 구분하려고 따로 둔다."""
+
+
 class Facts(NamedTuple):
     """켜는 조건이 보는 공고 값."""
 
@@ -131,7 +136,7 @@ class Facts(NamedTuple):
 
 
 def load_facts(engine: Engine, house_manage_no: str, pblanc_no: str | None = None) -> tuple:
-    """공고 하나의 켜는 조건 값 → (pblanc_no, 공고명, Facts). 공고가 없으면 LookupError."""
+    """공고 하나의 켜는 조건 값 → (pblanc_no, 공고명, Facts). 공고가 없으면 NoticeNotFound."""
     sums = ", ".join(
         f"coalesce(sum(nullif(m.raw->>'{key}', '')::int), 0) AS {key.lower()}"
         for key, _ in SPECIAL_TYPES
@@ -150,7 +155,7 @@ def load_facts(engine: Engine, house_manage_no: str, pblanc_no: str | None = Non
     with engine.connect() as conn:
         row = conn.execute(sql, {"h": house_manage_no, "p": pblanc_no}).mappings().first()
     if row is None:
-        raise LookupError(f"공고 {house_manage_no} (pblanc_no={pblanc_no}) 없음")
+        raise NoticeNotFound(f"공고 {house_manage_no} (pblanc_no={pblanc_no}) 없음")
     facts = Facts(
         area=row["subscrpt_area_nm"],
         flags={c: bool(row[c]) for c, _ in REGULATION_FLAGS},
@@ -202,7 +207,7 @@ def _decide(axis_id: str, facts: Facts) -> tuple[bool, str, list[str]]:
 
 
 def plan(engine: Engine, house_manage_no: str, pblanc_no: str | None = None) -> list[AxisPlan]:
-    """공고 하나의 축 7개 — 켜짐 여부·이유·하위 질의·법령 버전(MST). 공고가 없으면 LookupError."""
+    """공고 하나의 축 7개 — 켜짐 여부·이유·하위 질의·MST. 공고가 없으면 NoticeNotFound."""
     return plan_from_facts(load_facts(engine, house_manage_no, pblanc_no)[2])
 
 
@@ -246,6 +251,15 @@ class _Corpus:
 Cache = dict[tuple[str, str | None], _Corpus]
 
 
+def _doc_order(chunk_id: str) -> list:
+    """`제2조` < `제2조의2` < `제10조` — 숫자를 수로 비교해 문서 순서와 맞춘다.
+
+    `query.Index`는 문서 순서로 청크를 두고 BM25 동점을 그 순서로 가른다.
+    DB에서 `ORDER BY chunk_id`로 읽으면 `제10조`가 `제2조`보다 앞서 동점 순서가 달라진다.
+    """
+    return [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", chunk_id)]
+
+
 def _corpus(engine: Engine, source: str, mst: str | None, cache: Cache) -> _Corpus:
     key = (source, mst)
     if key not in cache:
@@ -255,7 +269,8 @@ def _corpus(engine: Engine, source: str, mst: str | None, cache: Cache) -> _Corp
             sql += " AND law_mst = :m"
             params["m"] = mst
         with engine.connect() as conn:
-            rows = conn.execute(sa.text(sql + " ORDER BY chunk_id"), params).all()
+            rows = conn.execute(sa.text(sql), params).all()
+        rows.sort(key=lambda r: _doc_order(r.chunk_id))
         chunks = [
             Chunk(r.chunk_id, r.label, r.path, r.text, source, {"title": r.title}) for r in rows
         ]
@@ -362,11 +377,11 @@ def main(argv: list[str] | None = None, *, engine: Engine | None = None, embedde
         )  # fmt: skip
         print(format_report(name, facts.law_mst, plans, results))
         return 0
-    except LookupError as e:
+    except NoticeNotFound as e:
         print(e, file=sys.stderr)
         return 2
-    except OperationalError as e:
-        print(f"DB 오류: {type(e).__name__}: {e.orig}", file=sys.stderr)
+    except SQLAlchemyError as e:
+        print(f"DB 오류: {type(e).__name__}: {getattr(e, 'orig', e)}", file=sys.stderr)
         return 2
     finally:
         if own:

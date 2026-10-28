@@ -6,7 +6,7 @@ from sqlalchemy import text
 from cheongyak_rag.retrieval import axes, index_db
 from cheongyak_rag.retrieval.query import Index
 from tests.fakes import FakeEmbedder
-from tests.test_retrieval_query import FAQ, LAW
+from tests.test_retrieval_query import FAQ, LAW, _row
 
 IDS = [a.id for a in axes.AXES]
 
@@ -294,3 +294,29 @@ def test_cli_off_axis_has_no_result_section(pg_engine, capsys):
 def test_cli_unknown_notice_exits_2(pg_engine, capsys):
     assert axes.main(["nope"], engine=pg_engine, embedder=FakeEmbedder(dim=1536)) == 2
     assert "nope" in capsys.readouterr().err
+
+
+def test_search_matches_the_index_when_bm25_ties_depend_on_article_order(pg_engine):
+    """조 12개: `제10조`가 `제2조`보다 사전순으로 앞서도 문서 순서(제2조 먼저)로 동점을 가른다."""
+    law = LAW + [_row(f"제{n}조", f"제목{n}", f"{n}번째 규정을 정한다.") for n in range(4, 13)]
+    emb = FakeEmbedder(dim=1536)
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})])
+    index_db.load(
+        pg_engine, index_db.build_rows(emb, "286965", "article", law_rows=law, faq_rows=FAQ)
+    )
+    index = Index("article", emb, law_rows=law, faq_rows=FAQ)
+    for r in axes.search(pg_engine, emb, hmn, k=5, faq_k=3):
+        for h in r.hits:
+            want = index.search(h.query, 5, faq_k=3)
+            assert [c.chunk_id for c in h.law] == [c.chunk_id for c in want["law"]], h.query
+
+
+def test_doc_order_sorts_article_numbers_numerically():
+    ids = ["law:제10조", "law:제2조의2", "law:제2조", "law:제9조제1항"]
+    assert sorted(ids, key=axes._doc_order) == [
+        "law:제2조",
+        "law:제2조의2",
+        "law:제9조제1항",
+        "law:제10조",
+    ]
