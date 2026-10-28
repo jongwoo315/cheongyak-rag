@@ -459,6 +459,9 @@ def render(run: dict, prev: dict | None = None) -> str:
             f"5번 시간은 공고마다 `load_facts`부터 `search`까지다. BM25 색인은 (source, MST)마다"
             f" 처음 한 번 만들고 그 시간({t['warmup']:.3f}초)은 공고별 시간에서 뺐다."
             " 하위 질의 임베딩은 시간 재기 전에 한 번에 보냈다",
+            "1·3번의 dense 경로는 `chunks` 행이 568개라 planner가 HNSW 대신 전수 스캔(Seq Scan)을"
+            " 고르고, 공고가 가리킨 MST가 하나라 `law_mst` 조건이 행을 거르지 않는다."
+            " HNSW 후보에서 거르는 경우(필터 × ANN)는 이 실행에서 재지 못했다",
         ]
     )
     lines += ["", "## 2. 축 7개", ""]
