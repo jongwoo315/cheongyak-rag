@@ -242,6 +242,7 @@ def measure(engine: Engine, embedder, index: Index, *, api_start: int) -> dict:
         },
         "miss": miss,
         "api_calls": embedder.api_calls - api_start,
+        "n_queries": len(all_queries),
         "time": {
             "median": statistics.median(elapsed) if elapsed else 0.0,
             "max": max(elapsed) if elapsed else 0.0,
@@ -414,7 +415,12 @@ def render(run: dict, prev: dict | None = None) -> str:
                 f"하위 질의 {m['same']}/{m['n']} ({m['ratio']:.1%}) 같음",
                 z["memory"],
             ),
-            ("4. 임베딩 API 호출 수", f"{run['api_calls']}회", z["calls"]),
+            (
+                "4. 임베딩 API 호출 수",
+                f"{run['api_calls']}회 (서로 다른 하위 질의 {run['n_queries']}개."
+                " 임베딩 캐시에 이미 있는 질의는 세지 않는다)",
+                z["calls"],
+            ),
             (
                 "5. 공고 하나 처리 시간 (캐시가 찬 상태)",
                 f"중앙값 {t['median']:.3f}초 · 최댓값 {t['max']:.3f}초"

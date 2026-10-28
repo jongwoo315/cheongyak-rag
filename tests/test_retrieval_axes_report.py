@@ -114,6 +114,7 @@ def test_report_writes_md_and_json_with_all_six_signs(pg_engine, tmp_path, capsy
     assert run["notices"] == 3 and run["kinds"] == 3 and len(run["samples"]) == 3
     assert run["list_diff"] == [] and run["short"] == [] and run["errors"] == []
     assert run["memory"]["ratio"] == 1.0
+    assert run["n_queries"] > 0 and f"서로 다른 하위 질의 {run['n_queries']}개" in md
     assert "구간:" in capsys.readouterr().out
 
 
