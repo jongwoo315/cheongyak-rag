@@ -4,7 +4,10 @@ import pytest
 from sqlalchemy import text
 
 from cheongyak_rag.retrieval import axes, index_db
+from cheongyak_rag.retrieval.chunk import Chunk
+from cheongyak_rag.retrieval.chunk_eval import _Doc
 from cheongyak_rag.retrieval.query import Index
+from cheongyak_rag.retrieval.search import BM25
 from tests.fakes import FakeEmbedder
 from tests.test_retrieval_query import FAQ, LAW, _row
 
@@ -327,3 +330,20 @@ def test_doc_order_sorts_article_numbers_numerically():
         "law:제9조제1항",
         "law:제10조",
     ]
+
+
+def _law_corpus(n=6):
+    chunks = [
+        Chunk(f"law:제{i}조", f"제{i}조", f"제{i}조", f"{i}번째 조문 규정을 정한다", "law", {})
+        for i in range(1, n + 1)
+    ]
+    return axes._Corpus(
+        {c.chunk_id: c for c in chunks}, BM25([_Doc(c.chunk_id, c.text) for c in chunks])
+    )
+
+
+@pytest.mark.parametrize("dense", [[], ["law:제3조"]])
+def test_law_top_fills_k_from_bm25_when_dense_returns_fewer(dense):
+    """HNSW가 후보를 덜 돌려줘도(dense가 비거나 일부) 조문은 BM25로 k개가 찬다."""
+    top = axes._law_top(_law_corpus(), dense, "규정", 5)
+    assert len(top) == 5 and len({c.label for c in top}) == 5
