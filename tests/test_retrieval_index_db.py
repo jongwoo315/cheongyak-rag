@@ -305,3 +305,10 @@ def test_nearest_law_mst_still_uses_the_partial_index(pg_engine):
     index_db.load(pg_engine, _mst_rows())
     plan = index_db.explain(pg_engine, [0.5] * 1536, "law", 5, seqscan_off=True, law_mst="A")
     assert "chunks_embedding_law_hnsw" in plan
+
+
+def test_nearest_law_mst_returns_every_row_of_that_mst_through_the_index(pg_engine):
+    """HNSW는 source 전체에서 후보를 고른 뒤 MST로 거른다 — 그래도 그 MST 행을 k개까지 채운다."""
+    index_db.load(pg_engine, _mst_rows(n_a=100, n_b=100))
+    got = index_db.nearest(pg_engine, [0.5] * 1536, "law", 100, law_mst="B", force_index=True)
+    assert len(got) == 100

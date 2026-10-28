@@ -144,8 +144,16 @@ def _ef_for(k: int, ef_search: int | None) -> int | None:
     return max(ef_search or 0, k)
 
 
-def _session_settings(conn, *, ef_search: int | None, seqscan_off: bool) -> None:
-    """트랜잭션 안에서만 적용된다(`SET LOCAL`)."""
+def _session_settings(
+    conn, *, ef_search: int | None, seqscan_off: bool, filtered: bool = False
+) -> None:
+    """트랜잭션 안에서만 적용된다(`SET LOCAL`).
+
+    `filtered`면 HNSW가 후보를 고른 뒤 거른 결과가 k개보다 적을 때 k개가 찰 때까지 더 스캔한다
+    (pgvector `hnsw.iterative_scan`). 안 켜면 `law_mst`로 거를 때 `ef_search`개 안에서만 남는다.
+    """
+    if filtered:
+        conn.execute(sa.text("SET LOCAL hnsw.iterative_scan = strict_order"))
     if ef_search is not None:
         conn.execute(sa.text(f"SET LOCAL hnsw.ef_search = {int(ef_search)}"))
     if seqscan_off:
@@ -172,7 +180,12 @@ def nearest(
         params["mst"] = law_mst
     sql = nearest_sql(source, law_mst=law_mst is not None)
     with engine.begin() as conn:
-        _session_settings(conn, ef_search=_ef_for(k, ef_search), seqscan_off=force_index)
+        _session_settings(
+            conn,
+            ef_search=_ef_for(k, ef_search),
+            seqscan_off=force_index,
+            filtered=law_mst is not None,
+        )
         return [(r.chunk_id, float(r.dist)) for r in conn.execute(sql, params)]
 
 
@@ -192,7 +205,12 @@ def explain(
     if law_mst is not None:
         params["mst"] = law_mst
     with engine.begin() as conn:
-        _session_settings(conn, ef_search=_ef_for(k, ef_search), seqscan_off=seqscan_off)
+        _session_settings(
+            conn,
+            ef_search=_ef_for(k, ef_search),
+            seqscan_off=seqscan_off,
+            filtered=law_mst is not None,
+        )
         rows = conn.execute(sql, params).scalars()
         return VECTOR_LITERAL.sub("'[…]'", "\n".join(rows))
 
