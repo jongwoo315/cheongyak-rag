@@ -248,6 +248,7 @@ class _Corpus:
     bm25: BM25 | None  # 행이 없으면 None
 
 
+# engine 하나·적재 한 번 동안만 쓴다. 키에 DB가 없고 재색인 전후 청크를 구분하지 않는다.
 Cache = dict[tuple[str, str | None], _Corpus]
 
 
