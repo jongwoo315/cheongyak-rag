@@ -375,6 +375,9 @@ def main(argv: list[str] | None = None, *, engine: Engine | None = None, embedde
             engine, embedder, args.house_manage_no, pblanc_no, k=args.k, faq_k=args.faq_k,
             plans=plans,
         )  # fmt: skip
+        if not any(h.law or h.faq for r in results for h in r.hits):
+            print("chunks에 검색할 행이 없다. 먼저 index_db로 적재한다", file=sys.stderr)
+            return 2
         print(format_report(name, facts.law_mst, plans, results))
         return 0
     except NoticeNotFound as e:

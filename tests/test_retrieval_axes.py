@@ -291,6 +291,13 @@ def test_cli_off_axis_has_no_result_section(pg_engine, capsys):
     assert "## 재당첨제한" not in out and "## 무주택 여부·기간" in out
 
 
+def test_cli_empty_chunks_exits_2(pg_engine, capsys):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})])
+    assert axes.main([hmn], engine=pg_engine, embedder=FakeEmbedder(dim=1536)) == 2
+    assert "chunks" in capsys.readouterr().err
+
+
 def test_cli_unknown_notice_exits_2(pg_engine, capsys):
     assert axes.main(["nope"], engine=pg_engine, embedder=FakeEmbedder(dim=1536)) == 2
     assert "nope" in capsys.readouterr().err
