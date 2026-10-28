@@ -213,3 +213,13 @@ def test_report_ignores_a_broken_previous_run(pg_engine, tmp_path, capsys):
     assert _main(pg_engine, tmp_path, emb, index) == 0
     assert "직전 실행 기록을 못 읽었다" in capsys.readouterr().err
     assert "직전 실행 기록이 없다" in (tmp_path / "r.md").read_text(encoding="utf-8")
+
+
+def test_report_collects_a_broken_notice_and_keeps_going(pg_engine, tmp_path):
+    emb, index = _setup(pg_engine)
+    broken = _notice(pg_engine, 4, models=[(1, {"MNYCH_HSHLDCO": "x"})])
+    assert _main(pg_engine, tmp_path, emb, index) == 1
+    run = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert [(e["notice"], e["stage"]) for e in run["errors"]] == [(broken, "plan")]
+    assert run["zones"]["run"] == "미완"
+    assert len(run["samples"]) == 3  # 나머지 공고 셋은 끝까지 돌았다
