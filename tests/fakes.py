@@ -2,13 +2,16 @@ import hashlib
 
 import numpy as np
 
+from cheongyak_rag.retrieval.embed import text_key
+
 
 class FakeEmbedder:
     """텍스트 해시로 만든 벡터. API를 안 부른다."""
 
     model = "fake"
 
-    def __init__(self):
+    def __init__(self, dim=16):
+        self.dim = dim  # 16 초과면 해시를 시드로 한 난수 벡터. DB의 vector(1536) 칸에 넣을 때 쓴다
         self.api_calls = 0
         self.cache = {}
         self.calls = []
@@ -17,10 +20,15 @@ class FakeEmbedder:
         self.calls.append(len(texts))
         out = []
         for t in texts:
-            if t not in self.cache:
+            key = text_key(t)  # 진짜 Embedder.cache와 같은 키 — sha256
+            if key not in self.cache:
                 h = hashlib.sha256(t.encode()).digest()
-                self.cache[t] = [(b + 1) / 256 for b in h[:16]]
-            out.append(self.cache[t])
+                if self.dim <= 16:
+                    self.cache[key] = [(b + 1) / 256 for b in h[: self.dim]]
+                else:
+                    rng = np.random.default_rng(int.from_bytes(h[:8], "big"))
+                    self.cache[key] = list(rng.random(self.dim) + 0.01)
+            out.append(self.cache[key])
         return np.array(out, dtype=np.float64)
 
 
