@@ -7,15 +7,21 @@
 법령 버전(MST) 행만 거르고, dense는 DB `nearest`, BM25는 앱, 합치기는 `search.rrf`다.
 """
 
+import argparse
+import sys
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 
+from cheongyak_rag.config import settings
 from cheongyak_rag.retrieval import index_db
 from cheongyak_rag.retrieval.chunk import Chunk
 from cheongyak_rag.retrieval.chunk_eval import _Doc, article_view
+from cheongyak_rag.retrieval.embed import Embedder
+from cheongyak_rag.retrieval.query import format_result
 from cheongyak_rag.retrieval.search import BM25, rrf
 
 # `notice_models.raw`의 유형별 특별공급 세대수 키 → 하위 질의에 끼우는 유형 이름
@@ -319,3 +325,53 @@ def search(
             hits.append(QueryHits(q, law_hits, faq_hits, pool, n_dense))
         out.append(AxisResult(p.id, p.name, hits))
     return out
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+
+def format_report(
+    name: str, mst: str | None, plans: list[AxisPlan], results: list[AxisResult]
+) -> str:
+    """공고명·MST, 축 7개(켜짐·이유), 켜진 축마다 하위 질의와 조문·FAQ top-k."""
+    out = [f"공고: {name} · 법령 버전(MST) {mst or '없음'}", "", "축"]
+    out += [f"- {p.line}" for p in plans]
+    for r in results:
+        out += ["", f"## {r.name}"]
+        for h in r.hits:
+            out += [f"질의: {h.query}", format_result({"law": h.law, "faq": h.faq})]
+    return "\n".join(out)
+
+
+def main(argv: list[str] | None = None, *, engine: Engine | None = None, embedder=None) -> int:
+    ap = argparse.ArgumentParser(prog="cheongyak_rag.retrieval.axes")
+    ap.add_argument("house_manage_no")
+    ap.add_argument("--pblanc-no", help="공고번호. 생략하면 그 관리번호의 첫 공고")
+    ap.add_argument("-k", type=int, default=5, help="조문 개수")
+    ap.add_argument("--faq-k", type=int, default=3, help="FAQ 개수")
+    args = ap.parse_args(argv)
+    own = engine is None
+    engine = engine or sa.create_engine(settings.database_url)
+    try:
+        pblanc_no, name, facts = load_facts(engine, args.house_manage_no, args.pblanc_no)
+        plans = plan_from_facts(facts)
+        embedder = embedder or Embedder(settings.openai_embed_model)
+        results = search(
+            engine, embedder, args.house_manage_no, pblanc_no, k=args.k, faq_k=args.faq_k,
+            plans=plans,
+        )  # fmt: skip
+        print(format_report(name, facts.law_mst, plans, results))
+        return 0
+    except LookupError as e:
+        print(e, file=sys.stderr)
+        return 2
+    except OperationalError as e:
+        print(f"DB 오류: {type(e).__name__}: {e.orig}", file=sys.stderr)
+        return 2
+    finally:
+        if own:
+            engine.dispose()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

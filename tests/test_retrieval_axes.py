@@ -263,3 +263,34 @@ def test_search_without_mst_has_no_law_hits(pg_engine):
     emb = _load_chunks(pg_engine)
     res = axes.search(pg_engine, emb, hmn)
     assert res and all(not h.law and h.faq for r in res for h in r.hits)
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+
+def test_cli_prints_all_axis_names_and_hit_lines(pg_engine, capsys):
+    hmn, emb = _setup(pg_engine)
+    assert axes.main([hmn, "-k", "2", "--faq-k", "1"], engine=pg_engine, embedder=emb) == 0
+    out = capsys.readouterr().out
+    assert "단지 1" in out and "286965" in out
+    for a in axes.AXES:
+        assert a.name in out
+    assert "재당첨제한: 켜짐 — 투기과열지구 표시 참" in out
+    assert "질의: " + axes.Q_HOMELESS in out
+    assert "조문 상위 2개" in out and "FAQ 상위 1개" in out
+    assert "1. 제" in out and "1. Q" in out
+
+
+def test_cli_off_axis_has_no_result_section(pg_engine, capsys):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})])
+    emb = _load_chunks(pg_engine)
+    assert axes.main([hmn], engine=pg_engine, embedder=emb) == 0
+    out = capsys.readouterr().out
+    assert "재당첨제한: 꺼짐 — " in out
+    assert "## 재당첨제한" not in out and "## 무주택 여부·기간" in out
+
+
+def test_cli_unknown_notice_exits_2(pg_engine, capsys):
+    assert axes.main(["nope"], engine=pg_engine, embedder=FakeEmbedder(dim=1536)) == 2
+    assert "nope" in capsys.readouterr().err
