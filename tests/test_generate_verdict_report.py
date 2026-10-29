@@ -164,6 +164,21 @@ def test_second_run_costs_no_calls_and_keeps_the_first_run(world):
     assert "두 번째 실행 호출 0" in md2
 
 
+@pytest.mark.parametrize("text", ["<<<<<<< HEAD", "[]"])
+def test_unreadable_previous_record_stops_before_any_call(world, text):
+    root = world["root"]
+    (root / "out.json").write_text(text, encoding="utf-8")
+    client = FakeChat([_echo()])
+    code = vr.main(
+        ["--report"], engine=world["engine"], embedder=FakeEmbedder(dim=1536), client=client,
+        cache_path=root / "cache.jsonl", samples_json=world["samples_json"],
+        profiles_dir=world["profiles_dir"], out_md=root / "out.md", out_json=root / "out.json",
+        sleep=lambda s: None,
+    )  # fmt: skip
+    assert code == 3 and client.calls == []
+    assert (root / "out.json").read_text(encoding="utf-8") == text  # 첫 실행 기록을 덮지 않는다
+
+
 def test_missing_profile_file_is_a_setup_error(world):
     (world["profiles_dir"] / "full.json").unlink()
     code = vr.main(

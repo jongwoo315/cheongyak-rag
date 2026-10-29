@@ -576,13 +576,16 @@ def dump(run: dict) -> str:
 
 
 def _read_prev(path: Path) -> dict | None:
+    """직전 기록. 없으면 None. 있는데 못 읽으면 ValueError — 덮어쓰면 첫 실행 기록을 잃는다."""
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        prev = json.loads(path.read_text(encoding="utf-8"))
     except ValueError as e:
-        print(f"직전 실행 기록을 못 읽었다({path}): {e}", file=sys.stderr)
-        return None
+        raise ValueError(f"직전 실행 기록을 못 읽었다({path}): {e}") from e
+    if not isinstance(prev, dict):
+        raise ValueError(f"직전 실행 기록이 객체가 아니다({path})")
+    return prev
 
 
 # ── 실행 ─────────────────────────────────────────────────────────────────
@@ -614,6 +617,7 @@ def main(
     try:
         notices = sample_notices(samples_json)
         profiles = load_profiles(profiles_dir)
+        prev = _read_prev(out_json)  # 호출 비용을 쓰기 전에 읽는다
         check_model(args.model)
         client = RetryingClient(client or make_client(), sleep=sleep)
     except (OSError, KeyError, ValueError, HardApiError) as e:
@@ -641,7 +645,7 @@ def main(
         }
         run["symptoms"] = symptoms(m)
         run["usage"] = usage(m, client, sum(v["cached"] for _, v in _verdict_rows(m["cells"])))
-        attach_runs(run, _read_prev(out_json))
+        attach_runs(run, prev)
         sym = run["symptoms"]
         run["symptoms"] = {k: _plain(v) for k, v in sym.items()}
         write(out_md, render({**run, "symptoms": sym}))
