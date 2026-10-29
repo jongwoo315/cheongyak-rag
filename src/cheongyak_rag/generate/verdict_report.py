@@ -168,6 +168,8 @@ def measure(
                     engine, embedder, client, model, hmn, profile, cache=cache,
                     search_cache=search_cache,
                 )  # fmt: skip
+                spent += sum(v.usd for v in verdicts if not v.cached)
+                labelled = [_with_labels(engine, notice.facts.law_mst, v) for v in verdicts]
             except HardApiError as e:
                 stop = ("hard", f"{hmn} × {pname}: {e}")
                 break
@@ -189,10 +191,9 @@ def measure(
                     "on_sql": on_sql,
                     "plans": [p.line for p in plans],
                     "seconds": seconds,
-                    "verdicts": [_with_labels(engine, notice.facts.law_mst, v) for v in verdicts],
+                    "verdicts": labelled,
                 }
             )
-            spent += sum(v.usd for v in verdicts if not v.cached)
             if spent > budget_usd:
                 stop = ("budget", f"{hmn} × {pname}: 비용 상한 ${budget_usd} 초과 (${spent:.4f})")
                 break

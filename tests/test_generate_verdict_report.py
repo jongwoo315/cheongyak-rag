@@ -237,6 +237,23 @@ def test_run_with_missing_verdicts_is_not_a_first_run():
     assert run["first_run"] is None and run["symptoms"]["zones"]["cost"] == "미완"
 
 
+def test_label_recheck_db_error_is_a_cell_error_not_a_lost_report(world, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    real, n = vr.label_exists, {"i": 0}
+
+    def flaky(*a):
+        n["i"] += 1
+        if n["i"] == 1:
+            raise OperationalError("SELECT", {}, Exception("연결 끊김"))
+        return real(*a)
+
+    monkeypatch.setattr(vr, "label_exists", flaky)
+    code, md, js = _run(world, FakeChat([_echo()]))
+    assert code == 1 and len(js["cell_errors"]) == 1 and len(js["cells"]) == 5
+    assert "OperationalError" in js["cell_errors"][0]["error"]
+
+
 def test_unexpected_exception_in_one_cell_is_recorded_and_the_run_continues(world, monkeypatch):
     from cheongyak_rag.generate import verdict as vd
 
