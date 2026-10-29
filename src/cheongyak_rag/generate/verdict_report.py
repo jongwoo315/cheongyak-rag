@@ -54,8 +54,30 @@ MISSING_RETRY = 2  # 징후 1 — 판정 없음이 이 개수까지면 다시 �
 SHOW = 10
 TRANSIENT = ("RateLimitError", "APITimeoutError", "APIConnectionError", "InternalServerError")
 
-# 열린 질문(설계 §열린 질문)에서 고른 것 중 프롬프트를 고친 기록. 측정 뒤 고쳤으면 여기에 적는다
-PROMPT_NOTES: list[str] = []
+# 측정 뒤 system 프롬프트를 고친 기록과 징후 2·3에서 남은 것. 프롬프트를 다시 고치면 여기도 고친다
+PROMPT_NOTES: list[str] = [
+    "첫 측정(프롬프트 8f4b18cc): 징후 2는 10개, 징후 3은 24개로 둘 다 미완이었다."
+    " ELIGIBLE이면서 이유가 빈 판정이 많아 표본을 읽을 수 없었다",
+    "고침 1(b9ccf0a6): `reason`을 모든 판정에 한 문장으로 쓰게 하고, 값이 있는 프로필"
+    " 칸을 직접 대조할 때만 ELIGIBLE·INELIGIBLE을 쓰게 했다. 징후 2는 5개, 징후 3은"
+    " 18개였다",
+    "고침 2(5ea17eff): 판정 절차 4단계와 재당첨·거주 예시를 넣었다. 징후 2는 6개, 징후"
+    " 3은 15개였다",
+    "고침 3(92f338a4, 이 리포트의 값): ELIGIBLE을 「어긋나는 값이 없다」만으로는 못 쓰게"
+    " 정의했다. 징후 2는 7개, 징후 3은 18개였다",
+    "네 번 사이 값이 징후 2는 5~10개, 징후 3은 15~24개에서 오르내렸고 방향이 일정하지"
+    " 않아 프롬프트 고치기를 여기서 멈췄다. 남은 문제는 모델이 이유에 「프로필에서"
+    " 확인된다」고 쓰면서 프로필에 없는 값을 지어내는 것이다(예: 프로필에 거주지역 칸이"
+    " 없는데 「프로필의 공급지역이 경기로 확인되어」)",
+    "칸이 없는 축 18개 중 INELIGIBLE 5개는 프로필에 실제 있는 값에서 나왔다. 미혼 자녀"
+    " 수가 1명이라 다자녀(미성년 자녀 2명 이상)를 못 채우고, 혼인신고일이 2012-05-20이라"
+    " 신혼부부(혼인 7년 이내)를 못 채운다. 징후 3은 칸이 없는 축의 충족·미충족을 모두"
+    " 세므로 이 5개도 센다. 나머지 13개는 ELIGIBLE이고 이유가 요건 내용만 풀어 썼거나 없는"
+    " 값을 있는 것처럼 썼다",
+    "측정에 쓴 비용은 네 번 합쳐 $3.63이다($0.8665 + $0.9151 + $0.9216 + $0.9313)."
+    " 비용 상한 $3은 실행 하나에 건다",
+    "모델 비교(`gpt-5.6-sol` 등)는 #143이, 모자란 값을 질문으로 받는 일은 #82가 맡는다",
+]
 
 
 # ── 구간 ─────────────────────────────────────────────────────────────────
@@ -399,9 +421,15 @@ def _open_questions(run: dict) -> list[str]:
         f" 표본에서 `CONDITIONAL` {len(cond)}개 · `NEED_INFO` {len(need)}개가 나왔다."
         " 사례는 아래다",
     ]
+    if not cond:
+        items.append(
+            "CONDITIONAL이 한 건도 안 나와서 이 규칙대로 갈렸는지는 사례로 보지 못했다."
+            " 표본의 하위 질의가 공고 이후 행동으로 채우는 요건을 거의 묻지 않았고,"
+            " 모자란 값은 전부 NEED_INFO로 갔다"
+        )
     items += [f"CONDITIONAL — {_case(c, v)}" for c, v in cond[:3]]
     items += [f"NEED_INFO — {_case(c, v)}" for c, v in need[:3]]
-    return items + [f"프롬프트를 고친 기록: {x}" for x in PROMPT_NOTES]
+    return items + [f"측정 뒤 기록: {x}" for x in PROMPT_NOTES]
 
 
 def _usage_text(u: dict) -> str:
@@ -486,7 +514,7 @@ def render(run: dict) -> str:
             "`strict` schema가 5값 밖 응답을 막으므로 파싱에 실패한 응답은 「판정 없음」에 센다",
             "2·3번은 모르는 값을 지어내는지만 본다."
             " 판정이 맞았는지는 정답이 없어 이번에 안 잰다(골든셋 #75)",
-            "처리 시간은 값만 적는다(baseline 없음): " + _usage_text(second or run["usage"]),
+            "처리 시간은 값만 적는다(baseline 없음): " + _usage_text(first or run["usage"]),
         ]
     )
     lines += ["", "## 2. 판정값 분포 — 프로필 × 축", ""] + _dist_tables(run["cells"])
