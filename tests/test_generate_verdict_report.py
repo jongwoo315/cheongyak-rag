@@ -171,3 +171,71 @@ def test_missing_profile_file_is_a_setup_error(world):
         samples_json=world["samples_json"], profiles_dir=world["profiles_dir"],
     )  # fmt: skip
     assert code == 3
+
+
+# ── attach_runs: 첫 실행 · 두 번째 실행을 가르는 규칙 ────────────────────
+
+
+def _usage(calls, usd=1.0):
+    return {"calls": calls, "retries": 0, "cache_hits": 0, "input_tokens": 10,
+            "output_tokens": 1, "usd": usd, "cell_median_s": 1.0, "cell_max_s": 1.0}  # fmt: skip
+
+
+def _rec(calls, *, sha="a", model="m", stop=None, errors=(), usd=1.0):
+    return {"usage": _usage(calls, usd), "stop": stop, "cell_errors": list(errors),
+            "system_sha": sha, "model": model, "symptoms": {"zones": {}}}  # fmt: skip
+
+
+def _attached(run, prev=None):
+    vr.attach_runs(run, prev)
+    return run
+
+
+def test_second_run_needs_the_same_prompt_and_model():
+    first = _attached(_rec(135))
+    assert first["first_run"]["calls"] == 135 and first["second_run"] is None
+    same = _attached(_rec(0), first)
+    assert same["second_run"]["calls"] == 0 and same["first_run"]["calls"] == 135
+    assert same["symptoms"]["zones"]["cost"] == "통과"
+    other = _attached(
+        _rec(0, sha="b"), first
+    )  # 프롬프트가 바뀐 뒤 캐시만 읽은 실행은 두 번째 실행이 아니다
+    assert other["second_run"] is None and other["first_run"]["calls"] == 0
+    assert _attached(_rec(0, model="n"), first)["second_run"] is None
+
+
+def test_stopped_run_keeps_the_old_first_run_and_costs_add_up():
+    first = _attached(_rec(135, usd=0.9))
+    stopped = _attached(_rec(50, stop=("budget", "x"), usd=2.0), first)
+    assert stopped["first_run"]["calls"] == 135 and stopped["second_run"] is None
+    assert stopped["symptoms"]["zones"]["cost"] == "미완"
+    # 첫 실행이 멈췄으면 이어 받은 실행의 비용에 멈춘 실행의 비용을 더한다
+    s1 = _attached(_rec(50, stop=("budget", "x"), usd=2.0))
+    assert s1["first_run"] is None
+    done = _attached(_rec(85, usd=1.5), s1)
+    assert done["first_run"]["calls"] == 135 and done["first_run"]["usd"] == 3.5
+    assert done["symptoms"]["zones"]["cost"] == "미완"  # 합계가 $3을 넘는다
+
+
+def test_run_with_cell_errors_is_not_a_first_run():
+    errs = [{"notice": "n", "profile": "full", "error": "x"}]
+    run = _attached(_rec(100, errors=errs))
+    assert run["first_run"] is None and run["symptoms"]["zones"]["cost"] == "미완"
+
+
+def test_unexpected_exception_in_one_cell_is_recorded_and_the_run_continues(world, monkeypatch):
+    from cheongyak_rag.generate import verdict as vd
+
+    real = vd.judge
+    n = {"i": 0}
+
+    def flaky(*a, **kw):
+        n["i"] += 1
+        if n["i"] == 1:
+            raise RuntimeError("임베딩 실패")
+        return real(*a, **kw)
+
+    monkeypatch.setattr(vd, "judge", flaky)
+    code, md, js = _run(world, FakeChat([_echo()]))
+    assert code == 1 and len(js["cell_errors"]) == 1 and len(js["cells"]) == 5
+    assert "RuntimeError" in js["cell_errors"][0]["error"]

@@ -297,3 +297,28 @@ def test_cli_exits_2_for_unknown_notice_and_bad_profile(pg_engine, tmp_path):
     assert vd.main(["없음", "--profile", str(pf)], cache_path=tmp_path / "c", **kw) == 2
     pf.write_text('{"nope": 1}', encoding="utf-8")
     assert vd.main(["없음", "--profile", str(pf)], cache_path=tmp_path / "c", **kw) == 2
+
+
+# ── 리뷰 지적 ────────────────────────────────────────────────────────────
+
+
+def test_cached_value_that_no_longer_parses_is_called_again(tmp_path, engine_with_chunks):
+    cache = ans.GenCache(tmp_path / "v.jsonl")
+    probe = FakeChat([_reply()])
+    _call(probe, cache=cache, engine=engine_with_chunks)
+    (key,) = cache.rows
+    cache.rows[key] = {**cache.rows[key], "content": "{깨짐"}  # 스키마가 바뀐 뒤 옛 응답
+    client = FakeChat([_reply("INELIGIBLE")])
+    v = _call(client, cache=cache, engine=engine_with_chunks)
+    assert len(client.calls) == 1 and v.error is None and v.verdict == "INELIGIBLE"
+    assert not v.cached and json.loads(cache.rows[key]["content"])["verdict"] == "INELIGIBLE"
+
+
+def test_cli_summary_does_not_charge_cached_verdicts():
+    cached = vd.Verdict("homeless", "무주택", "q", verdict="ELIGIBLE", cached=True,
+                        input_tokens=1000, output_tokens=100, usd=0.5)  # fmt: skip
+    fresh = vd.Verdict("homeless", "무주택", "q2", verdict="ELIGIBLE",
+                       input_tokens=10, output_tokens=1, usd=0.25)  # fmt: skip
+    plan = axes.AxisPlan("homeless", "무주택", True, "r", ["q", "q2"], "1")
+    out = vd.format_report(_notice_info(), [plan], [cached, fresh])
+    assert "호출 1 · 캐시 1" in out and "$0.2500" in out and "토큰 입력 10 " in out

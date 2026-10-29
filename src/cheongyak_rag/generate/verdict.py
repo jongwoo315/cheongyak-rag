@@ -260,11 +260,11 @@ def _title(c: Chunk) -> str:
     return " ".join(head.split())[:TITLE_CHARS]
 
 
-def present_in_chunks(engine: Engine, mst: str | None, labels: list[Chunk]) -> set[str]:
+def present_in_chunks(engine: Engine, mst: str | None, chunks: list[Chunk]) -> set[str]:
     """`chunks`에서 다시 조회해 있는 라벨. 조문은 공고의 MST 행만, FAQ는 `faq` 행을 본다."""
     found: set[str] = set()
-    for source, group in (("law", [c for c in labels if c.source == "law"]),
-                          ("faq", [c for c in labels if c.source == "faq"])):  # fmt: skip
+    for source, group in (("law", [c for c in chunks if c.source == "law"]),
+                          ("faq", [c for c in chunks if c.source == "faq"])):  # fmt: skip
         if not group or (source == "law" and mst is None):
             continue
         sql = "SELECT label FROM chunks WHERE source = :s AND label IN :labels"
@@ -318,9 +318,14 @@ def judge_one(
     messages = build_messages(axis, hits, notice, payload)
     key = cache_key(model, messages)
     value = cache.get(key) if cache is not None else None
+    data = None
     if value is not None:
-        out.cached = True
-    else:
+        try:
+            data = _parse(value["content"])
+            out.cached = True
+        except ValueError:
+            value = None  # 스키마를 고친 뒤 못 읽게 된 옛 응답은 다시 부른다
+    if value is None:
         try:
             value = _call(client, model, messages)
         except HardApiError:
@@ -331,13 +336,16 @@ def judge_one(
     out.input_tokens, out.output_tokens = value["input_tokens"], value["output_tokens"]
     out.usd = cost_usd(model, out.input_tokens, out.output_tokens)
     out.latency_s = value["latency_s"]
-    try:
-        data = _parse(value["content"])
-    except ValueError as e:
-        out.error = str(e)
-        return out
-    if cache is not None and not out.cached:
-        cache.put(key, value)  # 읽히는 응답만 둔다 — 잘린 응답이 굳어 다시 안 불리는 것을 막는다
+    if data is None:
+        try:
+            data = _parse(value["content"])
+        except ValueError as e:
+            out.error = str(e)
+            return out
+        if cache is not None:
+            cache.put(
+                key, value
+            )  # 읽히는 응답만 둔다 — 잘린 응답이 굳어 다시 안 불리는 것을 막는다
     out.verdict, out.reason = data["verdict"], data["reason"]
     out.conditions, out.need_info = data["conditions"], data["need_info"]
 
@@ -450,13 +458,14 @@ def format_report(notice: NoticeInfo, plans: list[axes.AxisPlan], verdicts: list
         if p.on:
             out += ["", f"## {p.name}"]
             out += [format_verdict(v) for v in verdicts if v.axis == p.id]
-    calls = [v for v in verdicts if not v.cached and not v.no_context and not v.error]
+    # 캐시에서 읽은 판정은 돈이 안 든다. 호출한 판정(실패 포함)만 토큰과 비용을 센다
+    fresh = [v for v in verdicts if not v.cached and not v.no_context]
     out += [
         "",
-        f"판정 {len(verdicts)}개 · 호출 {len(calls)} · 캐시 {sum(v.cached for v in verdicts)}"
-        f" · 토큰 입력 {sum(v.input_tokens for v in verdicts):,}"
-        f" 출력 {sum(v.output_tokens for v in verdicts):,}"
-        f" · ${sum(v.usd for v in verdicts):.4f}",
+        f"판정 {len(verdicts)}개 · 호출 {len(fresh)} · 캐시 {sum(v.cached for v in verdicts)}"
+        f" · 토큰 입력 {sum(v.input_tokens for v in fresh):,}"
+        f" 출력 {sum(v.output_tokens for v in fresh):,}"
+        f" · ${sum(v.usd for v in fresh):.4f}",
     ]
     return "\n".join(out)
 

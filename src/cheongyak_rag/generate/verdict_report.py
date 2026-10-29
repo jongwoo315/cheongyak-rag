@@ -171,7 +171,7 @@ def measure(
             except HardApiError as e:
                 stop = ("hard", f"{hmn} × {pname}: {e}")
                 break
-            except (axes.NoticeNotFound, prof.ProfileError, SQLAlchemyError) as e:
+            except Exception as e:  # noqa: BLE001 — 셀 하나의 실패로 보고서 전체를 잃지 않는다
                 cell_errors.append(
                     {"notice": hmn, "profile": pname, "error": f"{type(e).__name__}: {e}"}
                 )
@@ -294,20 +294,37 @@ def usage(m: dict, client, cache_hits: int) -> dict:
     }
 
 
+def _add(a: dict, b: dict) -> dict:
+    """멈춘 실행이 쓴 호출·토큰·비용에 이어 받은 실행의 것을 더한다. 시간은 뒤 실행의 값이다."""
+    keys = ("calls", "retries", "cache_hits", "input_tokens", "output_tokens", "usd")
+    return {**b, **{k: a[k] + b[k] for k in keys}}
+
+
 def attach_runs(run: dict, prev: dict | None) -> None:
     """첫 실행(`first_run`)과 같은 명령을 한 번 더 돌린 실행(`second_run`)을 가른다.
 
-    직전 기록에 첫 실행이 있고 이번 호출이 그보다 적으면 두 번째 실행이다.
-    멈춘 실행은 첫 실행이 아니다.
+    직전 기록이 같은 프롬프트·모델의 첫 실행이고 이번 호출이 그보다 적으면 두 번째 실행이다.
+    멈추거나 판정을 못 낸 공고가 있는 실행은 첫 실행이 아니다. 그런 실행이 이어지면 비용을 더해
+    다음 완주 실행의 첫 실행 값으로 쓴다 — 캐시가 일부 찬 뒤의 비용만 첫 실행으로
+    적지 않으려는 것이다.
     """
-    cur, old = run["usage"], (prev or {}).get("first_run")
-    if not run["stop"] and old and cur["calls"] < old["calls"]:
-        run["first_run"], run["second_run"] = old, cur
+    prev = prev or {}
+    same = prev.get("system_sha") == run["system_sha"] and prev.get("model") == run["model"]
+    old = prev.get("first_run") if same else None
+    cur = run["usage"]
+    carried = prev.get("usage_total") if same and prev.get("incomplete") else None
+    total = _add(carried, cur) if carried else cur
+    incomplete = bool(run["stop"] or run["cell_errors"])
+    run["usage_total"], run["incomplete"] = total, incomplete
+    if incomplete:
+        first, second = old, None
+    elif old and cur["calls"] < old["calls"]:
+        first, second = old, cur
     else:
-        run["first_run"], run["second_run"] = (None if run["stop"] else cur), None
-    first = run["first_run"] or cur
+        first, second = total, None
+    run["first_run"], run["second_run"] = first, second
     run["symptoms"]["zones"]["cost"] = zone_cost(
-        first["usd"], run["second_run"]["calls"] if run["second_run"] else None, bool(run["stop"])
+        (first or total)["usd"], second["calls"] if second else None, incomplete
     )
 
 
