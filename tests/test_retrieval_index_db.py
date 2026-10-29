@@ -270,3 +270,45 @@ def test_load_refreshes_planner_statistics(pg_engine):
             text("SELECT reltuples FROM pg_class WHERE relname = 'chunks'")
         ).scalar()
     assert reltuples == len(rows)  # ANALYZE가 돌았다. 안 돌면 -1이거나 이전 적재의 값이다
+
+
+def _mst_rows(n_a=6, n_b=6):
+    """조문 행 둘 묶음 — law_mst가 'A'인 것과 'B'인 것. FAQ 한 행은 law_mst가 null이다."""
+    rows = _many_rows(n_law=n_a + n_b, n_faq=1)
+    law = [r for r in rows if r["source"] == "law"]
+    for i, r in enumerate(law):
+        r["law_mst"] = "A" if i < n_a else "B"
+    return rows
+
+
+def test_nearest_law_mst_keeps_only_that_mst(pg_engine):
+    index_db.load(pg_engine, _mst_rows())
+    got = index_db.nearest(pg_engine, [0.5] * 1536, "law", 12, law_mst="B", force_index=True)
+    assert len(got) == 6
+    ids = {cid for cid, _ in got}
+    assert ids == {f"law:{i}" for i in range(6, 12)}
+
+
+def test_nearest_without_law_mst_is_unchanged(pg_engine):
+    index_db.load(pg_engine, _mst_rows())
+    got = index_db.nearest(pg_engine, [0.5] * 1536, "law", 12, force_index=True)
+    assert len(got) == 12
+
+
+def test_nearest_law_mst_is_a_bind_parameter():
+    sql = index_db.nearest_sql("law", law_mst=True).text
+    assert "law_mst = :mst" in sql
+    assert "law_mst" not in index_db.nearest_sql("law").text
+
+
+def test_nearest_law_mst_still_uses_the_partial_index(pg_engine):
+    index_db.load(pg_engine, _mst_rows())
+    plan = index_db.explain(pg_engine, [0.5] * 1536, "law", 5, seqscan_off=True, law_mst="A")
+    assert "chunks_embedding_law_hnsw" in plan
+
+
+def test_nearest_law_mst_returns_every_row_of_that_mst_through_the_index(pg_engine):
+    """HNSW는 source 전체에서 후보를 고른 뒤 MST로 거른다 — 그래도 그 MST 행을 k개까지 채운다."""
+    index_db.load(pg_engine, _mst_rows(n_a=100, n_b=100))
+    got = index_db.nearest(pg_engine, [0.5] * 1536, "law", 100, law_mst="B", force_index=True)
+    assert len(got) == 100
