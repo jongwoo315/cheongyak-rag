@@ -223,6 +223,20 @@ def test_run_with_cell_errors_is_not_a_first_run():
     assert run["first_run"] is None and run["symptoms"]["zones"]["cost"] == "미완"
 
 
+def test_rerun_with_as_many_calls_is_still_a_second_run():
+    first = _attached(_rec(135))
+    again = _attached(_rec(135), first)  # 캐시 키가 흔들려 호출이 줄지 않았다
+    assert again["second_run"]["calls"] == 135 and again["first_run"]["calls"] == 135
+    assert again["symptoms"]["zones"]["cost"] == "미완"
+
+
+def test_run_with_missing_verdicts_is_not_a_first_run():
+    run = _rec(100)
+    run["symptoms"]["missing"] = [({}, {})]  # 판정을 못 낸 하위 질의 하나
+    run = _attached(run)
+    assert run["first_run"] is None and run["symptoms"]["zones"]["cost"] == "미완"
+
+
 def test_unexpected_exception_in_one_cell_is_recorded_and_the_run_continues(world, monkeypatch):
     from cheongyak_rag.generate import verdict as vd
 

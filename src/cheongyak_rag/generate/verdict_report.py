@@ -303,10 +303,11 @@ def _add(a: dict, b: dict) -> dict:
 def attach_runs(run: dict, prev: dict | None) -> None:
     """첫 실행(`first_run`)과 같은 명령을 한 번 더 돌린 실행(`second_run`)을 가른다.
 
-    직전 기록이 같은 프롬프트·모델의 첫 실행이고 이번 호출이 그보다 적으면 두 번째 실행이다.
-    멈추거나 판정을 못 낸 공고가 있는 실행은 첫 실행이 아니다. 그런 실행이 이어지면 비용을 더해
-    다음 완주 실행의 첫 실행 값으로 쓴다 — 캐시가 일부 찬 뒤의 비용만 첫 실행으로
-    적지 않으려는 것이다.
+    직전 기록이 같은 프롬프트·모델의 첫 실행이 있으면 이번 완주 실행은 호출 수와 상관없이 두 번째
+    실행이다 — 캐시 키가 매번 바뀌어 호출이 첫 실행만큼 나와도 새 첫 실행으로 덮지 않는다.
+    실행이 멈추거나, 셀 전체가 실패했거나, 판정을 못 낸 하위 질의가 있으면 첫 실행이 아니다.
+    그런 실행이 이어지면 비용을 더해 다음 완주 실행의 첫 실행 값으로 쓴다 — 캐시가 일부 찬
+    뒤의 비용만 첫 실행으로 적지 않으려는 것이다.
     """
     prev = prev or {}
     same = prev.get("system_sha") == run["system_sha"] and prev.get("model") == run["model"]
@@ -314,11 +315,11 @@ def attach_runs(run: dict, prev: dict | None) -> None:
     cur = run["usage"]
     carried = prev.get("usage_total") if same and prev.get("incomplete") else None
     total = _add(carried, cur) if carried else cur
-    incomplete = bool(run["stop"] or run["cell_errors"])
+    incomplete = bool(run["stop"] or run["cell_errors"] or run["symptoms"].get("missing"))
     run["usage_total"], run["incomplete"] = total, incomplete
     if incomplete:
         first, second = old, None
-    elif old and cur["calls"] < old["calls"]:
+    elif old:
         first, second = old, cur
     else:
         first, second = total, None
