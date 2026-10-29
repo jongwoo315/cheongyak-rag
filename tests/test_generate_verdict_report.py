@@ -139,6 +139,73 @@ def test_missing_label_is_counted_by_the_report_own_sql(world):
     assert real(world["engine"], "999", "제2조") is False
 
 
+def _vrow(axis, verdict, **kw):
+    row = {
+        "axis": axis, "verdict": verdict, "citations": ["제1조"], "missing_labels": [],
+        "invalid_citations": [], "forced": False, "no_context": False, "error": None,
+    }  # fmt: skip
+    return {**row, **kw}
+
+
+def _cell(profile, *verdicts):
+    on = [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type",
+    ]
+    return {"profile": profile, "on_sql": on, "verdicts": list(verdicts)}
+
+
+def test_symptoms_count_by_profile_and_axis():
+    m = {
+        "cells": [
+            _cell("empty", _vrow("homeless", "ELIGIBLE"), _vrow("homeless", "NEED_INFO")),
+            _cell(
+                "partial",
+                _vrow("homeless", "INELIGIBLE"),
+                _vrow("account", "ELIGIBLE", citations=[]),
+                _vrow("rewin", "ELIGIBLE", missing_labels=["제9조", "제8조"]),
+            ),
+            _cell(
+                "full",
+                _vrow("homeless", "CONDITIONAL"),
+                _vrow("account", "NEED_INFO"),
+                _vrow("residence", "ELIGIBLE"),
+                _vrow("rewin", "UNVERIFIABLE"),
+                _vrow("special_type", "INELIGIBLE"),
+            ),
+        ],
+        "cell_errors": [],
+        "stop": None,
+    }
+    s = vr.symptoms(m)
+    assert s["total"] == 10
+    assert len(s["empty_decided"]) == 1  # empty 프로필의 ELIGIBLE만 센다
+    assert len(s["nofield_decided"]) == 2  # full 프로필의 칸 없는 축만 센다
+    assert (s["backed_n"], len(s["decisive"])) == (2, 1)  # NEED_INFO는 판정을 낸 것이 아니다
+    assert len(s["no_cite"]) == 1 and len(s["bad_label"]) == 1 and s["n_bad_labels"] == 2
+    assert s["zones"]["run"] == "미완"
+    empty = vr.symptoms({"cells": [], "cell_errors": [], "stop": None})
+    assert empty["forced_ratio"] == 1.0 and empty["zones"]["forced"] == "미완"
+
+
+def test_label_missing_from_chunks_makes_the_report_incomplete(world, monkeypatch):
+    # verdict.py의 대조는 통과시키고 측정 코드의 SQL이 따로 잡는지 본다
+    from cheongyak_rag.generate import verdict as vd
+
+    monkeypatch.setattr(
+        vd, "present_in_chunks", lambda engine, mst, chunks: {c.label for c in chunks}
+    )
+    monkeypatch.setattr(vr, "label_exists", lambda *a: False)
+    code, md, js = _run(world, FakeChat([_echo()]))
+    assert code == 1 and js["symptoms"]["zones"]["run"] == "미완"
+    assert js["symptoms"]["n_bad_labels"] > 0 and "DB에 없는 라벨" in md
+
+
 def test_budget_stops_the_run_and_exits_1(world):
     code, md, js = _run(world, FakeChat([_echo()]), "--budget-usd", "0.0001")
     assert code == 1 and js["stop"][0] == "budget" and "비용 상한에서 멈춤" in md
