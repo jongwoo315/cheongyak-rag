@@ -651,7 +651,8 @@ def render(run: dict, baseline: dict) -> str:
             "`strict` schema가 5값 밖 응답을 막으므로 파싱에 실패한 응답은 「판정 없음」에 센다",
             "판정이 맞았는지는 정답이 없어 이번에 안 잰다(골든셋 #75)",
             "PR #13 값은 `runs/80/pr13_baseline.json`이고 출처는 " + baseline["source"],
-            "처리 시간은 값만 적는다(baseline 없음): " + _usage_text(first or run["usage"]),
+            "처리 시간은 값만 적는다(baseline 없음). 호출이 0이면 캐시와 SQL을 읽은 시간이라"
+            " LLM을 부른 실행과 비교할 수 없다: " + _usage_text(first or run["usage"]),
         ]
     )
     lines += ["", f"## 2. 최종 ELIGIBLE 전부 ({len(s['eligible'])}개)", ""]
