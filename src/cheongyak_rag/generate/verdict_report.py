@@ -821,7 +821,8 @@ def main(
         if run["stop"]:
             print(f"멈춤({run['stop'][0]}): {run['stop'][1]}", file=sys.stderr)
         bad = [k for k in ("jw", "loss", "run") if sym["zones"][k] == "미완"]
-        return 1 if run["stop"] or bad else 0  # 징후 1·2 미완이면 리포트를 쓴 뒤 exit 1
+        # 징후 1·2·4 중 하나가 미완이거나 실행이 멈췄으면 리포트를 쓴 뒤 exit 1
+        return 1 if run["stop"] or bad else 0
     except SQLAlchemyError as e:
         print(f"DB 오류: {type(e).__name__}: {getattr(e, 'orig', e)}", file=sys.stderr)
         return 2
