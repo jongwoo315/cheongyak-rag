@@ -277,6 +277,18 @@ def test_jw_zone_is_incomplete_when_only_the_full_profile_gets_eligible_on_a_no_
     assert s["zones"]["jw"] == "미완"
 
 
+def test_jw_zone_remeasures_when_a_sub_query_on_empty_or_full_has_no_verdict():
+    no_verdict = _vrow("homeless", None, error="Timeout: x")
+    s = _sym(_cell("empty", no_verdict), _cell("full", _vrow("homeless", "NEED_INFO")))
+    assert (s["jw_missing"], s["zones"]["jw"]) == (1, "다시 잰다")
+    # partial 쪽 판정 없음은 징후 1이 보는 칸이 아니다
+    s = _sym(_cell("partial", no_verdict), _cell("empty", _vrow("homeless", "NEED_INFO")))
+    assert (s["jw_missing"], s["zones"]["jw"]) == (0, "통과")
+    s = _sym(_cell("empty", _vrow("homeless", "NEED_INFO")),
+             cell_errors=[{"profile": "empty", "notice": "n", "error": "x"}])  # fmt: skip
+    assert (s["jw_cell_errors"], s["zones"]["jw"]) == (1, "미완")
+
+
 def test_distribution_compares_the_verdict_before_the_guard():
     cells = [_cell("full", _vrow("residence", "ELIGIBLE"), _guarded("rewin"))]
     pre = {"full": {"residence": {"ELIGIBLE": 1}, "rewin": {"ELIGIBLE": 1}}}
