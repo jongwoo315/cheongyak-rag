@@ -272,6 +272,18 @@ def test_distribution_compares_the_verdict_before_the_guard():
     assert vr.symptoms(m, {"distribution": post})["dist_same"] is False
 
 
+def test_baseline_missing_a_key_the_report_reads_is_a_setup_error(world):
+    bad = {k: v for k, v in BASELINE.items() if k != "decisive_full_n"}
+    world["baseline_json"].write_text(json.dumps(bad), encoding="utf-8")
+    client = FakeChat([_echo()])
+    code = vr.main(
+        ["--report"], engine=world["engine"], client=client,
+        samples_json=world["samples_json"], profiles_dir=world["profiles_dir"],
+        baseline_json=world["baseline_json"],
+    )  # fmt: skip
+    assert code == 3 and client.calls == []  # 호출 비용을 쓰기 전에 멈춘다
+
+
 def test_missing_baseline_is_a_setup_error(world):
     world["baseline_json"].unlink()
     code = vr.main(
@@ -307,6 +319,8 @@ def test_label_missing_from_chunks_makes_the_report_incomplete(world, monkeypatc
 def test_budget_stops_the_run_and_exits_1(world):
     code, md, js = _run(world, FakeChat([_echo()]), "--budget-usd", "0.0001")
     assert code == 1 and js["stop"][0] == "budget" and "비용 상한에서 멈춤" in md
+    zones = js["symptoms"]["zones"]
+    assert zones["jw"] == zones["loss"] == "미완"  # 안 돈 셀을 못 쟀는데 통과로 찍지 않는다
     assert len(js["cells"]) == 1 and js["first_run"] is None
 
 

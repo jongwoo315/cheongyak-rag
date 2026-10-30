@@ -393,6 +393,27 @@ def test_cli_prints_seven_axes_and_each_verdict_line(pg_engine, tmp_path, capsys
     assert "ELIGIBLE" in out and "인용" in out and "단지 1" in out
 
 
+def test_cli_prints_the_guarded_verdict_with_the_original_one(pg_engine, tmp_path, capsys):
+    from tests.fakes import FakeEmbedder
+
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})])
+    _load_chunks(pg_engine, other_mst=False)
+    pf = tmp_path / "p.json"
+    pf.write_text("{}", encoding="utf-8")  # 빈 프로필
+    code = vd.main(
+        [hmn, "--profile", str(pf)],
+        engine=pg_engine,
+        embedder=FakeEmbedder(dim=1536),
+        client=FakeChat([_echo("ELIGIBLE")]),
+        cache_path=tmp_path / "c.jsonl",
+    )
+    out = capsys.readouterr().out
+    assert code == 0 and "판정: ELIGIBLE" not in out
+    assert out.count("프로필 값이 없어 코드가 바꿈 — 모델 판정 ELIGIBLE") == 3
+    assert "필요한 정보: 무주택세대구성원 판정 값(homeless_now)" in out
+
+
 def test_cli_exits_2_for_unknown_notice_and_bad_profile(pg_engine, tmp_path):
     from tests.fakes import FakeEmbedder
 

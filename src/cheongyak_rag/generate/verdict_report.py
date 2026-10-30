@@ -65,7 +65,7 @@ PROMPT_NOTES: list[str] = [
     " 18개였다",
     "고침 2(5ea17eff): 판정 절차 4단계와 재당첨·거주 예시를 넣었다. 징후 2는 6개, 징후"
     " 3은 15개였다",
-    "고침 3(92f338a4, 이 리포트의 값): ELIGIBLE을 「어긋나는 값이 없다」만으로는 못 쓰게"
+    "고침 3(92f338a4, PR #12 리포트의 값): ELIGIBLE을 「어긋나는 값이 없다」만으로는 못 쓰게"
     " 정의했다. 징후 2는 7개, 징후 3은 18개였다",
     "네 번 사이 값이 징후 2는 5~10개, 징후 3은 15~24개에서 오르내렸고 방향이 일정하지"
     " 않아 프롬프트 고치기를 여기서 멈췄다. 남은 문제는 모델이 이유에 「프로필에서"
@@ -164,7 +164,12 @@ def sample_notices(path: Path) -> list[str]:
 def load_baseline(path: Path) -> dict:
     """PR #12 측정값. 없거나 못 읽으면 예외 — baseline 없이 재면 같은 응답을 읽었는지 모른다."""
     data = json.loads(path.read_text(encoding="utf-8"))
-    for key in ("system_sha", "distribution", "eligible_empty", "eligible_full_nofield"):
+    keys = (
+        "source", "system_sha", "total", "distribution", "eligible_empty", "eligible_full_nofield",
+        "decisive_full", "decisive_full_n", "forced", "ineligible_full_nofield",
+        "eligible_partial_nofield",
+    )  # fmt: skip
+    for key in keys:  # render가 쓰는 키 전부
         data[key]  # noqa: B018 — 없는 키는 KeyError로 준비 실패가 된다
     return data
 
@@ -345,9 +350,9 @@ def symptoms(m: dict, baseline: dict | None = None) -> dict:
         "dist_same": None if baseline is None else dist_pre == baseline["distribution"],
         "zones": {
             "jw": zone_jw(len(empty), len(nofield), len(jw_missing), len(jw_errors))
-            if total
-            else "미완",
-            "loss": zone_loss(len(loss)) if total else "미완",
+            if total and not m["stop"]
+            else "미완",  # 멈춘 실행은 안 돈 셀을 못 쟀다
+            "loss": zone_loss(len(loss)) if total and not m["stop"] else "미완",
             "decisive": zone_decisive(len(decisive)),
             "run": z4 if total else "미완",
         },
@@ -543,6 +548,10 @@ def _open_questions(run: dict) -> list[str]:
         f"이번 PR은 프롬프트(system_sha {run['system_sha']})를 고치지 않고"
         " LLM 응답 뒤에 코드 guard를 더했다. 모델 비교와 프롬프트 재측정은 #143이 맡는다"
     )
+    items.append(
+        "아래 징후 번호는 PR #12 plan의 것이다. 그쪽 징후 2는 빈 프로필의 ELIGIBLE·INELIGIBLE 수,"
+        " 징후 3은 칸 없는 축의 ELIGIBLE·INELIGIBLE 수였고 이 리포트 1절의 번호와 다르다"
+    )
     return items + [f"PR #12에서 프롬프트로 시도한 것: {x}" for x in PROMPT_NOTES]
 
 
@@ -633,7 +642,11 @@ def render(run: dict, baseline: dict) -> str:
             (
                 "5. 같은 응답을 읽었나 (첫 실행 호출 0 · 두 번째 실행 호출 0 ·"
                 " guard 전 분포가 PR #12와 칸마다 같다)",
-                (f"첫 실행 {_usage_text(first)}" if first else "첫 실행 기록 없음(멈춘 실행)")
+                (
+                    f"첫 실행 {_usage_text(first)}"
+                    if first
+                    else "첫 실행 기록 없음(멈췄거나 판정을 못 낸 실행)"
+                )
                 + (
                     f" · 두 번째 실행 호출 {second['calls']}"
                     if second
