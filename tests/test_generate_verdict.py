@@ -212,6 +212,11 @@ FIELD = {
 }
 
 
+def test_guard_tables_cover_exactly_the_axes():
+    """축을 더하고 표를 안 고치면 ELIGIBLE이 나오는 순간 KeyError가 난다."""
+    assert set(vd.REQUIRED_FIELDS) == set(vd.NEED_INFO_TEXT) == set(axes.AXIS_BY_ID)
+
+
 @pytest.mark.parametrize("axis_id", NO_FIELD_AXES)
 def test_guard_turns_eligible_into_need_info_on_axes_without_a_profile_field(
     engine_with_chunks, axis_id
