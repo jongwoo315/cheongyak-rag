@@ -4,12 +4,20 @@ import re
 
 import pytest
 
+from cheongyak_rag.generate import verdict as vd
 from cheongyak_rag.generate import verdict_report as vr
 from cheongyak_rag.retrieval import axes
 from tests.fakes import FakeChat, FakeEmbedder
 from tests.test_retrieval_axes import _load_chunks, _notice, _version
 
 LABEL = re.compile(r"^\[([^\]]+)\] ", re.M)
+BASELINE = {
+    "source": "테스트", "system_sha": "92f338a4", "model": "m", "total": 135,
+    "eligible_empty": 7, "eligible_full_nofield": 13, "decisive_full": 10,
+    "decisive_full_n": 12, "forced": 0, "ineligible_full_nofield": 5,
+    "eligible_partial_nofield": 12, "first_run_usd": 0.93, "first_run_calls": 135,
+    "distribution": {},
+}  # fmt: skip
 
 
 def _echo(verdict="ELIGIBLE"):
@@ -36,15 +44,18 @@ def world(pg_engine, tmp_path):
     samples.write_text(json.dumps({"samples": [{"notice": a}, {"notice": b}]}), encoding="utf-8")
     profiles = tmp_path / "profiles"
     profiles.mkdir()
-    (profiles / "full.json").write_text(
-        json.dumps({"birth_date": "1985-04-10", "is_household_head": True}), encoding="utf-8"
-    )
+    full = {"birth_date": "1985-04-10", "homeless_now": True, "is_household_head": True,
+            "savings_join_date": "2014-03-01"}  # fmt: skip
+    (profiles / "full.json").write_text(json.dumps(full), encoding="utf-8")
     (profiles / "partial.json").write_text('{"birth_date": "1985-04-10"}', encoding="utf-8")
     (profiles / "empty.json").write_text("{}", encoding="utf-8")
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(BASELINE), encoding="utf-8")
     return {
         "engine": pg_engine,
         "samples_json": samples,
         "profiles_dir": profiles,
+        "baseline_json": baseline,
         "root": tmp_path,
     }
 
@@ -55,8 +66,8 @@ def _run(world, client, *extra, name="out"):
         ["--report", *extra],
         engine=world["engine"], embedder=FakeEmbedder(dim=1536), client=client,
         cache_path=root / "cache.jsonl", samples_json=world["samples_json"],
-        profiles_dir=world["profiles_dir"], out_md=root / f"{name}.md",
-        out_json=root / f"{name}.json", sleep=lambda s: None,
+        profiles_dir=world["profiles_dir"], baseline_json=world["baseline_json"],
+        out_md=root / f"{name}.md", out_json=root / f"{name}.json", sleep=lambda s: None,
     )  # fmt: skip
     return (
         code,
@@ -78,17 +89,31 @@ def test_zone_run_follows_the_plan_bands():
         assert vr.zone_run(missing=0, transient=False, **{**ok, k: 1}) == "미완"
 
 
+def test_zone_jw_follows_the_plan_bands():
+    assert vr.zone_jw(0, 0, 0, 0) == "통과"
+    assert vr.zone_jw(0, 0, 1, 0) == "다시 잰다" and vr.zone_jw(0, 0, 2, 0) == "다시 잰다"
+    assert vr.zone_jw(0, 0, 3, 0) == "미완"
+    assert vr.zone_jw(1, 0, 0, 0) == "미완" and vr.zone_jw(0, 1, 0, 0) == "미완"
+    assert vr.zone_jw(0, 0, 0, 1) == "미완"  # 셀 전체가 실패했으면 못 잰 것이다
+
+
 def test_other_zone_bands():
-    assert [vr.zone_count(n) for n in (0, 1, 2, 3)] == ["통과", "다시 잰다", "다시 잰다", "미완"]
+    assert [vr.zone_loss(n) for n in (0, 1)] == ["통과", "미완"]
     assert [vr.zone_decisive(n) for n in (12, 10, 9, 6, 5)] == [
         "통과", "통과", "다시 잰다", "다시 잰다", "미완"
     ]  # fmt: skip
-    assert [vr.zone_forced(r) for r in (0.0, 0.2, 0.21, 0.5, 0.51)] == [
-        "통과", "통과", "다시 잰다", "다시 잰다", "미완"
-    ]  # fmt: skip
-    assert vr.zone_cost(1.0, 0, False) == "통과" and vr.zone_cost(1.0, None, False) == "미측정"
-    assert vr.zone_cost(1.0, 3, False) == "다시 잰다" and vr.zone_cost(1.0, 4, False) == "미완"
-    assert vr.zone_cost(3.1, 0, False) == "미완" and vr.zone_cost(0.1, 0, True) == "미완"
+    assert vr.zone_cost(0, 1.0, 0, False) == "통과"
+    assert vr.zone_cost(0, 1.0, None, False) == "미측정"
+    assert (
+        vr.zone_cost(0, 1.0, 3, False) == "다시 잰다" and vr.zone_cost(0, 1.0, 4, False) == "미완"
+    )
+    assert (
+        vr.zone_cost(1, 1.0, 0, False) == "다시 잰다"
+        and vr.zone_cost(3, 1.0, 0, False) == "다시 잰다"
+    )
+    assert vr.zone_cost(4, 1.0, 0, False) == "미완"
+    assert vr.zone_cost(0, 3.1, 0, False) == "미완" and vr.zone_cost(0, 0.1, 0, True) == "미완"
+    assert vr.zone_cost(0, 0.1, 0, False, dist_same=False) == "미완"
 
 
 # ── 리포트 ───────────────────────────────────────────────────────────────
@@ -99,17 +124,44 @@ def test_report_has_all_six_symptoms_and_every_sample(world):
     assert code == 0
     for n in "123456":
         assert re.search(rf"^\| {n}\. ", md, re.M)
-    assert "## 2. 판정값 분포" in md and "## 5. 열린 질문" in md
+    assert "## 2. 판정값 분포" in md and "## 3. guard가 바꾼 판정 전부" in md
+    assert "## 4. 표본" in md and "## 5. 열린 질문" in md
     assert len(js["cells"]) == 6  # 공고 2건 × 프로필 3종
-    assert md.splitlines()[0].startswith("공고 2건 × 프로필 3종, 켜진 하위 질의")
     assert all(f"× `{p}`" in md for p in ("full", "partial", "empty"))
-    assert set(js["symptoms"]["zones"]) == {"run", "empty", "nofield", "decisive", "forced", "cost"}
+    assert set(js["symptoms"]["zones"]) == {"jw", "loss", "decisive", "run", "cost"}
+    first = md.splitlines()[0]
+    assert (
+        first.startswith("빈 프로필 ELIGIBLE 0(guard 전 ") and "칸 없는 4개 축 ELIGIBLE 0(" in first
+    )
 
 
-def test_report_flags_decided_verdicts_on_the_empty_profile(world):
+def test_guard_clears_the_empty_profile_and_the_report_shows_what_it_was(world):
     code, md, js = _run(world, FakeChat([_echo("ELIGIBLE")]))
-    assert js["symptoms"]["zones"]["empty"] == "미완"  # 빈 프로필의 ELIGIBLE이 3개를 넘는다
-    assert js["symptoms"]["zones"]["run"] == "통과" and code == 0
+    s = js["symptoms"]
+    assert (
+        s["empty_eligible"] == [] and s["empty_eligible_pre"] > 0
+    )  # guard 전 ELIGIBLE이 guard 후 0
+    assert s["nofield_eligible"] == [] and s["nofield_eligible_pre"] > 0
+    assert s["zones"]["jw"] == "통과" and s["zones"]["loss"] == "통과" and code == 0
+    assert len(s["guarded"]) > 0 and "→" in md  # 분포 표에 guard 전→후가 보인다
+    assert "모델이 쓴 이유 원문" in md and "guard가 넣은 필요한 정보" in md
+
+
+def test_report_exits_1_when_an_empty_profile_still_gets_eligible(world, monkeypatch):
+    monkeypatch.setattr(vd, "eligible_guard", lambda axis_id, profile: True)  # guard가 빠졌다
+    code, md, js = _run(world, FakeChat([_echo("ELIGIBLE")]))
+    assert js["symptoms"]["zones"]["jw"] == "미완" and code == 1
+    assert len(js["symptoms"]["empty_eligible"]) > 0 and "## 6. 어긋난 곳" in md
+
+
+def test_report_exits_1_when_the_guard_changes_a_verdict_with_all_fields_present(
+    world, monkeypatch
+):
+    monkeypatch.setattr(vd, "eligible_guard", lambda axis_id, profile: False)  # 너무 넓다
+    code, md, js = _run(world, FakeChat([_echo("ELIGIBLE")]))
+    s = js["symptoms"]
+    assert s["empty_eligible"] == [] and s["nofield_eligible"] == []  # 징후 1은 통과다
+    assert len(s["loss"]) > 0 and s["zones"]["loss"] == "미완" and code == 1
 
 
 def test_off_axis_call_is_measured_independently_and_exits_1(world, monkeypatch):
@@ -143,6 +195,7 @@ def _vrow(axis, verdict, **kw):
     row = {
         "axis": axis, "verdict": verdict, "citations": ["제1조"], "missing_labels": [],
         "invalid_citations": [], "forced": False, "no_context": False, "error": None,
+        "guarded": False, "original_verdict": None,
     }  # fmt: skip
     return {**row, **kw}
 
@@ -160,22 +213,33 @@ def _cell(profile, *verdicts):
     return {"profile": profile, "on_sql": on, "verdicts": list(verdicts)}
 
 
+def _guarded(axis, **kw):
+    return _vrow(axis, "NEED_INFO", guarded=True, original_verdict="ELIGIBLE", **kw)
+
+
 def test_symptoms_count_by_profile_and_axis():
     m = {
         "cells": [
-            _cell("empty", _vrow("homeless", "ELIGIBLE"), _vrow("homeless", "NEED_INFO")),
+            _cell(
+                "empty",
+                _vrow("homeless", "ELIGIBLE"),
+                _guarded("homeless"),
+                _vrow("homeless", "NEED_INFO"),
+            ),
             _cell(
                 "partial",
                 _vrow("homeless", "INELIGIBLE"),
                 _vrow("account", "ELIGIBLE", citations=[]),
                 _vrow("rewin", "ELIGIBLE", missing_labels=["제9조", "제8조"]),
+                _guarded("residence"),
             ),
             _cell(
                 "full",
                 _vrow("homeless", "CONDITIONAL"),
                 _vrow("account", "NEED_INFO"),
                 _vrow("residence", "ELIGIBLE"),
-                _vrow("rewin", "UNVERIFIABLE"),
+                _guarded("rewin"),
+                _guarded("householder"),
                 _vrow("special_type", "INELIGIBLE"),
             ),
         ],
@@ -183,14 +247,48 @@ def test_symptoms_count_by_profile_and_axis():
         "stop": None,
     }
     s = vr.symptoms(m)
-    assert s["total"] == 10
-    assert len(s["empty_decided"]) == 1  # empty 프로필의 ELIGIBLE만 센다
-    assert len(s["nofield_decided"]) == 2  # full 프로필의 칸 없는 축만 센다
+    assert s["total"] == 13
+    assert (len(s["empty_eligible"]), s["empty_eligible_pre"]) == (1, 2)  # guard 후 · 전
+    assert (len(s["nofield_eligible"]), s["nofield_eligible_pre"]) == (1, 2)  # full의 칸 없는 축
+    assert len(s["loss"]) == 1  # full의 칸이 다 있는 축을 guard가 바꿨다
     assert (s["backed_n"], len(s["decisive"])) == (2, 1)  # NEED_INFO는 판정을 낸 것이 아니다
+    assert s["ineligible_nofield"] == 1 and len(s["guarded"]) == 4
+    assert (s["partial_nofield_eligible"], s["partial_nofield_eligible_pre"]) == (1, 2)
     assert len(s["no_cite"]) == 1 and len(s["bad_label"]) == 1 and s["n_bad_labels"] == 2
-    assert s["zones"]["run"] == "미완"
+    assert s["zones"]["run"] == "미완" and s["zones"]["jw"] == "미완"
+    assert s["zones"]["loss"] == "미완" and s["dist_same"] is None
     empty = vr.symptoms({"cells": [], "cell_errors": [], "stop": None})
-    assert empty["forced_ratio"] == 1.0 and empty["zones"]["forced"] == "미완"
+    assert empty["zones"]["run"] == "미완" and empty["zones"]["jw"] == "미완"
+
+
+def test_distribution_compares_the_verdict_before_the_guard():
+    cells = [_cell("full", _vrow("residence", "ELIGIBLE"), _guarded("rewin"))]
+    pre = {"full": {"residence": {"ELIGIBLE": 1}, "rewin": {"ELIGIBLE": 1}}}
+    post = {"full": {"residence": {"ELIGIBLE": 1}, "rewin": {"NEED_INFO": 1}}}
+    assert vr.distribution(cells, pre=True) == pre
+    assert vr.distribution(cells, pre=False) == post
+    m = {"cells": cells, "cell_errors": [], "stop": None}
+    assert vr.symptoms(m, {"distribution": pre})["dist_same"] is True
+    assert vr.symptoms(m, {"distribution": post})["dist_same"] is False
+
+
+def test_missing_baseline_is_a_setup_error(world):
+    world["baseline_json"].unlink()
+    code = vr.main(
+        ["--report"], engine=world["engine"], client=FakeChat([_echo()]),
+        samples_json=world["samples_json"], profiles_dir=world["profiles_dir"],
+        baseline_json=world["baseline_json"],
+    )  # fmt: skip
+    assert code == 3
+
+
+def test_committed_baseline_is_readable_and_matches_the_plan_numbers():
+    base = vr.load_baseline(vr.BASELINE_JSON)
+    assert (base["eligible_empty"], base["eligible_full_nofield"]) == (7, 13)
+    assert base["system_sha"] == vr.system_sha() == "92f338a4"  # 프롬프트를 고치지 않았다
+    assert (
+        sum(n for a in base["distribution"].values() for x in a.values() for n in x.values()) == 135
+    )
 
 
 def test_label_missing_from_chunks_makes_the_report_incomplete(world, monkeypatch):
@@ -221,14 +319,31 @@ def test_hard_error_stops_the_run(world):
 
 def test_second_run_costs_no_calls_and_keeps_the_first_run(world):
     code1, _, js1 = _run(world, FakeChat([_echo()]))
+    same = {**BASELINE, "distribution": vr.distribution(js1["cells"], pre=True)}
+    world["baseline_json"].write_text(json.dumps(same), encoding="utf-8")  # 같은 응답을 읽은 기준
     client = FakeChat([_echo("INELIGIBLE")])
     code2, md2, js2 = _run(world, client)
     assert (code1, code2) == (0, 0) and client.calls == []
     assert (
         js2["second_run"]["calls"] == 0 and js2["first_run"]["calls"] == js1["usage"]["calls"] > 0
     )
-    assert js2["symptoms"]["zones"]["cost"] == "통과"
-    assert "두 번째 실행 호출 0" in md2
+    assert js2["symptoms"]["dist_same"] is True
+    assert js2["symptoms"]["zones"]["cost"] == "미완"  # 첫 실행이 호출했다 — 기대값은 호출 0
+    assert "두 번째 실행 호출 0" in md2 and "PR #12와 칸마다 같다" in md2
+
+
+def test_cost_passes_when_the_first_run_reads_only_the_cache(world):
+    """프롬프트를 안 고치면 첫 실행도 캐시만 읽는다 — 실제 측정이 기대하는 모양."""
+    _, _, warm = _run(world, FakeChat([_echo()]), name="warm")
+    same = {**BASELINE, "distribution": vr.distribution(warm["cells"], pre=True)}
+    world["baseline_json"].write_text(json.dumps(same), encoding="utf-8")
+    first = FakeChat([_echo("INELIGIBLE")])
+    _, _, js1 = _run(world, first, name="out")
+    again = FakeChat([_echo("INELIGIBLE")])
+    code, md, js2 = _run(world, again, name="out")
+    assert first.calls == again.calls == [] and js1["first_run"]["calls"] == 0
+    assert js1["symptoms"]["zones"]["cost"] == "미측정"
+    assert code == 0 and js2["symptoms"]["zones"]["cost"] == "통과"
 
 
 @pytest.mark.parametrize("text", ["<<<<<<< HEAD", "[]"])
@@ -239,8 +354,8 @@ def test_unreadable_previous_record_stops_before_any_call(world, text):
     code = vr.main(
         ["--report"], engine=world["engine"], embedder=FakeEmbedder(dim=1536), client=client,
         cache_path=root / "cache.jsonl", samples_json=world["samples_json"],
-        profiles_dir=world["profiles_dir"], out_md=root / "out.md", out_json=root / "out.json",
-        sleep=lambda s: None,
+        profiles_dir=world["profiles_dir"], baseline_json=world["baseline_json"],
+        out_md=root / "out.md", out_json=root / "out.json", sleep=lambda s: None,
     )  # fmt: skip
     assert code == 3 and client.calls == []
     assert (root / "out.json").read_text(encoding="utf-8") == text  # 첫 실행 기록을 덮지 않는다
@@ -251,6 +366,7 @@ def test_missing_profile_file_is_a_setup_error(world):
     code = vr.main(
         ["--report"], engine=world["engine"], client=FakeChat([_echo()]),
         samples_json=world["samples_json"], profiles_dir=world["profiles_dir"],
+        baseline_json=world["baseline_json"],
     )  # fmt: skip
     assert code == 3
 
@@ -278,7 +394,9 @@ def test_second_run_needs_the_same_prompt_and_model():
     assert first["first_run"]["calls"] == 135 and first["second_run"] is None
     same = _attached(_rec(0), first)
     assert same["second_run"]["calls"] == 0 and same["first_run"]["calls"] == 135
-    assert same["symptoms"]["zones"]["cost"] == "통과"
+    assert same["symptoms"]["zones"]["cost"] == "미완"  # 첫 실행 호출이 4 이상이다
+    cached = _attached(_rec(0, usd=0), _attached(_rec(0, usd=0)))
+    assert cached["symptoms"]["zones"]["cost"] == "통과"
     other = _attached(
         _rec(0, sha="b"), first
     )  # 프롬프트가 바뀐 뒤 캐시만 읽은 실행은 두 번째 실행이 아니다
