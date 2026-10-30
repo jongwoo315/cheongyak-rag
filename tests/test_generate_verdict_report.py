@@ -431,6 +431,18 @@ def _attached(run, prev=None):
     return run
 
 
+def test_cost_zone_is_incomplete_when_the_guard_before_distribution_differs():
+    """캐시만 읽은 두 번째 실행이어도 guard 전 분포가 PR #12와 다르면 같은 응답을 읽은 게 아니다."""
+
+    def rec(same):
+        r = _rec(0, usd=0)
+        r["symptoms"] = {"zones": {}, "dist_same": same}
+        return r
+
+    assert _attached(rec(False), _attached(rec(False)))["symptoms"]["zones"]["cost"] == "미완"
+    assert _attached(rec(True), _attached(rec(True)))["symptoms"]["zones"]["cost"] == "통과"
+
+
 def test_second_run_needs_the_same_prompt_and_model():
     first = _attached(_rec(135))
     assert first["first_run"]["calls"] == 135 and first["second_run"] is None
