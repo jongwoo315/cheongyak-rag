@@ -524,13 +524,14 @@ def _open_questions(run: dict) -> list[str]:
     cells = run["cells"]
     groups = [[v for v in c["verdicts"] if v["axis"] == "special_type"] for c in cells]
     groups = [g for g in groups if len(g) >= 2]
-    same = sum(len({v["verdict"] for v in g}) == 1 for g in groups)
+    same = sum(len({pre_guard(v) for v in g}) == 1 for g in groups)  # guard 전: 모델이 낸 판정
+    same_post = sum(len({v["verdict"] for v in g}) == 1 for g in groups)
     cond = [(c, v) for c, v in _verdict_rows(cells) if v["verdict"] == "CONDITIONAL"]
     need = [(c, v) for c, v in _verdict_rows(cells) if v["verdict"] == "NEED_INFO"]
     items = [
         "1번 특별공급 유형처럼 하위 질의가 여럿인 축은 이번에도 하위 질의마다 따로 물었다."
         f" 유형이 둘 이상인 (공고, 프로필) {len(groups)}쌍 중"
-        f" 유형 판정이 전부 같게 나온 것은 {same}쌍이다",
+        f" 모델이 낸 유형 판정이 전부 같게 나온 것은 {same}쌍이다 (guard 뒤에는 {same_post}쌍)",
         "2번 `CONDITIONAL`과 `NEED_INFO`는 system 프롬프트에 「정보를 더 받으면 정해지면"
         " `NEED_INFO`, 정보가 다 있어도 신청자가 행동해야 채우면 `CONDITIONAL`」로 적었다."
         f" 표본에서 `CONDITIONAL` {len(cond)}개 · `NEED_INFO` {len(need)}개가 나왔다."
