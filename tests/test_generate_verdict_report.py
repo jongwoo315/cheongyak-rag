@@ -282,6 +282,19 @@ def test_reason_words_are_the_plans_list_and_not_read_from_the_guard_table():
     assert s["unbacked"] == [] and s["zones"]["jw"] == "통과"
 
 
+def test_symptom_1_does_not_read_the_guard_table(monkeypatch):
+    """통과 기준 5 — 표가 어떻게 바뀌어도 이유 문장에서 센 A·B는 같다."""
+    cell = _cell("full", _vrow("account", "ELIGIBLE", reason="예치금이 충분하다."),
+                 _vrow("homeless", "ELIGIBLE"))  # fmt: skip
+    before = _sym(cell)
+    monkeypatch.setitem(vd.REQUIRED_FIELDS, "account", ("savings_join_date",))
+    monkeypatch.setitem(vd.REQUIRED_FIELDS, "homeless", None)
+    after = _sym(cell)
+    assert (len(after["unbacked"]), len(after["eligible"])) == (1, 2)
+    assert (len(before["unbacked"]), len(before["eligible"])) == (1, 2)
+    assert after["zones"]["jw"] == before["zones"]["jw"] == "미완"
+
+
 def test_jw_zone_looks_at_the_final_eligible_of_every_profile():
     for profile in ("empty", "partial", "full"):
         s = _sym(_cell(profile, _vrow("account", "ELIGIBLE", reason="예치금이 충분하다.")))
