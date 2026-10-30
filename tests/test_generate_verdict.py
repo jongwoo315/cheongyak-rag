@@ -217,6 +217,13 @@ def test_guard_tables_cover_exactly_the_axes():
     assert set(vd.REQUIRED_FIELDS) == set(vd.NEED_INFO_TEXT) == set(axes.AXIS_BY_ID)
 
 
+def test_guard_field_names_exist_on_the_profile():
+    """칸 이름이 틀리면 `.get`이 None을 돌려줘 그 축의 ELIGIBLE이 전부 조용히 NEED_INFO가 된다."""
+    keys = set(prof.Profile().to_dict())
+    for fields in vd.REQUIRED_FIELDS.values():
+        assert set(fields or ()) <= keys
+
+
 @pytest.mark.parametrize("axis_id", NO_FIELD_AXES)
 def test_guard_turns_eligible_into_need_info_on_axes_without_a_profile_field(
     engine_with_chunks, axis_id
