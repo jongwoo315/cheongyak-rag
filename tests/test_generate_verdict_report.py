@@ -175,6 +175,16 @@ def test_report_asks_to_remeasure_when_there_is_no_eligible_to_judge(world):
     assert "공허하게 참" in md and code == 0
 
 
+def test_vacuous_note_is_absent_when_eligible_exists_or_the_run_did_not_finish(world):
+    from cheongyak_rag.generate.answer import HardApiError
+
+    _, md, js = _run(world, FakeChat([HardApiError("insufficient_quota")]), name="stopped")
+    assert js["stop"] and js["symptoms"]["zones"]["jw"] == "미완"
+    assert "공허하게 참" not in md  # 멈춘 실행은 못 잰 것이다
+    _, md, _ = _run(world, FakeChat([_echo("ELIGIBLE", "요건을 충족한다.")]), name="eligible")
+    assert "공허하게 참" not in md  # 최종 ELIGIBLE이 있다
+
+
 def test_report_exits_1_when_the_guard_changes_a_verdict_with_all_fields_present(
     world, monkeypatch
 ):
