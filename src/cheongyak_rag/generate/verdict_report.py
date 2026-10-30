@@ -589,7 +589,7 @@ def render(run: dict, baseline: dict) -> str:
                 f"{len(s['decisive'])}/{s['backed_n']} (PR #13 {baseline['decisive_homeless']}"
                 f"/{baseline['decisive_homeless_n']})"
                 f" · `full.json` `account` 판정값 {_counts(s['account_full'])}"
-                f" (PR #13 guard 전 {_counts(baseline['account_full'])})",
+                f" (PR #13 최종 {_counts(baseline['account_full'])})",
                 z["decisive"],
             ),
             (

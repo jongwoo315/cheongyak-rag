@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 1. 프로필에 없는 값을 이유로 든 ELIGIBLE (jw 기준, 세 프로필 전부의 최종 판정, 이유에 `예치금` `납입` `거주` `소득` `자산` `당첨` 중 하나) | A 0 (guard 전 ELIGIBLE 49개 중 32; PR #13 최종 5, guard 전 32/49) · B 8 (PR #13 17) · 판정을 못 낸 (공고, 프로필) 0 | 통과 |
 | 2. guard가 정상 판정을 지웠나 (`full.json`의 `homeless`·`householder`) | 0개 | 통과 |
-| 3. 판정을 내리긴 하는가 (`full.json`의 `homeless`, ELIGIBLE·INELIGIBLE·CONDITIONAL) | 6/6 (PR #13 6/6) · `full.json` `account` 판정값 NEED_INFO 4 · UNVERIFIABLE 2 (PR #13 guard 전 ELIGIBLE 4 · UNVERIFIABLE 2) | 통과 |
+| 3. 판정을 내리긴 하는가 (`full.json`의 `homeless`, ELIGIBLE·INELIGIBLE·CONDITIONAL) | 6/6 (PR #13 6/6) · `full.json` `account` 판정값 NEED_INFO 4 · UNVERIFIABLE 2 (PR #13 최종 ELIGIBLE 4 · UNVERIFIABLE 2) | 통과 |
 | 4. 켜진 축만 판정하고 판정값이 5개 중 하나이고 남은 인용이 실제로 있다 (PR #12 징후 1) | 판정 없음 0 · 5값 밖 0 · 꺼진 축 호출 0 · 인용 0개인 판정 0 · DB에 없는 라벨 0 · 판정을 못 낸 (공고, 프로필) 0 (켜진 하위 질의 135개) | 통과 |
 | 5. 같은 응답을 읽었나 (첫 실행 호출 0 · 두 번째 실행 호출 0 · guard 전 분포가 PR #13과 칸마다 같다) | 첫 실행 호출 0 (재시도 0) · 캐시 135 · 입력 0 · 출력 0 토큰 · $0.0000 · 공고×프로필 하나 중앙값 0.1초 · 최댓값 2.6초 · 두 번째 실행 호출 0 · guard 전 분포 PR #13과 칸마다 같다 | 통과 |
 | 6. 값만 적는 것 (구간 없음) | guard가 바꾼 판정 41/135 (PR #13 32/135; 프로필 × 축은 3절 끝 표) · 인용 기각으로 코드가 바꾼 것 0/135 (PR #13 0/135) · 최종 ELIGIBLE 중 값이 없는 것을 근거로 든 이유 1 (PR #13 2; 정규식 `정보가 없\|사유가 없\|별도.{0,15}없`) | — |
