@@ -42,17 +42,24 @@ def _notice_info(mst="286965"):
     return vd.NoticeInfo("2026000001", "2026000001", "단지 1", date(2026, 10, 1), facts)
 
 
-def _payload():
-    p = prof.Profile(birth_date=date(1990, 1, 1))
+def _payload(**fields):
+    p = prof.Profile(birth_date=date(1990, 1, 1), **fields)
     return vd.profile_payload(p, prof.score(p, date(2026, 10, 1)))
 
 
 AXIS = axes.AXIS_BY_ID["homeless"]
 
 
-def _call(client, hits=None, cache=None, engine=None, notice=None):
+def _call(client, hits=None, cache=None, engine=None, notice=None, axis=AXIS, payload=None):
     return vd.judge_one(
-        AXIS, hits or _hits(), notice or _notice_info(), _payload(), client, MODEL, cache, engine
+        axis,
+        hits or _hits(),
+        notice or _notice_info(),
+        payload or _payload(),
+        client,
+        MODEL,
+        cache,
+        engine,
     )
 
 
@@ -126,7 +133,7 @@ def test_no_context_skips_the_call_and_is_unverifiable():
 
 def test_citation_outside_the_context_is_rejected(engine_with_chunks):
     client = FakeChat([_reply(citations=["제2조", "제99조", "[Q1]"])])
-    v = _call(client, engine=engine_with_chunks)
+    v = _call(client, engine=engine_with_chunks, payload=_payload(homeless_now=True))
     assert v.citations == ["제2조", "Q1"] and v.invalid_citations == ["제99조"]
     assert (v.verdict, v.forced) == ("ELIGIBLE", False)
 
@@ -173,9 +180,10 @@ def test_conditions_and_need_info_are_kept(engine_with_chunks):
 
 def test_second_call_comes_from_the_cache(tmp_path, engine_with_chunks):
     path = tmp_path / "verdict.jsonl"
-    first = _call(FakeChat([_reply()]), cache=ans.GenCache(path), engine=engine_with_chunks)
+    kw = {"engine": engine_with_chunks, "payload": _payload(homeless_now=True)}
+    first = _call(FakeChat([_reply()]), cache=ans.GenCache(path), **kw)
     client = FakeChat([_reply("INELIGIBLE")])
-    second = _call(client, cache=ans.GenCache(path), engine=engine_with_chunks)
+    second = _call(client, cache=ans.GenCache(path), **kw)
     assert client.calls == [] and second.cached and not first.cached
     assert second.verdict == first.verdict == "ELIGIBLE"
 
@@ -192,6 +200,103 @@ def test_api_error_is_recorded_and_hard_error_propagates():
     assert "boom" in v.error and v.verdict is None
     with pytest.raises(ans.HardApiError):
         _call(FakeChat([ans.HardApiError("insufficient_quota")]))
+
+
+# ── ELIGIBLE guard ───────────────────────────────────────────────────────
+
+NO_FIELD_AXES = ("residence", "income_asset", "rewin", "special_type")
+FIELD = {
+    "homeless": ("homeless_now", True),
+    "account": ("savings_join_date", date(2014, 3, 1)),
+    "householder": ("is_household_head", True),
+}
+
+
+@pytest.mark.parametrize("axis_id", NO_FIELD_AXES)
+def test_guard_turns_eligible_into_need_info_on_axes_without_a_profile_field(
+    engine_with_chunks, axis_id
+):
+    """꽉 찬 프로필이어도 #77에 칸이 없는 축은 ELIGIBLE이 남지 않는다."""
+    full = _payload(**dict(FIELD.values()))
+    v = _call(
+        FakeChat([_reply("ELIGIBLE", citations=["제2조"])]),
+        engine=engine_with_chunks,
+        axis=axes.AXIS_BY_ID[axis_id],
+        payload=full,
+    )
+    assert (v.verdict, v.guarded, v.original_verdict) == ("NEED_INFO", True, "ELIGIBLE")
+    assert v.need_info == [vd.NEED_INFO_TEXT[axis_id]] and v.forced is False
+    assert v.citations == ["제2조"]  # 인용은 그대로 둔다
+
+
+@pytest.mark.parametrize("axis_id", list(FIELD))
+def test_guard_needs_the_axis_field_value(engine_with_chunks, axis_id):
+    name, value = FIELD[axis_id]
+    axis = axes.AXIS_BY_ID[axis_id]
+    missing = _call(FakeChat([_reply("ELIGIBLE")]), engine=engine_with_chunks, axis=axis)
+    assert (missing.verdict, missing.guarded) == ("NEED_INFO", True)
+    assert missing.need_info == [vd.NEED_INFO_TEXT[axis_id]]
+    kept = _call(
+        FakeChat([_reply("ELIGIBLE")]),
+        engine=engine_with_chunks,
+        axis=axis,
+        payload=_payload(**{name: value}),
+    )
+    assert (kept.verdict, kept.guarded, kept.original_verdict) == ("ELIGIBLE", False, None)
+
+
+def test_guard_counts_false_as_a_value(engine_with_chunks):
+    """`homeless_now=False`는 사용자가 답한 값이다. 모르는 값은 None뿐이다."""
+    v = _call(
+        FakeChat([_reply("ELIGIBLE")]),
+        engine=engine_with_chunks,
+        payload=_payload(homeless_now=False),
+    )
+    assert (v.verdict, v.guarded) == ("ELIGIBLE", False)
+
+
+@pytest.mark.parametrize("verdict", ["INELIGIBLE", "CONDITIONAL", "NEED_INFO", "UNVERIFIABLE"])
+@pytest.mark.parametrize("axis_id", [*NO_FIELD_AXES, *FIELD])
+def test_guard_leaves_every_other_verdict_alone(engine_with_chunks, axis_id, verdict):
+    v = _call(
+        FakeChat([_reply(verdict, need_info=["x"])]),
+        engine=engine_with_chunks,
+        axis=axes.AXIS_BY_ID[axis_id],
+    )
+    assert (v.verdict, v.guarded, v.forced) == (verdict, False, False)
+    assert v.need_info == ["x"]
+
+
+def test_guard_does_not_touch_a_forced_verdict(engine_with_chunks):
+    """인용이 기각돼 UNVERIFIABLE이 된 판정은 원래 판정(ELIGIBLE)을 forced가 쥔다."""
+    v = _call(
+        FakeChat([_reply("ELIGIBLE", citations=["제99조"])]),
+        engine=engine_with_chunks,
+        axis=axes.AXIS_BY_ID["residence"],
+    )
+    assert (v.verdict, v.forced, v.guarded, v.original_verdict) == (
+        "UNVERIFIABLE",
+        True,
+        False,
+        "ELIGIBLE",
+    )
+    assert v.need_info == []
+
+
+def test_guard_reads_the_raw_profile_not_the_score(engine_with_chunks):
+    """guard는 `profile.score` 결과가 아니라 프로필 원본의 칸을 본다."""
+    payload = _payload()
+    assert payload["profile"]["homeless_now"] is None
+    v = _call(FakeChat([_reply("ELIGIBLE")]), engine=engine_with_chunks, payload=payload)
+    assert (v.verdict, v.guarded) == ("NEED_INFO", True)
+
+
+def test_guard_is_applied_after_the_cache(tmp_path, engine_with_chunks):
+    """캐시에는 모델 응답 원본이 있고 guard는 읽은 뒤에 건다."""
+    path = tmp_path / "v.jsonl"
+    _call(FakeChat([_reply("ELIGIBLE")]), cache=ans.GenCache(path), engine=engine_with_chunks)
+    again = _call(FakeChat([]), cache=ans.GenCache(path), engine=engine_with_chunks)
+    assert again.cached and (again.verdict, again.guarded) == ("NEED_INFO", True)
 
 
 # ── Task 3: judge ────────────────────────────────────────────────────────
@@ -312,6 +417,16 @@ def test_cached_value_that_no_longer_parses_is_called_again(tmp_path, engine_wit
     v = _call(client, cache=cache, engine=engine_with_chunks)
     assert len(client.calls) == 1 and v.error is None and v.verdict == "INELIGIBLE"
     assert not v.cached and json.loads(cache.rows[key]["content"])["verdict"] == "INELIGIBLE"
+
+
+def test_cli_shows_the_original_verdict_of_a_guarded_verdict():
+    v = vd.Verdict(
+        "residence", "거주", "q", verdict="NEED_INFO", reason="경기로 확인되어",
+        need_info=["거주 지역·기간"], guarded=True, original_verdict="ELIGIBLE",
+    )  # fmt: skip
+    out = vd.format_verdict(v)
+    assert "판정: NEED_INFO (프로필 값이 없어 코드가 바꿈 — 모델 판정 ELIGIBLE)" in out
+    assert "이유(모델): 경기로 확인되어" in out and "필요한 정보: 거주 지역·기간" in out
 
 
 def test_cli_summary_does_not_charge_cached_verdicts():

@@ -4,7 +4,9 @@ python -m cheongyak_rag.generate.verdict <house_manage_no> --profile runs/80/pro
 
 #79 `axes`가 켠 축마다 조문·FAQ를 찾고(B5), 판정 LLM이 요건 정의 + 프로필 값 + 근거로 판정값 5개 중
 하나를 낸다(B6). 코드 guardrail(B7)이 근거 0개 · 문맥에 없는 인용 · `chunks`에 없는 인용 ·
-남은 인용이 0개인 판정을 걸러낸다. 꺼진 축은 LLM을 부르지 않는다. 응답은 #139의 `GenCache`에 둔다.
+남은 인용이 0개인 판정을 걸러낸다. 그 뒤에 ELIGIBLE guard가 축별로 필요한 프로필 칸이 비어 있는
+ELIGIBLE을 NEED_INFO로 바꾼다 (프롬프트로는 0이 안 나왔다).
+꺼진 축은 LLM을 부르지 않는다. 응답은 #139의 `GenCache`에 둔다.
 """
 
 import argparse
@@ -122,6 +124,27 @@ NEED_INFO는 그 정보를 요구하는 규정을 인용한다.
 축 7개의 요건:
 {_AXIS_LINES}"""
 
+# ELIGIBLE guard — 축별로 판정에 필요한 프로필 칸. `None`은 #77 프로필에 대응하는 칸이 없는
+# 축이라 프로필이 꽉 차도 ELIGIBLE을 낼 수 없다 (설계 §무엇을 바꾸나)
+REQUIRED_FIELDS: dict[str, tuple[str, ...] | None] = {
+    "homeless": ("homeless_now",),
+    "account": ("savings_join_date",),
+    "householder": ("is_household_head",),
+    "residence": None,
+    "income_asset": None,
+    "rewin": None,
+    "special_type": None,
+}
+NEED_INFO_TEXT = {
+    "homeless": "무주택세대구성원 판정 값(homeless_now)",
+    "account": "청약통장 가입일(savings_join_date)",
+    "householder": "세대주 여부(is_household_head)",
+    "residence": "거주 지역·기간",
+    "income_asset": "월평균 소득·자산",
+    "rewin": "과거 당첨 이력",
+    "special_type": "특별공급 유형별 자격",
+}
+
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -149,7 +172,8 @@ class Verdict:
     invalid_citations: list[str] = field(default_factory=list)
     titles: dict[str, str] = field(default_factory=dict)  # 인용한 라벨 → 조 제목 · FAQ 질문
     forced: bool = False  # 인용이 모두 기각돼 코드가 UNVERIFIABLE로 바꿨다
-    original_verdict: str | None = None  # forced일 때 모델이 낸 판정
+    guarded: bool = False  # 필요한 프로필 값이 없어 코드가 ELIGIBLE을 NEED_INFO로 바꿨다
+    original_verdict: str | None = None  # forced · guarded일 때 모델이 낸 판정
     no_context: bool = False  # 근거가 0개라 호출하지 않았다
     context_labels: list[str] = field(default_factory=list)
     input_tokens: int = 0
@@ -298,6 +322,15 @@ def _call(client, model: str, messages: list[dict]) -> dict:
     }
 
 
+def eligible_guard(axis_id: str, profile: dict) -> bool:
+    """ELIGIBLE을 낼 수 있나. 필요한 칸이 하나라도 `None`이거나 칸이 없는 축이면 False.
+
+    `profile`은 `Profile.to_dict()` 원본이다. `False`·`0`은 사용자가 답한 값이라 `None`만 모른다.
+    """
+    fields = REQUIRED_FIELDS[axis_id]
+    return fields is not None and all(profile.get(f) is not None for f in fields)
+
+
 def judge_one(
     axis,
     hits: axes.QueryHits,
@@ -358,6 +391,9 @@ def judge_one(
     out.titles = {c: _title(by_label[c]) for c in cites if c in by_label}
     if out.verdict != "UNVERIFIABLE" and not out.citations:
         out.original_verdict, out.verdict, out.forced = out.verdict, "UNVERIFIABLE", True
+    elif out.verdict == "ELIGIBLE" and not eligible_guard(axis.id, payload["profile"]):
+        out.original_verdict, out.verdict, out.guarded = "ELIGIBLE", "NEED_INFO", True
+        out.need_info = [NEED_INFO_TEXT[axis.id]]
     return out
 
 
@@ -434,9 +470,11 @@ def format_verdict(v: Verdict) -> str:
         flags.append("근거 0개라 호출 안 함")
     if v.forced:
         flags.append(f"인용이 모두 기각돼 코드가 바꿈 — 모델 판정 {v.original_verdict}")
+    if v.guarded:
+        flags.append(f"프로필 값이 없어 코드가 바꿈 — 모델 판정 {v.original_verdict}")
     out = [head, f"판정: {v.verdict}" + (f" ({', '.join(flags)})" if flags else "")]
     if v.reason:
-        out.append(f"이유: {v.reason}")
+        out.append(f"이유{'(모델)' if v.guarded else ''}: {v.reason}")
     out += [f"조건: {x}" for x in v.conditions]
     out += [f"필요한 정보: {x}" for x in v.need_info]
     cites = " · ".join(f"{c}({v.titles[c]})" if c in v.titles else c for c in v.citations)
