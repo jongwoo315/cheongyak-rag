@@ -125,10 +125,11 @@ NEED_INFO는 그 정보를 요구하는 규정을 인용한다.
 {_AXIS_LINES}"""
 
 # ELIGIBLE guard — 축별로 판정에 필요한 프로필 칸. `None`은 #77 프로필에 대응하는 칸이 없는
-# 축이라 프로필이 꽉 차도 ELIGIBLE을 낼 수 없다 (설계 §무엇을 바꾸나)
+# 축이라 프로필이 꽉 차도 ELIGIBLE을 낼 수 없다 (설계 §무엇을 바꾸나).
+# `account`: 가입일만으로는 예치금(민영)·납입 횟수·금액(국민) 요건을 모른다
 REQUIRED_FIELDS: dict[str, tuple[str, ...] | None] = {
     "homeless": ("homeless_now",),
-    "account": ("savings_join_date",),
+    "account": None,
     "householder": ("is_household_head",),
     "residence": None,
     "income_asset": None,
@@ -137,7 +138,7 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...] | None] = {
 }
 NEED_INFO_TEXT = {
     "homeless": "무주택세대구성원 판정 값(homeless_now)",
-    "account": "청약통장 가입일(savings_join_date)",
+    "account": "청약통장 예치금(민영주택) 또는 납입 횟수·금액(국민주택)",
     "householder": "세대주 여부(is_household_head)",
     "residence": "거주 지역·기간",
     "income_asset": "월평균 소득·자산",

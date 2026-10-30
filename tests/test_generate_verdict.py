@@ -204,12 +204,13 @@ def test_api_error_is_recorded_and_hard_error_propagates():
 
 # ── ELIGIBLE guard ───────────────────────────────────────────────────────
 
-NO_FIELD_AXES = ("residence", "income_asset", "rewin", "special_type")
+NO_FIELD_AXES = ("account", "residence", "income_asset", "rewin", "special_type")
 FIELD = {
     "homeless": ("homeless_now", True),
-    "account": ("savings_join_date", date(2014, 3, 1)),
     "householder": ("is_household_head", True),
 }
+# 칸이 있는 값은 전부 채운다. `account`는 가입일이 있어도 예치금·납입 칸이 없어 ELIGIBLE이 안 나온다
+FULL = {**dict(FIELD.values()), "savings_join_date": date(2014, 3, 1)}
 
 
 def test_guard_tables_cover_exactly_the_axes():
@@ -229,16 +230,16 @@ def test_guard_turns_eligible_into_need_info_on_axes_without_a_profile_field(
     engine_with_chunks, axis_id
 ):
     """꽉 찬 프로필이어도 #77에 칸이 없는 축은 ELIGIBLE이 남지 않는다."""
-    full = _payload(**dict(FIELD.values()))
-    v = _call(
-        FakeChat([_reply("ELIGIBLE", citations=["제2조"])]),
-        engine=engine_with_chunks,
-        axis=axes.AXIS_BY_ID[axis_id],
-        payload=full,
-    )
-    assert (v.verdict, v.guarded, v.original_verdict) == ("NEED_INFO", True, "ELIGIBLE")
-    assert v.need_info == [vd.NEED_INFO_TEXT[axis_id]] and v.forced is False
-    assert v.citations == ["제2조"]  # 인용은 그대로 둔다
+    for payload in (_payload(**FULL), _payload()):  # 가입일이 있어도 없어도 같다
+        v = _call(
+            FakeChat([_reply("ELIGIBLE", citations=["제2조"])]),
+            engine=engine_with_chunks,
+            axis=axes.AXIS_BY_ID[axis_id],
+            payload=payload,
+        )
+        assert (v.verdict, v.guarded, v.original_verdict) == ("NEED_INFO", True, "ELIGIBLE")
+        assert v.need_info == [vd.NEED_INFO_TEXT[axis_id]] and v.forced is False
+        assert v.citations == ["제2조"]  # 인용은 그대로 둔다
 
 
 @pytest.mark.parametrize("axis_id", list(FIELD))
@@ -272,7 +273,7 @@ def test_guard_need_info_text_matches_the_design_table():
     """설계 §무엇을 바꾸나 표의 문구. 표 값끼리 바꿔 적어도 다른 테스트는 못 잡는다."""
     assert vd.NEED_INFO_TEXT == {
         "homeless": "무주택세대구성원 판정 값(homeless_now)",
-        "account": "청약통장 가입일(savings_join_date)",
+        "account": "청약통장 예치금(민영주택) 또는 납입 횟수·금액(국민주택)",
         "householder": "세대주 여부(is_household_head)",
         "residence": "거주 지역·기간",
         "income_asset": "월평균 소득·자산",
