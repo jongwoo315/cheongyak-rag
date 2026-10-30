@@ -13,18 +13,19 @@ from tests.test_retrieval_axes import _load_chunks, _notice, _version
 LABEL = re.compile(r"^\[([^\]]+)\] ", re.M)
 BASELINE = {
     "source": "테스트", "system_sha": "92f338a4", "model": "m", "total": 135,
-    "eligible_empty": 7, "eligible_full_nofield": 13, "decisive_full": 10,
-    "decisive_full_n": 12, "forced": 0, "ineligible_full_nofield": 5,
-    "eligible_partial_nofield": 12, "first_run_usd": 0.93, "first_run_calls": 135,
-    "distribution": {},
+    "eligible_final": 17, "eligible_final_words": 5, "eligible_pre": 49,
+    "eligible_pre_words": 32, "guarded": 32, "forced": 0, "no_value": 2,
+    "decisive_homeless": 6, "decisive_homeless_n": 6,
+    "account_full": {"ELIGIBLE": 4, "UNVERIFIABLE": 2},
+    "first_run_usd": 0, "first_run_calls": 0, "distribution": {},
 }  # fmt: skip
 
 
-def _echo(verdict="ELIGIBLE"):
+def _echo(verdict="ELIGIBLE", reason="문맥대로다."):
     def reply(kw):
         labels = LABEL.findall(kw["messages"][1]["content"])
         body = {
-            "verdict": verdict, "reason": "문맥대로다.", "conditions": [], "need_info": [],
+            "verdict": verdict, "reason": reason, "conditions": [], "need_info": [],
             "citations": labels[:1],
         }  # fmt: skip
         return json.dumps(body, ensure_ascii=False)
@@ -90,17 +91,16 @@ def test_zone_run_follows_the_plan_bands():
 
 
 def test_zone_jw_follows_the_plan_bands():
-    assert vr.zone_jw(0, 0, 0, 0) == "통과"
-    assert vr.zone_jw(0, 0, 1, 0) == "다시 잰다" and vr.zone_jw(0, 0, 2, 0) == "다시 잰다"
-    assert vr.zone_jw(0, 0, 3, 0) == "미완"
-    assert vr.zone_jw(1, 0, 0, 0) == "미완" and vr.zone_jw(0, 1, 0, 0) == "미완"
-    assert vr.zone_jw(0, 0, 0, 1) == "미완"  # 셀 전체가 실패했으면 못 잰 것이다
+    assert vr.zone_jw(0, 1, 0) == "통과" and vr.zone_jw(0, 17, 0) == "통과"
+    assert vr.zone_jw(0, 0, 0) == "다시 잰다"  # 잴 판정이 없어 기준이 공허하게 참이다
+    assert vr.zone_jw(1, 5, 0) == "미완" and vr.zone_jw(1, 0, 0) == "미완"
+    assert vr.zone_jw(0, 5, 1) == "미완"  # 셀 전체가 실패했으면 못 잰 것이다
 
 
 def test_other_zone_bands():
     assert [vr.zone_loss(n) for n in (0, 1)] == ["통과", "미완"]
-    assert [vr.zone_decisive(n) for n in (12, 10, 9, 6, 5)] == [
-        "통과", "통과", "다시 잰다", "다시 잰다", "미완"
+    assert [vr.zone_decisive(n) for n in (6, 5, 4, 3, 2, 0)] == [
+        "통과", "통과", "다시 잰다", "다시 잰다", "미완", "미완"
     ]  # fmt: skip
     assert vr.zone_cost(0, 1.0, 0, False) == "통과"
     assert vr.zone_cost(0, 1.0, None, False) == "미측정"
@@ -124,34 +124,40 @@ def test_report_has_all_six_symptoms_and_every_sample(world):
     assert code == 0
     for n in "123456":
         assert re.search(rf"^\| {n}\. ", md, re.M)
-    assert "## 2. 판정값 분포" in md and "## 3. guard가 바꾼 판정 전부" in md
-    assert "## 4. 표본" in md and "## 5. 열린 질문" in md
+    assert "## 2. 최종 ELIGIBLE 전부" in md and "## 3. 판정값 분포" in md
+    assert "## 4. guard가 바꾼 판정 전부" in md and "## 5. 표본" in md
     assert len(js["cells"]) == 6  # 공고 2건 × 프로필 3종
     assert all(f"× `{p}`" in md for p in ("full", "partial", "empty"))
     assert set(js["symptoms"]["zones"]) == {"jw", "loss", "decisive", "run", "cost"}
     first = md.splitlines()[0]
     assert (
-        first.startswith("빈 프로필 ELIGIBLE 0(guard 전 ") and "칸 없는 4개 축 ELIGIBLE 0(" in first
+        first.startswith("최종 ELIGIBLE ")
+        and "프로필에 없는 값을 이유로 든 것 0(guard 전 " in first
     )
 
 
-def test_guard_clears_the_empty_profile_and_the_report_shows_what_it_was(world):
+def test_account_axis_never_ends_eligible_even_with_a_full_profile(world):
     code, md, js = _run(world, FakeChat([_echo("ELIGIBLE")]))
     s = js["symptoms"]
-    assert (
-        s["empty_eligible"] == [] and s["empty_eligible_pre"] > 0
-    )  # guard 전 ELIGIBLE이 guard 후 0
-    assert s["nofield_eligible"] == [] and s["nofield_eligible_pre"] > 0
+    assert all(r["axis"] != "account" for r in s["eligible"])  # 최종 ELIGIBLE에 통장 축이 없다
+    assert "ELIGIBLE" not in s["account_full"]  # 꽉 찬 프로필 통장 축 판정값
+    assert any(r["axis"] == "account" and r["profile"] == "full" for r in s["guarded"])
     assert s["zones"]["jw"] == "통과" and s["zones"]["loss"] == "통과" and code == 0
-    assert len(s["guarded"]) > 0 and "→" in md  # 분포 표에 guard 전→후가 보인다
+    assert "→" in md  # 분포 표에 guard 전→후가 보인다
     assert "모델이 쓴 이유 원문" in md and "guard가 넣은 필요한 정보" in md
 
 
-def test_report_exits_1_when_an_empty_profile_still_gets_eligible(world, monkeypatch):
-    monkeypatch.setattr(vd, "eligible_guard", lambda axis_id, profile: True)  # guard가 빠졌다
-    code, md, js = _run(world, FakeChat([_echo("ELIGIBLE")]))
-    assert js["symptoms"]["zones"]["jw"] == "미완" and code == 1
-    assert len(js["symptoms"]["empty_eligible"]) > 0 and "## 6. 어긋난 곳" in md
+def test_report_exits_1_when_an_eligible_reason_leans_on_a_value_the_profile_lacks(world):
+    code, md, js = _run(world, FakeChat([_echo("ELIGIBLE", "월납입금 예치금 기준을 충족한다.")]))
+    s = js["symptoms"]
+    assert len(s["unbacked"]) > 0 and s["zones"]["jw"] == "미완" and code == 1
+    assert "예치금" in md and "## 6. 어긋난 곳" in md  # 걸린 단어가 리포트에 보인다
+
+
+def test_report_asks_to_remeasure_when_there_is_no_eligible_to_judge(world):
+    code, md, js = _run(world, FakeChat([_echo("NEED_INFO")]))
+    assert js["symptoms"]["eligible"] == [] and js["symptoms"]["zones"]["jw"] == "다시 잰다"
+    assert "공허하게 참" in md and code == 0
 
 
 def test_report_exits_1_when_the_guard_changes_a_verdict_with_all_fields_present(
@@ -160,7 +166,7 @@ def test_report_exits_1_when_the_guard_changes_a_verdict_with_all_fields_present
     monkeypatch.setattr(vd, "eligible_guard", lambda axis_id, profile: False)  # 너무 넓다
     code, md, js = _run(world, FakeChat([_echo("ELIGIBLE")]))
     s = js["symptoms"]
-    assert s["empty_eligible"] == [] and s["nofield_eligible"] == []  # 징후 1은 통과다
+    assert s["eligible"] == []  # 최종 ELIGIBLE이 없어 징후 1은 잴 것이 없다
     assert len(s["loss"]) > 0 and s["zones"]["loss"] == "미완" and code == 1
 
 
@@ -195,7 +201,7 @@ def _vrow(axis, verdict, **kw):
     row = {
         "axis": axis, "verdict": verdict, "citations": ["제1조"], "missing_labels": [],
         "invalid_citations": [], "forced": False, "no_context": False, "error": None,
-        "guarded": False, "original_verdict": None,
+        "guarded": False, "original_verdict": None, "reason": "문맥대로다.",
     }  # fmt: skip
     return {**row, **kw}
 
@@ -222,14 +228,14 @@ def test_symptoms_count_by_profile_and_axis():
         "cells": [
             _cell(
                 "empty",
-                _vrow("homeless", "ELIGIBLE"),
-                _guarded("homeless"),
+                _vrow("homeless", "ELIGIBLE", reason="소득 기준을 충족한다."),
+                _guarded("homeless", reason="거주 기간이 넘는다."),
                 _vrow("homeless", "NEED_INFO"),
             ),
             _cell(
                 "partial",
                 _vrow("homeless", "INELIGIBLE"),
-                _vrow("account", "ELIGIBLE", citations=[]),
+                _vrow("account", "ELIGIBLE", citations=[], reason="정보가 없어 본다."),
                 _vrow("rewin", "ELIGIBLE", missing_labels=["제9조", "제8조"]),
                 _guarded("residence"),
             ),
@@ -237,8 +243,8 @@ def test_symptoms_count_by_profile_and_axis():
                 "full",
                 _vrow("homeless", "CONDITIONAL"),
                 _vrow("account", "NEED_INFO"),
-                _vrow("residence", "ELIGIBLE"),
-                _guarded("rewin"),
+                _vrow("residence", "ELIGIBLE", reason="자산이 낮다."),
+                _guarded("rewin", reason="당첨 이력이 없다."),
                 _guarded("householder"),
                 _vrow("special_type", "INELIGIBLE"),
             ),
@@ -248,12 +254,14 @@ def test_symptoms_count_by_profile_and_axis():
     }
     s = vr.symptoms(m)
     assert s["total"] == 13
-    assert (len(s["empty_eligible"]), s["empty_eligible_pre"]) == (1, 2)  # guard 후 · 전
-    assert (len(s["nofield_eligible"]), s["nofield_eligible_pre"]) == (1, 2)  # full의 칸 없는 축
-    assert len(s["loss"]) == 1  # full의 칸이 다 있는 축을 guard가 바꿨다
-    assert (s["backed_n"], len(s["decisive"])) == (2, 1)  # NEED_INFO는 판정을 낸 것이 아니다
-    assert s["ineligible_nofield"] == 1 and len(s["guarded"]) == 4
-    assert (s["partial_nofield_eligible"], s["partial_nofield_eligible_pre"]) == (1, 2)
+    assert len(s["eligible"]) == 4  # 최종 ELIGIBLE — 모든 프로필
+    assert [r[1]["reason"] for r in s["unbacked"]] == ["소득 기준을 충족한다.", "자산이 낮다."]
+    assert s["unbacked_pre"] == 4  # guard 전 ELIGIBLE 중 단어가 나오는 것 (거주·당첨 포함)
+    assert len(s["no_value"]) == 1  # 「정보가 없」
+    assert len(s["loss"]) == 1  # full의 homeless·householder를 guard가 바꿨다
+    assert (s["backed_n"], len(s["decisive"])) == (1, 1)  # full의 homeless 하나, CONDITIONAL
+    assert s["account_full"] == {"NEED_INFO": 1}
+    assert len(s["guarded"]) == 4
     assert len(s["no_cite"]) == 1 and len(s["bad_label"]) == 1 and s["n_bad_labels"] == 2
     assert s["zones"]["run"] == "미완" and s["zones"]["jw"] == "미완"
     assert s["zones"]["loss"] == "미완" and s["dist_same"] is None
@@ -265,39 +273,49 @@ def _sym(*cells, cell_errors=()):
     return vr.symptoms({"cells": list(cells), "cell_errors": list(cell_errors), "stop": None})
 
 
-def test_jw_zone_is_incomplete_when_only_the_empty_profile_gets_eligible():
-    s = _sym(_cell("empty", _vrow("homeless", "ELIGIBLE")))
-    assert (len(s["empty_eligible"]), len(s["nofield_eligible"])) == (1, 0)
-    assert s["zones"]["jw"] == "미완"
+def test_reason_words_are_the_plans_list_and_not_read_from_the_guard_table():
+    assert vr.REASON_WORDS == ("예치금", "납입", "거주", "소득", "자산", "당첨")
+    for w in vr.REASON_WORDS:
+        s = _sym(_cell("full", _vrow("homeless", "ELIGIBLE", reason=f"{w}이 맞다.")))
+        assert len(s["unbacked"]) == 1 and s["zones"]["jw"] == "미완"
+    s = _sym(_cell("full", _vrow("homeless", "ELIGIBLE", reason="homeless_now=true라 맞다.")))
+    assert s["unbacked"] == [] and s["zones"]["jw"] == "통과"
 
 
-def test_jw_zone_is_incomplete_when_only_the_full_profile_gets_eligible_on_a_no_field_axis():
-    s = _sym(_cell("full", _vrow("residence", "ELIGIBLE")))
-    assert (len(s["empty_eligible"]), len(s["nofield_eligible"])) == (0, 1)
-    assert s["zones"]["jw"] == "미완"
+def test_jw_zone_looks_at_the_final_eligible_of_every_profile():
+    for profile in ("empty", "partial", "full"):
+        s = _sym(_cell(profile, _vrow("account", "ELIGIBLE", reason="예치금이 충분하다.")))
+        assert (len(s["unbacked"]), s["zones"]["jw"]) == (1, "미완")
+    # guard 전 ELIGIBLE은 징후 1이 세지 않고 값만 적는다
+    s = _sym(_cell("full", _guarded("account", reason="예치금이 충분하다."),
+                   _vrow("homeless", "ELIGIBLE")))  # fmt: skip
+    assert (len(s["unbacked"]), s["unbacked_pre"], s["zones"]["jw"]) == (0, 1, "통과")
 
 
-def test_jw_zone_remeasures_when_a_sub_query_on_empty_or_full_has_no_verdict():
-    no_verdict = _vrow("homeless", None, error="Timeout: x")
-    s = _sym(_cell("empty", no_verdict), _cell("full", _vrow("homeless", "NEED_INFO")))
-    assert (s["jw_missing"], s["zones"]["jw"]) == (1, "다시 잰다")
-    # partial 쪽 판정 없음은 징후 1이 보는 칸이 아니다
-    s = _sym(_cell("partial", no_verdict), _cell("empty", _vrow("homeless", "NEED_INFO")))
-    assert (s["jw_missing"], s["zones"]["jw"]) == (0, "통과")
-    s = _sym(_cell("empty", _vrow("homeless", "NEED_INFO")),
+def test_jw_zone_remeasures_when_there_is_no_eligible_and_fails_on_a_cell_error():
+    s = _sym(_cell("full", _vrow("homeless", "NEED_INFO")))
+    assert (len(s["eligible"]), s["zones"]["jw"]) == (0, "다시 잰다")
+    s = _sym(_cell("empty", _vrow("homeless", "ELIGIBLE")),
              cell_errors=[{"profile": "empty", "notice": "n", "error": "x"}])  # fmt: skip
-    assert (s["jw_cell_errors"], s["zones"]["jw"]) == (1, "미완")
+    assert s["zones"]["jw"] == "미완"
 
 
-def test_decisive_counts_eligible_ineligible_and_conditional_on_homeless_and_account_only():
+def test_no_value_reasons_are_only_counted_not_judged():
+    reasons = ["예외 사유 정보가 없어 본다.", "사유가 없다.", "별도로 확인된 결격이 없다.", "맞다."]
+    s = _sym(_cell("full", *(_vrow("homeless", "ELIGIBLE", reason=r) for r in reasons)))
+    assert len(s["no_value"]) == 3 and s["zones"]["jw"] == "통과"
+
+
+def test_decisive_counts_eligible_ineligible_and_conditional_on_the_homeless_axis_only():
     five = ("ELIGIBLE", "INELIGIBLE", "CONDITIONAL", "NEED_INFO", "UNVERIFIABLE")
     full = _cell("full", *(_vrow("homeless", v) for v in five))
-    s = _sym(full, _cell("full", _vrow("residence", "ELIGIBLE"), _vrow("account", "ELIGIBLE")))
-    assert s["backed_n"] == 6  # residence는 프로필에 칸이 없는 축이라 센 대상이 아니다
+    s = _sym(full, _cell("full", _vrow("residence", "ELIGIBLE"), _vrow("account", "NEED_INFO")))
+    assert s["backed_n"] == 5  # account·residence는 센 대상이 아니다
     assert sorted(v["verdict"] for _, v in s["decisive"]) == [
-        "CONDITIONAL", "ELIGIBLE", "ELIGIBLE", "INELIGIBLE"
+        "CONDITIONAL", "ELIGIBLE", "INELIGIBLE"
     ]  # fmt: skip
-    assert s["zones"]["decisive"] == "미완"  # 4개는 5 이하
+    assert s["zones"]["decisive"] == "다시 잰다"  # 3개는 3~4/6 구간
+    assert s["account_full"] == {"NEED_INFO": 1}
 
 
 def test_distribution_compares_the_verdict_before_the_guard():
@@ -312,7 +330,7 @@ def test_distribution_compares_the_verdict_before_the_guard():
 
 
 def test_baseline_missing_a_key_the_report_reads_is_a_setup_error(world):
-    bad = {k: v for k, v in BASELINE.items() if k != "decisive_full_n"}
+    bad = {k: v for k, v in BASELINE.items() if k != "decisive_homeless_n"}
     world["baseline_json"].write_text(json.dumps(bad), encoding="utf-8")
     client = FakeChat([_echo()])
     code = vr.main(
@@ -335,7 +353,10 @@ def test_missing_baseline_is_a_setup_error(world):
 
 def test_committed_baseline_is_readable_and_matches_the_plan_numbers():
     base = vr.load_baseline(vr.BASELINE_JSON)
-    assert (base["eligible_empty"], base["eligible_full_nofield"]) == (7, 13)
+    assert vr.BASELINE_JSON.name == "pr13_baseline.json" and "f42b690" in base["source"]
+    assert (base["eligible_final"], base["eligible_final_words"]) == (17, 5)
+    assert (base["guarded"], base["forced"], base["no_value"]) == (32, 0, 2)
+    assert (base["decisive_homeless"], base["decisive_homeless_n"]) == (6, 6)
     assert base["system_sha"] == vr.system_sha() == "92f338a4"  # 프롬프트를 고치지 않았다
     assert (
         sum(n for a in base["distribution"].values() for x in a.values() for n in x.values()) == 135
@@ -382,7 +403,7 @@ def test_second_run_costs_no_calls_and_keeps_the_first_run(world):
     )
     assert js2["symptoms"]["dist_same"] is True
     assert js2["symptoms"]["zones"]["cost"] == "미완"  # 첫 실행이 호출했다 — 기대값은 호출 0
-    assert "두 번째 실행 호출 0" in md2 and "PR #12와 칸마다 같다" in md2
+    assert "두 번째 실행 호출 0" in md2 and "PR #13과 칸마다 같다" in md2
 
 
 def test_cost_passes_when_the_first_run_reads_only_the_cache(world):
@@ -443,7 +464,7 @@ def _attached(run, prev=None):
 
 
 def test_cost_zone_is_incomplete_when_the_guard_before_distribution_differs():
-    """캐시만 읽은 두 번째 실행이어도 guard 전 분포가 PR #12와 다르면 같은 응답을 읽은 게 아니다."""
+    """캐시만 읽은 두 번째 실행이어도 guard 전 분포가 PR #13과 다르면 같은 응답을 읽은 게 아니다."""
 
     def rec(same):
         r = _rec(0, usd=0)

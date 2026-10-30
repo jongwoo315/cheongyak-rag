@@ -7,13 +7,15 @@ python -m cheongyak_rag.generate.verdict_report --report [--budget-usd 3]
 나란히 센다.
 구간 이름(통과·다시 잰다·미완)과 경계는 plan §실패 징후의 것이다. 꺼진 축 판정과 없는 인용 라벨은
 측정 코드가 SQL로 따로 다시 센다(`independent_on`·`label_exists` — `verdict.py`의 대조
-함수를 부르지 않는다). PR #12 값은 `runs/80/pr12_baseline.json`에서 읽는다.
+함수를 부르지 않는다). 징후 1은 guard 표(`REQUIRED_FIELDS`)를 읽지 않고 이유 문장에서
+`REASON_WORDS`를 센다. PR #13 값은 `runs/80/pr13_baseline.json`에서 읽는다.
 """
 
 import argparse
 import dataclasses
 import hashlib
 import json
+import re
 import statistics
 import sys
 import time
@@ -40,47 +42,24 @@ OUT_MD = ROOT / "docs/80-axis-verdict.md"
 OUT_JSON = ROOT / "runs/80/last_run.json"
 PROFILES_DIR = ROOT / "runs/80/profiles"
 SAMPLES_JSON = ROOT / "runs/79/last_run.json"
-BASELINE_JSON = ROOT / "runs/80/pr12_baseline.json"
+BASELINE_JSON = ROOT / "runs/80/pr13_baseline.json"
 PROFILE_NAMES = ("full", "partial", "empty")
 
 BUDGET_USD = 3.0
 DECISIVE = ("ELIGIBLE", "INELIGIBLE", "CONDITIONAL")  # 정보 부족·근거 없음이 아닌 판정
-NO_FIELD_AXES = ("residence", "income_asset", "rewin", "special_type")  # #77 프로필에 칸이 없다
-GUARD_FIELD_AXES = ("homeless", "account", "householder")  # 필요한 칸이 #77에 있다
-PROFILE_BACKED_AXES = ("homeless", "account")  # 징후 3 — 공고 6건 × 2축 = 12개
-DECISIVE_PASS, DECISIVE_RETRY = 10, 6  # 징후 3 — 12개 중
+# 징후 1 — #77 프로필에 없는 값을 가리키는 말. guard 표와 따로 둔다(통과 기준 5)
+REASON_WORDS = ("예치금", "납입", "거주", "소득", "자산", "당첨")
+# 징후 6 — 값이 없는 것을 근거로 드는 이유
+NO_VALUE_RE = re.compile(r"정보가 없|사유가 없|별도.{0,15}없")
+GUARD_FIELD_AXES = ("homeless", "householder")  # 필요한 칸이 #77에 있다
+PROFILE_BACKED_AXIS = "homeless"  # 징후 3 — 공고 6건 × 1축
+DECISIVE_PASS, DECISIVE_RETRY = 5, 3  # 징후 3 — 6개 중
 FIRST_USD_MAX = 3.0  # 징후 5
 FIRST_CALLS_RETRY = 3  # 징후 5 — 첫 실행 호출이 1~3이면 다시 잰다, 4 이상이면 미완
 SECOND_CALLS_RETRY = 3
-MISSING_RETRY = 2  # 징후 1 — 판정 없음이 이 개수까지면 다시 잰다
+MISSING_RETRY = 2  # 징후 4 — 판정 없음이 이 개수까지면 다시 잰다
 SHOW = 10
 TRANSIENT = ("RateLimitError", "APITimeoutError", "APIConnectionError", "InternalServerError")
-
-# PR #12에서 system 프롬프트로 시도한 것. 이번 PR은 프롬프트를 고치지 않는다(통과 기준 6)
-PROMPT_NOTES: list[str] = [
-    "첫 측정(프롬프트 8f4b18cc): 징후 2는 10개, 징후 3은 24개로 둘 다 미완이었다."
-    " ELIGIBLE이면서 이유가 빈 판정이 많아 표본을 읽을 수 없었다",
-    "고침 1(b9ccf0a6): `reason`을 모든 판정에 한 문장으로 쓰게 하고, 값이 있는 프로필"
-    " 칸을 직접 대조할 때만 ELIGIBLE·INELIGIBLE을 쓰게 했다. 징후 2는 5개, 징후 3은"
-    " 18개였다",
-    "고침 2(5ea17eff): 판정 절차 4단계와 재당첨·거주 예시를 넣었다. 징후 2는 6개, 징후"
-    " 3은 15개였다",
-    "고침 3(92f338a4, PR #12 리포트의 값): ELIGIBLE을 「어긋나는 값이 없다」만으로는 못 쓰게"
-    " 정의했다. 징후 2는 7개, 징후 3은 18개였다",
-    "네 번 사이 값이 징후 2는 5~10개, 징후 3은 15~24개에서 오르내렸고 방향이 일정하지"
-    " 않아 프롬프트 고치기를 여기서 멈췄다. 남은 문제는 모델이 이유에 「프로필에서"
-    " 확인된다」고 쓰면서 프로필에 없는 값을 지어내는 것이다(예: 프로필에 거주지역 칸이"
-    " 없는데 「프로필의 공급지역이 경기로 확인되어」)",
-    "칸이 없는 축 18개 중 INELIGIBLE 5개는 프로필에 실제 있는 값에서 나왔다. 미혼 자녀"
-    " 수가 1명이라 다자녀(미성년 자녀 2명 이상)를 못 채우고, 혼인신고일이 2012-05-20이라"
-    " 신혼부부(혼인 7년 이내)를 못 채운다. 징후 3은 칸이 없는 축의 충족·미충족을 모두"
-    " 세므로 이 5개도 센다. 나머지 13개는 ELIGIBLE이고 이유가 요건 내용만 풀어 썼거나 없는"
-    " 값을 있는 것처럼 썼다",
-    "측정에 쓴 비용은 네 번 합쳐 $3.63이다($0.8665 + $0.9151 + $0.9216 + $0.9313)."
-    " 비용 상한 $3은 실행 하나에 건다",
-    "모델 비교(`gpt-5.6-sol` 등)와 프롬프트 재측정은 #143이, 모자란 값을 질문으로 받는 일은"
-    " #82가 맡는다",
-]
 
 
 # ── 구간 ─────────────────────────────────────────────────────────────────
@@ -98,15 +77,15 @@ def zone_run(
     return "다시 잰다" if missing <= MISSING_RETRY and transient else "미완"
 
 
-def zone_jw(a: int, b: int, missing: int, cell_errors: int) -> str:
-    """징후 1 — A·B가 0이고 판정 없음도 0이면 통과, 판정 없음 1~2개면 다시 잰다.
+def zone_jw(a: int, b: int, cell_errors: int) -> str:
+    """징후 1 — A(프로필에 없는 값을 이유로 든 최종 ELIGIBLE)가 0이고 B(최종 ELIGIBLE 총수)가
+    1 이상이면 통과, A 0 · B 0이면 다시 잰다(잴 판정이 없어 기준이 공허하게 참이다).
 
-    A 1 이상 · B 1 이상 · 판정 없음 3개 이상이면 미완이다.
-    셀 전체가 실패한 것은 못 잰 것이라 미완이다.
+    A 1 이상은 미완이다. 셀 전체가 실패한 것은 못 잰 것이라 미완이다.
     """
-    if a or b or cell_errors or missing > MISSING_RETRY:
+    if a or cell_errors:
         return "미완"
-    return "통과" if missing == 0 else "다시 잰다"
+    return "통과" if b else "다시 잰다"
 
 
 def zone_loss(n: int) -> str:
@@ -115,6 +94,7 @@ def zone_loss(n: int) -> str:
 
 
 def zone_decisive(n: int) -> str:
+    """징후 3 — `homeless` 축 6개 중."""
     return "통과" if n >= DECISIVE_PASS else "다시 잰다" if n >= DECISIVE_RETRY else "미완"
 
 
@@ -122,7 +102,7 @@ def zone_cost(
     first_calls: int, first_usd: float, second_calls: int | None, stopped: bool,
     dist_same: bool = True,
 ) -> str:  # fmt: skip
-    """징후 5 — 첫 실행 호출 0 · 두 번째 실행 호출 0 · guard 전 분포가 PR #12와 칸마다 같다."""
+    """징후 5 — 첫 실행 호출 0 · 두 번째 실행 호출 0 · guard 전 분포가 PR #13과 칸마다 같다."""
     if stopped or first_usd > FIRST_USD_MAX or first_calls > FIRST_CALLS_RETRY or not dist_same:
         return "미완"
     if first_calls > 0:
@@ -162,16 +142,21 @@ def sample_notices(path: Path) -> list[str]:
 
 
 def load_baseline(path: Path) -> dict:
-    """PR #12 측정값. 없거나 못 읽으면 예외 — baseline 없이 재면 같은 응답을 읽었는지 모른다."""
+    """PR #13 측정값. 없거나 못 읽으면 예외 — baseline 없이 재면 같은 응답을 읽었는지 모른다."""
     data = json.loads(path.read_text(encoding="utf-8"))
     keys = (
-        "source", "system_sha", "total", "distribution", "eligible_empty", "eligible_full_nofield",
-        "decisive_full", "decisive_full_n", "forced", "ineligible_full_nofield",
-        "eligible_partial_nofield",
+        "source", "system_sha", "total", "distribution", "eligible_final", "eligible_final_words",
+        "eligible_pre", "eligible_pre_words", "guarded", "forced", "no_value",
+        "decisive_homeless", "decisive_homeless_n", "account_full",
     )  # fmt: skip
     for key in keys:  # render가 쓰는 키 전부
         data[key]  # noqa: B018 — 없는 키는 KeyError로 준비 실패가 된다
     return data
+
+
+def reason_words(v: dict) -> list[str]:
+    """이유 문장에 나오는 `REASON_WORDS`. guard 표를 읽지 않고 문장만 본다."""
+    return [w for w in REASON_WORDS if w in (v["reason"] or "")]
 
 
 def pre_guard(v: dict) -> str | None:
@@ -266,7 +251,7 @@ def _transient_only(errors: list[str]) -> bool:
 
 
 def symptoms(m: dict, baseline: dict | None = None) -> dict:
-    """징후 1~6의 값과 구간. `m`은 `measure`의 결과, `baseline`은 PR #12 측정값이다."""
+    """징후 1~6의 값과 구간. `m`은 `measure`의 결과, `baseline`은 PR #13 측정값이다."""
     rows = list(_verdict_rows(m["cells"]))
     total = len(rows)
     missing = [(c, v) for c, v in rows if v["verdict"] is None]
@@ -286,43 +271,34 @@ def symptoms(m: dict, baseline: dict | None = None) -> dict:
         transient=_transient_only([v["error"] for _, v in missing]),
     )  # fmt: skip
 
-    # 징후 1 — 빈 프로필의 ELIGIBLE(A)과 꽉 찬 프로필에서 칸 없는 4개 축의 ELIGIBLE(B)
-    empty = [(c, v) for c, v in rows if c["profile"] == "empty" and v["verdict"] == "ELIGIBLE"]
-    empty_pre = [(c, v) for c, v in rows if c["profile"] == "empty" and pre_guard(v) == "ELIGIBLE"]
-    nofield = [
-        (c, v) for c, v in rows
-        if c["profile"] == "full" and v["axis"] in NO_FIELD_AXES and v["verdict"] == "ELIGIBLE"
-    ]  # fmt: skip
-    nofield_pre = [
-        (c, v) for c, v in rows
-        if c["profile"] == "full" and v["axis"] in NO_FIELD_AXES and pre_guard(v) == "ELIGIBLE"
-    ]  # fmt: skip
-    ef = ("empty", "full")
-    jw_missing = [(c, v) for c, v in missing if c["profile"] in ef]
-    jw_errors = [e for e in m["cell_errors"] if e["profile"] in ef]
-    # 징후 2 — 칸이 다 있는 세 축에서 guard가 바꾼 판정
+    # 징후 1 — 세 프로필 전부의 최종 ELIGIBLE(B) 중 이유에 프로필에 없는 값이 나오는 것(A)
+    eligible = [(c, v) for c, v in rows if v["verdict"] == "ELIGIBLE"]
+    unbacked = [(c, v) for c, v in eligible if reason_words(v)]
+    pre_eligible = [(c, v) for c, v in rows if pre_guard(v) == "ELIGIBLE"]
+    unbacked_pre = [(c, v) for c, v in pre_eligible if reason_words(v)]
+    # 징후 2 — 칸이 다 있는 두 축에서 guard가 바꾼 판정
     loss = [
         (c, v) for c, v in rows
         if c["profile"] == "full" and v["axis"] in GUARD_FIELD_AXES and v["guarded"]
     ]  # fmt: skip
     # 징후 3 — 판정을 내리긴 하는가
     backed = [
-        (c, v) for c, v in rows if c["profile"] == "full" and v["axis"] in PROFILE_BACKED_AXES
+        (c, v) for c, v in rows if c["profile"] == "full" and v["axis"] == PROFILE_BACKED_AXIS
     ]
     decisive = [(c, v) for c, v in backed if v["verdict"] in DECISIVE]
+    account_full = Counter(
+        v["verdict"] or "판정 없음"
+        for c, v in rows
+        if c["profile"] == "full" and v["axis"] == "account"
+    )
     # 징후 5 · 6
     guarded = [(c, v) for c, v in rows if v["guarded"]]
     forced = [(c, v) for c, v in rows if v["forced"]]
     no_context = [(c, v) for c, v in rows if v["no_context"]]
     invalid = sum(len(v["invalid_citations"]) for _, v in rows)
-    ineligible_nofield = [
-        (c, v) for c, v in rows
-        if c["profile"] == "full" and v["axis"] in NO_FIELD_AXES and v["verdict"] == "INELIGIBLE"
-    ]  # fmt: skip
-    partial_nofield = [
-        (c, v) for c, v in rows if c["profile"] == "partial" and v["axis"] in NO_FIELD_AXES
-    ]
+    no_value = [(c, v) for c, v in eligible if NO_VALUE_RE.search(v["reason"] or "")]
     dist_pre = distribution(m["cells"], pre=True)
+    measured = bool(total) and not m["stop"]  # 멈춘 실행은 안 돈 셀을 못 쟀다
     return {
         "total": total,
         "missing": missing,
@@ -331,28 +307,25 @@ def symptoms(m: dict, baseline: dict | None = None) -> dict:
         "no_cite": no_cite,
         "bad_label": bad_label,
         "n_bad_labels": n_bad_labels,
-        "empty_eligible": empty,
-        "empty_eligible_pre": len(empty_pre),
-        "nofield_eligible": nofield,
-        "nofield_eligible_pre": len(nofield_pre),
-        "jw_missing": len(jw_missing),
-        "jw_cell_errors": len(jw_errors),
+        "eligible": eligible,
+        "unbacked": unbacked,
+        "pre_eligible_n": len(pre_eligible),
+        "unbacked_pre": len(unbacked_pre),
+        "no_value": no_value,
         "loss": loss,
         "backed_n": len(backed),
         "decisive": decisive,
+        "account_full": dict(sorted(account_full.items())),
         "guarded": guarded,
         "forced": forced,
         "no_context": no_context,
         "invalid_labels": invalid,
-        "ineligible_nofield": len(ineligible_nofield),
-        "partial_nofield_eligible": sum(v["verdict"] == "ELIGIBLE" for _, v in partial_nofield),
-        "partial_nofield_eligible_pre": sum(pre_guard(v) == "ELIGIBLE" for _, v in partial_nofield),
         "dist_same": None if baseline is None else dist_pre == baseline["distribution"],
         "zones": {
-            "jw": zone_jw(len(empty), len(nofield), len(jw_missing), len(jw_errors))
-            if total and not m["stop"]
-            else "미완",  # 멈춘 실행은 안 돈 셀을 못 쟀다
-            "loss": zone_loss(len(loss)) if total and not m["stop"] else "미완",
+            "jw": zone_jw(len(unbacked), len(eligible), len(m["cell_errors"]))
+            if measured
+            else "미완",
+            "loss": zone_loss(len(loss)) if measured else "미완",
             "decisive": zone_decisive(len(decisive)),
             "run": z4 if total else "미완",
         },
@@ -440,10 +413,9 @@ def cites(v: dict) -> str:
 def summary_line(run: dict) -> str:
     s = run["symptoms"]
     return (
-        f"빈 프로필 ELIGIBLE {len(s['empty_eligible'])}(guard 전 {s['empty_eligible_pre']}),"
-        f" 꽉 찬 프로필 칸 없는 4개 축 ELIGIBLE {len(s['nofield_eligible'])}"
-        f"(guard 전 {s['nofield_eligible_pre']})이다"
-        f" (공고 {len(run['notices'])}건 × 프로필 {len(run['profiles'])}종,"
+        f"최종 ELIGIBLE {len(s['eligible'])}개 중 프로필에 없는 값을 이유로 든 것"
+        f" {len(s['unbacked'])}(guard 전 ELIGIBLE {s['pre_eligible_n']}개 중"
+        f" {s['unbacked_pre']}) (공고 {len(run['notices'])}건 × 프로필 {len(run['profiles'])}종,"
         f" 켜진 하위 질의 {s['total']}개)."
     )
 
@@ -520,45 +492,6 @@ def _guardrail_rows(rows: list) -> list[tuple]:
     ]
 
 
-def _open_questions(run: dict) -> list[str]:
-    cells = run["cells"]
-    groups = [[v for v in c["verdicts"] if v["axis"] == "special_type"] for c in cells]
-    groups = [g for g in groups if len(g) >= 2]
-    same = sum(len({pre_guard(v) for v in g}) == 1 for g in groups)  # guard 전: 모델이 낸 판정
-    same_post = sum(len({v["verdict"] for v in g}) == 1 for g in groups)
-    cond = [(c, v) for c, v in _verdict_rows(cells) if v["verdict"] == "CONDITIONAL"]
-    need = [(c, v) for c, v in _verdict_rows(cells) if v["verdict"] == "NEED_INFO"]
-    need_model = sum(pre_guard(v) == "NEED_INFO" for _, v in _verdict_rows(cells))
-    items = [
-        "1번 특별공급 유형처럼 하위 질의가 여럿인 축은 이번에도 하위 질의마다 따로 물었다."
-        f" 유형이 둘 이상인 (공고, 프로필) {len(groups)}쌍 중"
-        f" 모델이 낸 유형 판정이 전부 같게 나온 것은 {same}쌍이다 (guard 뒤에는 {same_post}쌍)",
-        "2번 `CONDITIONAL`과 `NEED_INFO`는 system 프롬프트에 「정보를 더 받으면 정해지면"
-        " `NEED_INFO`, 정보가 다 있어도 신청자가 행동해야 채우면 `CONDITIONAL`」로 적었다."
-        f" 표본에서 `CONDITIONAL` {len(cond)}개 · `NEED_INFO` {len(need)}개가 나왔다"
-        f" (`NEED_INFO` 중 모델이 낸 것 {need_model}개,"
-        f" guard가 바꾼 것 {len(need) - need_model}개)."
-        " 사례는 아래다",
-    ]
-    if not cond:
-        items.append(
-            "CONDITIONAL이 한 건도 안 나와서 이 규칙대로 갈렸는지는 사례로 보지 못했다."
-            " 표본의 하위 질의가 공고 이후 행동으로 채우는 요건을 거의 묻지 않았고,"
-            " 모델은 모자란 값을 NEED_INFO로 냈다"
-        )
-    items += [f"CONDITIONAL — {_case(c, v)}" for c, v in cond[:3]]
-    items += [f"NEED_INFO — {_case(c, v)}" for c, v in need[:3]]
-    items.append(
-        f"이번 PR은 프롬프트(system_sha {run['system_sha']})를 고치지 않고"
-        " LLM 응답 뒤에 코드 guard를 더했다. 모델 비교와 프롬프트 재측정은 #143이 맡는다"
-    )
-    items.append(
-        "아래 징후 번호는 PR #12 plan의 것이다. 그쪽 징후 2는 빈 프로필의 ELIGIBLE·INELIGIBLE 수,"
-        " 징후 3은 칸 없는 축의 ELIGIBLE·INELIGIBLE 수였고 이 리포트 1절의 번호와 다르다"
-    )
-    return items + [f"PR #12에서 프롬프트로 시도한 것: {x}" for x in PROMPT_NOTES]
-
-
 def _usage_text(u: dict) -> str:
     return (
         f"호출 {u['calls']} (재시도 {u['retries']}) · 캐시 {u['cache_hits']}"
@@ -592,13 +525,36 @@ def _guard_by_cell(guarded: list) -> list[tuple]:
     ]
 
 
+def _counts(d: dict) -> str:
+    return " · ".join(f"{k} {n}" for k, n in d.items()) or "없음"
+
+
+def _eligible_rows(rows: list) -> list[tuple]:
+    return [
+        (
+            f"{c['name']} × {c['profile']}",
+            f"`{v['axis']}`",
+            v["query"],
+            _one(v["reason"]) or "—",
+            " · ".join(reason_words(v)) or "—",
+            "✓" if NO_VALUE_RE.search(v["reason"] or "") else "—",
+        )
+        for c, v in rows
+    ]
+
+
 def render(run: dict, baseline: dict) -> str:
     s, z = run["symptoms"], run["symptoms"]["zones"]
     first, second = run["first_run"], run["second_run"]
-    lines = [summary_line(run), "", "# #80 축별 판정과 ELIGIBLE guard", ""]
+    lines = [
+        summary_line(run),
+        "",
+        "# #80 축별 판정 — 프로필에 없는 이유로 ELIGIBLE을 내지 않는다",
+        "",
+    ]
     lines += [
         f"실행 {run['run_at']} · 모델 `{run['model']}` · 프롬프트 {run['system_sha']}"
-        f" (PR #12 {baseline['system_sha']}) · 공고 {len(run['notices'])}건"
+        f" (PR #13 {baseline['system_sha']}) · 공고 {len(run['notices'])}건"
         f" × 프로필 {len(run['profiles'])}종",
         "",
     ]
@@ -606,31 +562,34 @@ def render(run: dict, baseline: dict) -> str:
         kind = "비용 상한에서 멈춤" if run["stop"][0] == "budget" else "인증·쿼터 오류로 멈춤"
         lines += [f"**{kind}** — {run['stop'][1]}", ""]
     same = s["dist_same"]
+    vacuous = not s["eligible"] and not run["cell_errors"] and not run["stop"]
     lines += ["## 1. 실패 징후 측정값", ""]
     lines += _table(
         ["지표", "측정값", "구간"],
         [
             (
-                "1. 빈 프로필 ELIGIBLE(A)과 꽉 찬 프로필에서 칸 없는 4개 축의 ELIGIBLE(B)"
-                " (jw 기준, guard 후)",
-                f"A {len(s['empty_eligible'])} (guard 전 {s['empty_eligible_pre']};"
-                f" PR #12 {baseline['eligible_empty']})"
-                f" · B {len(s['nofield_eligible'])} (guard 전 {s['nofield_eligible_pre']};"
-                f" PR #12 {baseline['eligible_full_nofield']})"
-                f" · 판정 없음(`empty`·`full`) {s['jw_missing']}"
-                f" · 판정을 못 낸 (공고, 프로필)(`empty`·`full`) {s['jw_cell_errors']}",
+                "1. 프로필에 없는 값을 이유로 든 ELIGIBLE (jw 기준, 세 프로필 전부의 최종 판정,"
+                f" 이유에 {' '.join(f'`{w}`' for w in REASON_WORDS)} 중 하나)",
+                f"A {len(s['unbacked'])} (guard 전 ELIGIBLE {s['pre_eligible_n']}개 중"
+                f" {s['unbacked_pre']}; PR #13 최종 {baseline['eligible_final_words']}, guard 전"
+                f" {baseline['eligible_pre_words']}/{baseline['eligible_pre']})"
+                f" · B {len(s['eligible'])} (PR #13 {baseline['eligible_final']})"
+                f" · 판정을 못 낸 (공고, 프로필) {len(run['cell_errors'])}"
+                + (" · 최종 ELIGIBLE이 없어 A 0은 공허하게 참이다" if vacuous else ""),
                 z["jw"],
             ),
             (
-                "2. guard가 정상 판정을 지웠나 (`full.json`의 `homeless`·`account`·`householder`)",
+                "2. guard가 정상 판정을 지웠나 (`full.json`의 `homeless`·`householder`)",
                 f"{len(s['loss'])}개",
                 z["loss"],
             ),
             (
-                "3. 판정을 내리긴 하는가 (`full.json`의 `homeless`·`account`,"
+                "3. 판정을 내리긴 하는가 (`full.json`의 `homeless`,"
                 " ELIGIBLE·INELIGIBLE·CONDITIONAL)",
-                f"{len(s['decisive'])}/{s['backed_n']} (PR #12 {baseline['decisive_full']}"
-                f"/{baseline['decisive_full_n']})",
+                f"{len(s['decisive'])}/{s['backed_n']} (PR #13 {baseline['decisive_homeless']}"
+                f"/{baseline['decisive_homeless_n']})"
+                f" · `full.json` `account` 판정값 {_counts(s['account_full'])}"
+                f" (PR #13 guard 전 {_counts(baseline['account_full'])})",
                 z["decisive"],
             ),
             (
@@ -645,7 +604,7 @@ def render(run: dict, baseline: dict) -> str:
             ),
             (
                 "5. 같은 응답을 읽었나 (첫 실행 호출 0 · 두 번째 실행 호출 0 ·"
-                " guard 전 분포가 PR #12와 칸마다 같다)",
+                " guard 전 분포가 PR #13과 칸마다 같다)",
                 (
                     f"첫 실행 {_usage_text(first)}"
                     if first
@@ -657,19 +616,17 @@ def render(run: dict, baseline: dict) -> str:
                     else " · 두 번째 실행 아직 안 잼"
                 )
                 + " · guard 전 분포 "
-                + ("PR #12와 칸마다 같다" if same else "PR #12와 다르다 — 2절에서 칸을 본다"),
+                + ("PR #13과 칸마다 같다" if same else "PR #13과 다르다 — 3절에서 칸을 본다"),
                 z["cost"],
             ),
             (
-                "6. guard가 얼마나 바꿨나 (값만, 구간 없음)",
+                "6. 값만 적는 것 (구간 없음)",
                 f"guard가 바꾼 판정 {len(s['guarded'])}/{s['total']}"
+                f" (PR #13 {baseline['guarded']}/{baseline['total']}; 프로필 × 축은 3절 끝 표)"
                 f" · 인용 기각으로 코드가 바꾼 것 {len(s['forced'])}/{s['total']}"
-                f" (PR #12 {baseline['forced']}/{baseline['total']})"
-                f" · 꽉 찬 프로필 칸 없는 4개 축 INELIGIBLE {s['ineligible_nofield']}"
-                f" (PR #12 {baseline['ineligible_full_nofield']}, guard 대상 아님)"
-                f" · `partial.json` 칸 없는 4개 축 ELIGIBLE {s['partial_nofield_eligible']}"
-                f" (guard 전 {s['partial_nofield_eligible_pre']};"
-                f" PR #12 {baseline['eligible_partial_nofield']})",
+                f" (PR #13 {baseline['forced']}/{baseline['total']})"
+                f" · 최종 ELIGIBLE 중 값이 없는 것을 근거로 든 이유 {len(s['no_value'])}"
+                f" (PR #13 {baseline['no_value']}; 정규식 `{NO_VALUE_RE.pattern}`)",
                 "—",
             ),
         ],
@@ -677,29 +634,41 @@ def render(run: dict, baseline: dict) -> str:
     lines += ["", "구간 기준과 경계는 plan §실패 징후와 같다.", "", "### 읽는 법", ""]
     lines += _bullets(
         [
+            "징후 1은 `verdict.py`의 guard 표를 읽지 않는다. 최종 `ELIGIBLE`의 이유 문장에서"
+            " 측정 코드의 단어 목록을 세므로 표가 틀려도 같이 틀리지 않는다."
+            " 목록은 PR #12·#13 이유를 보고 정했다. 처음 보는 표현은 놓칠 수 있어"
+            " 2절에 최종 `ELIGIBLE` 이유를 전부 싣는다",
             "guard 전은 인용 대조까지 마친 LLM 판정(캐시 응답 그대로)이고 guard 후는 최종 판정이다."
-            " guard는 축 단위 규칙이라 jw 기준 0은 규칙이 빠짐없이 걸렸다는 확인이다."
-            " LLM이 지어내지 않게 됐다는 뜻이 아니고, 지어낸 값은 guard 전 수로 본다",
+            " `account`의 `ELIGIBLE`은 표 정의상 최종에 남을 수 없고 guard 전 수로 본다",
             "꺼진 축 호출은 `notices`·`notice_models`를 SQL로 직접 읽어 따로 계산한 켜짐 목록"
             "(#79 `independent_on`)에 없는 축의 판정 수다. `axes.plan`과 같은 설계를"
             " 옮겨 적었으므로 같이 틀릴 수 있다",
             "DB에 없는 라벨은 측정 코드가 `verdict.py`의 대조 함수를 부르지 않고"
             " `chunks`를 SQL로 다시 센 값이다. 조문은 공고의 법령 버전(MST) 행만 본다",
             "인용이 판정 내용을 실제로 뒷받침하는지는 자동으로 재지 않는다."
-            " 4절 표본을 사람이 읽는다",
+            " 5절 표본을 사람이 읽는다",
             "`strict` schema가 5값 밖 응답을 막으므로 파싱에 실패한 응답은 「판정 없음」에 센다",
             "판정이 맞았는지는 정답이 없어 이번에 안 잰다(골든셋 #75)",
-            "PR #12 값은 `runs/80/pr12_baseline.json`이고 출처는 " + baseline["source"],
+            "PR #13 값은 `runs/80/pr13_baseline.json`이고 출처는 " + baseline["source"],
             "처리 시간은 값만 적는다(baseline 없음): " + _usage_text(first or run["usage"]),
         ]
     )
-    lines += ["", "## 2. 판정값 분포 — 프로필 × 축 (칸은 guard 전→후)", ""]
+    lines += ["", f"## 2. 최종 ELIGIBLE 전부 ({len(s['eligible'])}개)", ""]
+    lines += (
+        _table(
+            ["공고 × 프로필", "축", "하위 질의", "이유 원문", "걸린 단어", "값 없음 근거"],
+            _eligible_rows(s["eligible"]),
+        )
+        if s["eligible"]
+        else ["최종 ELIGIBLE이 없다."]
+    )
+    lines += ["", "## 3. 판정값 분포 — 프로필 × 축 (칸은 guard 전→후)", ""]
     lines += _dist_tables(run["cells"])
     lines += ["### guard가 바꾼 판정 수 — 프로필 × 축", ""]
     lines += _table(
         ["프로필", *[a.name for a in axes.AXES], "합"], _guard_by_cell(s["guarded"])
     ) + [""]
-    lines += [f"## 3. guard가 바꾼 판정 전부 ({len(s['guarded'])}개)", ""]
+    lines += [f"## 4. guard가 바꾼 판정 전부 ({len(s['guarded'])}개)", ""]
     lines += (
         _table(
             ["공고 × 프로필", "축", "하위 질의", "모델이 쓴 이유 원문", "guard가 넣은 필요한 정보"],
@@ -720,16 +689,13 @@ def render(run: dict, baseline: dict) -> str:
             ["공고 × 프로필", "축", "모델이 낸 판정", "최종 판정", "기각된 라벨"],
             _guardrail_rows(forced[: SHOW * 3]),
         ) + [""]
-    lines += ["## 4. 표본 — 공고 6건 × 프로필 3종 전부", ""] + _sample_sections(run)
-    lines += ["## 5. 열린 질문과 PR #12의 프롬프트 기록 (설계 §열린 질문 1·2)", ""]
-    lines += _bullets(_open_questions(run))
-    lines += ["", "## 6. 어긋난 곳", ""]
+    lines += ["## 5. 표본 — 공고 6건 × 프로필 3종 전부", ""] + _sample_sections(run)
+    lines += ["## 6. 어긋난 곳", ""]
     for title, rows in (
         ("판정 없음", s["missing"]),
         ("꺼진 축을 호출한 것", s["off_called"]),
         ("인용 0개인 판정", s["no_cite"]),
-        ("guard 후에도 남은 빈 프로필 ELIGIBLE", s["empty_eligible"]),
-        ("guard 후에도 남은 `full.json` 칸 없는 축 ELIGIBLE", s["nofield_eligible"]),
+        ("프로필에 없는 값을 이유로 든 최종 ELIGIBLE", s["unbacked"]),
         ("guard가 칸이 다 있는 축의 판정을 바꾼 것", s["loss"]),
     ):
         lines += [f"### {title}", ""] + _bullets([_case(c, v) for c, v in rows[:SHOW]]) + [""]
