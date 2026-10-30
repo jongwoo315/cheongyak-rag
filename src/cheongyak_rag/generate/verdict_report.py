@@ -528,20 +528,23 @@ def _open_questions(run: dict) -> list[str]:
     same_post = sum(len({v["verdict"] for v in g}) == 1 for g in groups)
     cond = [(c, v) for c, v in _verdict_rows(cells) if v["verdict"] == "CONDITIONAL"]
     need = [(c, v) for c, v in _verdict_rows(cells) if v["verdict"] == "NEED_INFO"]
+    need_model = sum(pre_guard(v) == "NEED_INFO" for _, v in _verdict_rows(cells))
     items = [
         "1번 특별공급 유형처럼 하위 질의가 여럿인 축은 이번에도 하위 질의마다 따로 물었다."
         f" 유형이 둘 이상인 (공고, 프로필) {len(groups)}쌍 중"
         f" 모델이 낸 유형 판정이 전부 같게 나온 것은 {same}쌍이다 (guard 뒤에는 {same_post}쌍)",
         "2번 `CONDITIONAL`과 `NEED_INFO`는 system 프롬프트에 「정보를 더 받으면 정해지면"
         " `NEED_INFO`, 정보가 다 있어도 신청자가 행동해야 채우면 `CONDITIONAL`」로 적었다."
-        f" 표본에서 `CONDITIONAL` {len(cond)}개 · `NEED_INFO` {len(need)}개가 나왔다."
+        f" 표본에서 `CONDITIONAL` {len(cond)}개 · `NEED_INFO` {len(need)}개가 나왔다"
+        f" (`NEED_INFO` 중 모델이 낸 것 {need_model}개,"
+        f" guard가 바꾼 것 {len(need) - need_model}개)."
         " 사례는 아래다",
     ]
     if not cond:
         items.append(
             "CONDITIONAL이 한 건도 안 나와서 이 규칙대로 갈렸는지는 사례로 보지 못했다."
             " 표본의 하위 질의가 공고 이후 행동으로 채우는 요건을 거의 묻지 않았고,"
-            " 모자란 값은 전부 NEED_INFO로 갔다"
+            " 모델은 모자란 값을 NEED_INFO로 냈다"
         )
     items += [f"CONDITIONAL — {_case(c, v)}" for c, v in cond[:3]]
     items += [f"NEED_INFO — {_case(c, v)}" for c, v in need[:3]]
