@@ -148,10 +148,25 @@ def test_account_axis_never_ends_eligible_even_with_a_full_profile(world):
 
 
 def test_report_exits_1_when_an_eligible_reason_leans_on_a_value_the_profile_lacks(world):
-    code, md, js = _run(world, FakeChat([_echo("ELIGIBLE", "월납입금 예치금 기준을 충족한다.")]))
+    code, md, js = _run(world, FakeChat(
+            [
+                _echo("ELIGIBLE", "월납입금 예치금 기준을 충족한다."),
+                _echo("ELIGIBLE", "요건을 충족한다."),  # 첫 응답 뒤는 이 응답을 되풀이한다
+            ]
+        ),
+    )
     s = js["symptoms"]
+    assert 0 < len(s["unbacked"]) < len(s["eligible"])  # A와 B가 다르다
     assert len(s["unbacked"]) > 0 and s["zones"]["jw"] == "미완" and code == 1
-    assert "예치금" in md and "## 6. 어긋난 곳" in md  # 걸린 단어가 리포트에 보인다
+    assert "## 6. 어긋난 곳" in md
+    row = re.search(r"^\| 1\. .*$", md, re.M).group(0)
+    assert f"| A {len(s['unbacked'])} (" in row and f" · B {len(s['eligible'])} (" in row
+    section = md.split("## 6. 어긋난 곳")[1]
+    listed = section.split("### 프로필에 없는 값을 이유로 든 최종 ELIGIBLE")[1].split("###")[0]
+    assert "월납입금 예치금 기준을 충족한다" in listed  # 걸린 이유 원문이 6절 목록에 있다
+    assert "요건을 충족한다" not in listed  # 안 걸린 ELIGIBLE은 6절에 없다
+    eligible_table = md.split("## 2. 최종 ELIGIBLE 전부")[1].split("## 3.")[0]
+    assert re.search(r"예치금.*납입|납입.*예치금", eligible_table)  # 2절 걸린 단어 칸
 
 
 def test_report_asks_to_remeasure_when_there_is_no_eligible_to_judge(world):
