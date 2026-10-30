@@ -289,6 +289,17 @@ def test_jw_zone_remeasures_when_a_sub_query_on_empty_or_full_has_no_verdict():
     assert (s["jw_cell_errors"], s["zones"]["jw"]) == (1, "미완")
 
 
+def test_decisive_counts_eligible_ineligible_and_conditional_on_homeless_and_account_only():
+    five = ("ELIGIBLE", "INELIGIBLE", "CONDITIONAL", "NEED_INFO", "UNVERIFIABLE")
+    full = _cell("full", *(_vrow("homeless", v) for v in five))
+    s = _sym(full, _cell("full", _vrow("residence", "ELIGIBLE"), _vrow("account", "ELIGIBLE")))
+    assert s["backed_n"] == 6  # residence는 프로필에 칸이 없는 축이라 센 대상이 아니다
+    assert sorted(v["verdict"] for _, v in s["decisive"]) == [
+        "CONDITIONAL", "ELIGIBLE", "ELIGIBLE", "INELIGIBLE"
+    ]  # fmt: skip
+    assert s["zones"]["decisive"] == "미완"  # 4개는 5 이하
+
+
 def test_distribution_compares_the_verdict_before_the_guard():
     cells = [_cell("full", _vrow("residence", "ELIGIBLE"), _guarded("rewin"))]
     pre = {"full": {"residence": {"ELIGIBLE": 1}, "rewin": {"ELIGIBLE": 1}}}
