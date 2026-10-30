@@ -257,6 +257,17 @@ def test_guard_needs_the_axis_field_value(engine_with_chunks, axis_id):
     assert (kept.verdict, kept.guarded, kept.original_verdict) == ("ELIGIBLE", False, None)
 
 
+def test_guard_replaces_the_models_need_info_and_keeps_its_reason(engine_with_chunks):
+    """모델이 ELIGIBLE과 함께 쓴 need_info는 guard의 문구로 바뀌고 이유·조건은 남는다."""
+    v = _call(
+        FakeChat([_reply("ELIGIBLE", need_info=["모델이 쓴 것"], conditions=["조건 하나"])]),
+        engine=engine_with_chunks,
+    )
+    assert (v.verdict, v.guarded) == ("NEED_INFO", True)
+    assert v.need_info == [vd.NEED_INFO_TEXT["homeless"]]
+    assert (v.reason, v.conditions) == ("문맥대로다.", ["조건 하나"])
+
+
 def test_guard_counts_false_as_a_value(engine_with_chunks):
     """`homeless_now=False`는 사용자가 답한 값이다. 모르는 값은 None뿐이다."""
     v = _call(
