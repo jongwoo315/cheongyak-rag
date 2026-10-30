@@ -261,6 +261,22 @@ def test_symptoms_count_by_profile_and_axis():
     assert empty["zones"]["run"] == "미완" and empty["zones"]["jw"] == "미완"
 
 
+def _sym(*cells, cell_errors=()):
+    return vr.symptoms({"cells": list(cells), "cell_errors": list(cell_errors), "stop": None})
+
+
+def test_jw_zone_is_incomplete_when_only_the_empty_profile_gets_eligible():
+    s = _sym(_cell("empty", _vrow("homeless", "ELIGIBLE")))
+    assert (len(s["empty_eligible"]), len(s["nofield_eligible"])) == (1, 0)
+    assert s["zones"]["jw"] == "미완"
+
+
+def test_jw_zone_is_incomplete_when_only_the_full_profile_gets_eligible_on_a_no_field_axis():
+    s = _sym(_cell("full", _vrow("residence", "ELIGIBLE")))
+    assert (len(s["empty_eligible"]), len(s["nofield_eligible"])) == (0, 1)
+    assert s["zones"]["jw"] == "미완"
+
+
 def test_distribution_compares_the_verdict_before_the_guard():
     cells = [_cell("full", _vrow("residence", "ELIGIBLE"), _guarded("rewin"))]
     pre = {"full": {"residence": {"ELIGIBLE": 1}, "rewin": {"ELIGIBLE": 1}}}
