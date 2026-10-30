@@ -148,7 +148,9 @@ def test_account_axis_never_ends_eligible_even_with_a_full_profile(world):
 
 
 def test_report_exits_1_when_an_eligible_reason_leans_on_a_value_the_profile_lacks(world):
-    code, md, js = _run(world, FakeChat(
+    code, md, js = _run(
+        world,
+        FakeChat(
             [
                 _echo("ELIGIBLE", "월납입금 예치금 기준을 충족한다."),
                 _echo("ELIGIBLE", "요건을 충족한다."),  # 첫 응답 뒤는 이 응답을 되풀이한다
