@@ -268,6 +268,19 @@ def test_guard_replaces_the_models_need_info_and_keeps_its_reason(engine_with_ch
     assert (v.reason, v.conditions) == ("문맥대로다.", ["조건 하나"])
 
 
+def test_guard_need_info_text_matches_the_design_table():
+    """설계 §무엇을 바꾸나 표의 문구. 표 값끼리 바꿔 적어도 다른 테스트는 못 잡는다."""
+    assert vd.NEED_INFO_TEXT == {
+        "homeless": "무주택세대구성원 판정 값(homeless_now)",
+        "account": "청약통장 가입일(savings_join_date)",
+        "householder": "세대주 여부(is_household_head)",
+        "residence": "거주 지역·기간",
+        "income_asset": "월평균 소득·자산",
+        "rewin": "과거 당첨 이력",
+        "special_type": "특별공급 유형별 자격",
+    }
+
+
 def test_guard_counts_false_as_a_value(engine_with_chunks):
     """`homeless_now=False`는 사용자가 답한 값이다. 모르는 값은 None뿐이다."""
     v = _call(
