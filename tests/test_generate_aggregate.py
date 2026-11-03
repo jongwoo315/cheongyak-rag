@@ -79,6 +79,16 @@ def test_income_axis_joins_special_routes_but_not_general():
     assert got.special[0].verdict == "INELIGIBLE"
 
 
+@pytest.mark.parametrize("verdict", ["INELIGIBLE", "UNVERIFIABLE", "NEED_INFO", None])
+def test_only_eligible_and_conditional_routes_are_applicable(verdict):
+    """정보가 더 필요하거나 확인 못 한 경로는 신청 가능한 경로가 아니다."""
+    plans = _plans({"homeless", "special_type"})
+    verdicts = [_v("homeless", "ELIGIBLE"), _v("special_type", verdict, _type_query(TYPE_A))]
+    got = agg.aggregate(plans, verdicts)
+    assert [r.key for r in got.applicable] == ["general"]
+    assert agg.aggregate(_plans({"homeless"}), [_v("homeless", verdict)]).applicable == []
+
+
 def test_missing_verdict_counts_as_unverifiable():
     plans = _plans({"homeless", "account"})
     verdicts = [_v("homeless", "ELIGIBLE"), _v("account", None)]
