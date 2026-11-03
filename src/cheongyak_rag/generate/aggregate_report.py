@@ -53,7 +53,6 @@ ORDER = ("INELIGIBLE", "UNVERIFIABLE", "NEED_INFO", "CONDITIONAL", "ELIGIBLE")
 GENERAL = ("homeless", "account", "residence", "rewin", "householder")  # 일반 축 5
 SLOTS = (*GENERAL, "income_asset", "special_type")  # 규칙 일치 테스트의 7칸
 STATES = (None, *ORDER)  # 꺼짐 + 판정값 5개
-APPLICABLE = ("ELIGIBLE", "CONDITIONAL")
 COMBO_TYPE = "다자녀가구"
 
 
