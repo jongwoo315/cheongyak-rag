@@ -177,6 +177,15 @@ def test_report_exits_one_when_the_rule_check_finds_a_mismatch(world):
     assert "다른 조합 2개" in md.splitlines()[0]
 
 
+def test_report_exits_one_and_lists_the_query_whose_call_failed(world):
+    """호출이 실패한 하위 질의는 UNVERIFIABLE로 세지만 측정은 미완이고 리포트가 적는다."""
+    code, md, js = _run(world, FakeChat([RuntimeError("boom"), _echo()]))
+    s = js["symptoms"]
+    assert code == 1
+    assert len(s["missing"]) >= 1 and s["zones"]["rule"] == s["zones"]["outside"] == "미완"
+    assert "호출이 실패해 판정이 없는 하위 질의" in md and "boom" in md
+
+
 def test_report_checks_each_carried_link_kind(world):
     code, md, js = _run(world, FakeChat([_echo()]), status={"law": 200, "faq": 404})
     s = js["symptoms"]

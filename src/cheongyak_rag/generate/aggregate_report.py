@@ -332,7 +332,7 @@ def symptoms(m: dict, engine: Engine, baseline: dict, fetch_status, combos) -> d
     faq = [(x, ctx) for x, ctx in refs if x.startswith("Q")]
     final_eligible = [r for r in rows if r["v"]["verdict"] == "ELIGIBLE"]
     missing = [r for r in rows if r["v"]["verdict"] is None]
-    incomplete = bool(m["stop"] or m["cell_errors"] or not cells)
+    incomplete = bool(m["stop"] or m["cell_errors"] or not cells or missing)
     dist = vr.distribution(cells, pre=False)
     base_dist = vr.distribution(baseline["cells"], pre=False)
     return {
@@ -565,6 +565,10 @@ def render(run: dict, baseline: dict) -> str:
         (
             "판정을 못 낸 (공고, 프로필)",
             [f"{e['notice']} × {e['profile']}: {e['error']}" for e in run["cell_errors"]],
+        ),
+        (
+            "호출이 실패해 판정이 없는 하위 질의 (UNVERIFIABLE로 센다)",
+            [f"{who(r['cell'])} · {r['v']['query']}: {r['v']['error']}" for r in s["missing"]],
         ),
     ):
         lines += [f"### {title}", ""] + _bullets(rows[:SHOW]) + [""]
