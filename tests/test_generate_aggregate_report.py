@@ -130,11 +130,7 @@ def test_report_measures_outside_mentions_and_leads_with_symptoms_1_and_2(world)
     assert s["zones"]["rule"] == "통과" and s["zones"]["outside"] == "통과"
     assert s["mention_law"] == [s["total_queries"], s["total_queries"]]
     assert "## 3. 검색 밖 언급이 붙은 하위 질의 전부" in md and "제99조 · Q77" in md
-    assert (
-        js["system_sha"]
-        and js["first_run"]["calls"]
-        == len(js["cells"][0]["verdicts"]) * 0 + js["first_run"]["calls"]
-    )
+    assert js["first_run"]["calls"] > 0  # 캐시가 빈 실행이라 LLM을 불렀다
     # 근거 원문은 JSON에서 길이와 해시로 줄어든다
     ev = js["cells"][0]["answer"]["checklist"][0]["citations"][0]
     assert "text" not in ev and ev["text_len"] > 0 and len(ev["text_sha256"]) == 12
