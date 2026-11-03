@@ -190,6 +190,18 @@ def test_links_are_only_for_verified_kinds(world):
     assert [e.url for e in none.checklist[0].citations] == [None, None]
 
 
+def test_read_texts_takes_law_rows_of_the_notice_mst_only(pg_engine):
+    _version(pg_engine)
+    _load_chunks(pg_engine, other_mst=True)  # 같은 라벨의 MST 999 조문이 함께 들어 있다
+    with pg_engine.begin() as conn:
+        conn.execute(text("UPDATE chunks SET text = 'OLD' WHERE law_mst = '999'"))
+    got = agg.read_texts(pg_engine, "286965", ["제2조", "Q1"])
+    assert set(got) == {"제2조", "Q1"} and "OLD" not in got.values()
+    # 적용되는 법령 버전을 모르면 조문은 읽지 않고 FAQ만 읽는다
+    assert set(agg.read_texts(pg_engine, None, ["제2조", "Q1"])) == {"Q1"}
+    assert agg.read_texts(pg_engine, "286965", []) == {}
+
+
 def test_outside_mentions_are_reason_numbers_missing_from_the_context():
     reason = "제2조와 제53조제1항, 제35조의2, FAQ Q1과 Q99 그리고 제53조를 다시 본다."
     got = agg.outside_mentions(reason, ["제2조", "Q1"])
