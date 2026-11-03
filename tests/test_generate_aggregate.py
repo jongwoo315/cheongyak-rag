@@ -1,11 +1,20 @@
 """#81 B8 집계 — 우선순위 규칙이 코드와 기대값에서 같은가."""
 
+import dataclasses
 import itertools
+import json
 import time
+from datetime import date
 
+import pytest
+from sqlalchemy import text
+
+from cheongyak_rag import profile as prof
 from cheongyak_rag.generate import aggregate as agg
 from cheongyak_rag.generate import verdict as vd
 from cheongyak_rag.retrieval import axes
+from tests.fakes import FakeChat, FakeEmbedder
+from tests.test_retrieval_axes import _load_chunks, _notice, _version
 
 # 기대값의 유일한 출처. 설계 §B8 / 바탕 설계 §168의 우선순위를 코드와 따로 적었다
 ORDER = ("INELIGIBLE", "UNVERIFIABLE", "NEED_INFO", "CONDITIONAL", "ELIGIBLE")
@@ -125,3 +134,146 @@ def test_verdicts_of_off_axes_are_ignored():
         _plans({"homeless"}), [_v("homeless", "ELIGIBLE"), _v("rewin", "INELIGIBLE")]
     )
     assert got.verdict == "ELIGIBLE"
+
+
+# ── B9 응답 ──────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def world(pg_engine):
+    """공고(특별공급 다자녀 4세대, 투기과열) + 법령 버전 + chunks. (engine, hmn, notice, plans)."""
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(4, {"MNYCH_HSHLDCO": 4})], speclt_rdn_earth_at=True)
+    _load_chunks(pg_engine, other_mst=False)
+    pblanc, name, facts = axes.load_facts(pg_engine, hmn)
+    notice = vd.NoticeInfo(hmn, pblanc, name, date(2026, 10, 1), facts)
+    return pg_engine, hmn, notice, axes.plan_from_facts(facts)
+
+
+def _fv(
+    axis, verdict, query=None, reason="문맥대로다.", cites=("제2조",), ctx=("제2조", "Q1"), **kw
+):
+    return vd.Verdict(
+        axis, axis, query or axis, verdict=verdict, reason=reason, citations=list(cites),
+        context_labels=list(ctx), titles={c: f"{c} 제목" for c in cites}, **kw,
+    )  # fmt: skip
+
+
+def _all_verdicts(**over):
+    base = {a: "ELIGIBLE" for a in (*GENERAL, "income_asset")}
+    base |= over
+    out = [_fv(a, v) for a, v in base.items()]
+    out.append(_fv("special_type", "INELIGIBLE", _type_query(TYPE_A)))
+    return out
+
+
+def _profile():
+    return prof.Profile(birth_date=date(1990, 1, 1))
+
+
+def _chunk_text(engine, label):
+    with engine.connect() as conn:
+        return conn.execute(
+            text("SELECT text FROM chunks WHERE label = :l LIMIT 1"), {"l": label}
+        ).scalar_one()
+
+
+def test_answer_has_every_field_and_dumps_to_json(world):
+    engine, hmn, notice, plans = world
+    a = agg.build_answer(engine, notice, plans, _all_verdicts(), _profile())
+    assert a.verdict == a.general.verdict == "ELIGIBLE"
+    assert [(r.key, r.verdict) for r in a.special] == [(TYPE_A, "INELIGIBLE")]
+    assert [r.key for r in a.applicable] == ["general"]
+    assert a.questions == []
+    assert a.law_mst == "286965" and a.law_effective_date == "2026-06-15"
+    assert a.score["total"]["lo"] <= a.score["total"]["hi"]
+    assert len(a.checklist) == 7
+    item = a.checklist[0]
+    assert item.axis == "homeless" and item.verdict == "ELIGIBLE" and item.reason
+    (ev,) = item.citations
+    assert ev.label == "제2조" and ev.text == _chunk_text(engine, "제2조")
+    assert ev.source == "주택공급에 관한 규칙 제2조 (법령 MST 286965 · 시행일 2026-06-15)"
+    dumped = json.dumps(dataclasses.asdict(a), ensure_ascii=False)
+    assert json.loads(dumped)["verdict"] == "ELIGIBLE"
+
+
+def test_faq_evidence_uses_the_faq_row_and_its_source(world):
+    engine, _, notice, plans = world
+    v = [_fv("homeless", "ELIGIBLE", cites=("제2조", "Q1"))]
+    a = agg.build_answer(engine, notice, plans, v, _profile())
+    laws, faq = a.checklist[0].citations
+    assert (laws.kind, faq.kind) == ("law", "faq")
+    assert faq.text == _chunk_text(engine, "Q1")
+    assert faq.source == "2024 주택청약 FAQ Q1"
+
+
+def test_links_are_only_for_verified_kinds(world):
+    engine, _, notice, plans = world
+    v = [_fv("homeless", "ELIGIBLE", cites=("제2조", "Q1"))]
+    both = agg.build_answer(engine, notice, plans, v, _profile(), link_kinds=("law", "faq"))
+    law, faq = both.checklist[0].citations
+    assert law.url == agg.link_for("law", "286965") and "286965" in law.url
+    assert faq.url == agg.link_for("faq", "286965")
+    only_law = agg.build_answer(engine, notice, plans, v, _profile(), link_kinds=("law",))
+    assert [e.url is not None for e in only_law.checklist[0].citations] == [True, False]
+    none = agg.build_answer(engine, notice, plans, v, _profile(), link_kinds=())
+    assert [e.url for e in none.checklist[0].citations] == [None, None]
+
+
+def test_outside_mentions_are_reason_numbers_missing_from_the_context():
+    reason = "제2조와 제53조제1항, 제35조의2, FAQ Q1과 Q99 그리고 제53조를 다시 본다."
+    got = agg.outside_mentions(reason, ["제2조", "Q1"])
+    assert got == ["제53조", "제35조의2", "Q99"]  # 항은 조로 세고 같은 번호는 한 번만
+    assert agg.outside_mentions("제2조만 본다", ["제2조"]) == []
+    assert agg.outside_mentions("", []) == []
+    # 접두 번호는 다른 조다 — 제5조가 문맥에 있어도 제53조는 검색 밖이다
+    assert agg.outside_mentions("제53조", ["제5조"]) == ["제53조"]
+
+
+def test_answer_marks_outside_mentions_per_query(world):
+    engine, _, notice, plans = world
+    v = [
+        _fv("homeless", "ELIGIBLE", reason="제2조와 제53조를 봤다.", ctx=("제2조",)),
+        _fv("account", "ELIGIBLE", reason="제2조를 봤다.", ctx=("제2조",)),
+    ]
+    a = agg.build_answer(engine, notice, plans, v, _profile())
+    assert [i.outside for i in a.checklist] == [["제53조"], []]
+
+
+def test_failed_verdict_is_listed_with_its_error_and_counts_as_unverifiable(world):
+    engine, _, notice, plans = world
+    v = _all_verdicts()
+    v[1] = vd.Verdict("account", "account", "account", verdict=None, error="RuntimeError: x")
+    a = agg.build_answer(engine, notice, plans, v, _profile())
+    assert a.verdict == "UNVERIFIABLE"
+    item = a.checklist[1]
+    assert item.verdict is None and item.error == "RuntimeError: x" and item.citations == []
+
+
+def test_render_text_leads_with_global_verdict_routes_and_checklist(world):
+    engine, _, notice, plans = world
+    a = agg.build_answer(engine, notice, plans, _all_verdicts(), _profile())
+    out = agg.render_text(a)
+    head = out.split("\n\n")[0]
+    assert "전역 판정" in head and "ELIGIBLE" in head
+    assert "특별공급 다자녀가구" in out and "INELIGIBLE" in out
+    assert "신청 가능한 경로" in out and "체크리스트" in out
+    assert "주택공급에 관한 규칙 제2조" in out
+    assert out.index("전역 판정") < out.index("체크리스트")
+
+
+def test_verdict_cli_prints_the_answer_above_the_old_report(tmp_path, capsys, world):
+    engine, hmn, *_ = world
+    pf = tmp_path / "p.json"
+    pf.write_text('{"birth_date": "1990-01-01"}', encoding="utf-8")
+    reply = json.dumps(
+        {"verdict": "ELIGIBLE", "reason": "r", "conditions": [], "need_info": [], "citations": []}
+    )
+    code = vd.main(
+        [hmn, "--profile", str(pf)], engine=engine, embedder=FakeEmbedder(dim=1536),
+        client=FakeChat([reply]), cache_path=tmp_path / "c.jsonl",
+    )  # fmt: skip
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.index("전역 판정") < out.index("공고: ")  # 기존 출력은 그 아래에 그대로 있다
+    assert "켜짐 —" in out and "판정 7개" in out

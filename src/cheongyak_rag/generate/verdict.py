@@ -24,6 +24,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from cheongyak_rag import profile as prof
 from cheongyak_rag.config import settings
+from cheongyak_rag.generate import aggregate
 from cheongyak_rag.generate.answer import (
     MAX_COMPLETION_TOKENS,
     GenCache,
@@ -551,6 +552,10 @@ def main(
             args.pblanc_no,
             GenCache(cache_path or cache_path_for(args.model)),
         )
+        # 맨 위가 응답(전역 판정 · 경로별 판정 · 체크리스트), 그 아래는 #80 출력 그대로다
+        answer = aggregate.build_answer(engine, notice, plans, verdicts, profile)
+        print(aggregate.render_text(answer))
+        print("\n---\n")
         print(format_report(notice, plans, verdicts))
         return 1 if any(v.error for v in verdicts) else 0
     except (axes.NoticeNotFound, prof.ProfileError) as e:
