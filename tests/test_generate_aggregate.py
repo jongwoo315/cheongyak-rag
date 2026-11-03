@@ -210,6 +210,18 @@ def test_answer_marks_outside_mentions_per_query(world):
     assert [i.outside for i in a.checklist] == [["제53조"], []]
 
 
+def test_render_text_shows_the_outside_mention_and_the_forced_note(world):
+    engine, _, notice, plans = world
+    v = [
+        _fv("homeless", "ELIGIBLE", reason="제2조와 제53조를 봤다.", ctx=("제2조",)),
+        _fv("account", "UNVERIFIABLE", forced=True, original_verdict="ELIGIBLE"),
+    ]
+    out = agg.render_text(agg.build_answer(engine, notice, plans, v, _profile()))
+    assert "검색 밖 언급: 제53조" in out
+    assert "인용이 모두 기각돼 UNVERIFIABLE로 바뀜 (모델 판정 ELIGIBLE)" in out
+    assert out.count("검색 밖 언급") == 1  # 문맥 안 번호만 언급한 질의에는 안 붙는다
+
+
 def test_failed_verdict_is_listed_with_its_error_and_counts_as_unverifiable(world):
     engine, _, notice, plans = world
     v = _all_verdicts()
