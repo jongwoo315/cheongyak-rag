@@ -1,0 +1,110 @@
+{
+  "source": "f42b690:runs/80/last_run.json (PR #13, 닫음). 같은 표본·같은 프롬프트라 guard 전 값은 이것과 같아야 한다",
+  "system_sha": "92f338a4",
+  "model": "gpt-5.4-mini",
+  "total": 135,
+  "eligible_final": 17,
+  "eligible_final_words": 5,
+  "eligible_pre": 49,
+  "eligible_pre_words": 32,
+  "guarded": 32,
+  "forced": 0,
+  "no_value": 2,
+  "decisive_homeless": 6,
+  "decisive_homeless_n": 6,
+  "account_full": {
+    "ELIGIBLE": 4,
+    "UNVERIFIABLE": 2
+  },
+  "first_run_usd": 0,
+  "first_run_calls": 0,
+  "distribution": {
+    "full": {
+      "account": {
+        "ELIGIBLE": 4,
+        "UNVERIFIABLE": 2
+      },
+      "homeless": {
+        "ELIGIBLE": 6
+      },
+      "householder": {
+        "ELIGIBLE": 2
+      },
+      "income_asset": {
+        "NEED_INFO": 1,
+        "UNVERIFIABLE": 3
+      },
+      "residence": {
+        "ELIGIBLE": 5,
+        "NEED_INFO": 1
+      },
+      "rewin": {
+        "ELIGIBLE": 3
+      },
+      "special_type": {
+        "ELIGIBLE": 5,
+        "INELIGIBLE": 5,
+        "NEED_INFO": 7,
+        "UNVERIFIABLE": 1
+      }
+    },
+    "partial": {
+      "account": {
+        "ELIGIBLE": 5,
+        "UNVERIFIABLE": 1
+      },
+      "homeless": {
+        "NEED_INFO": 5,
+        "UNVERIFIABLE": 1
+      },
+      "householder": {
+        "NEED_INFO": 2
+      },
+      "income_asset": {
+        "ELIGIBLE": 1,
+        "NEED_INFO": 2,
+        "UNVERIFIABLE": 1
+      },
+      "residence": {
+        "ELIGIBLE": 6
+      },
+      "rewin": {
+        "ELIGIBLE": 3
+      },
+      "special_type": {
+        "ELIGIBLE": 2,
+        "NEED_INFO": 14,
+        "UNVERIFIABLE": 2
+      }
+    },
+    "empty": {
+      "account": {
+        "NEED_INFO": 4,
+        "UNVERIFIABLE": 2
+      },
+      "homeless": {
+        "NEED_INFO": 6
+      },
+      "householder": {
+        "NEED_INFO": 2
+      },
+      "income_asset": {
+        "NEED_INFO": 2,
+        "UNVERIFIABLE": 2
+      },
+      "residence": {
+        "ELIGIBLE": 2,
+        "NEED_INFO": 1,
+        "UNVERIFIABLE": 3
+      },
+      "rewin": {
+        "ELIGIBLE": 3
+      },
+      "special_type": {
+        "ELIGIBLE": 2,
+        "NEED_INFO": 15,
+        "UNVERIFIABLE": 1
+      }
+    }
+  }
+}
