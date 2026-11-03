@@ -1,0 +1,422 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "청약 RAG 판정 흐름 — #80 PR #14",
+  "locale": "ko",
+  "quality_profile": "showcase",
+  "output": ".archify/workflow-80c-flow-20261103/80c-flow.html",
+  "repository": {
+   "url": "https://github.com/jongwoo315/cheongyak-rag",
+   "provider": "github",
+   "revision": "6f7ba5177b90357a39047dc7a7cf977ed986a804"
+  }
+ },
+ "lanes": [
+  {
+   "id": "ingest",
+   "label": "데이터 적재"
+  },
+  {
+   "id": "input",
+   "label": "입력"
+  },
+  {
+   "id": "retrieval",
+   "label": "#79 축과 검색"
+  },
+  {
+   "id": "judge",
+   "label": "LLM 판정"
+  },
+  {
+   "id": "guard",
+   "label": "인용 대조와 guard"
+  },
+  {
+   "id": "stop",
+   "label": "UNVERIFIABLE로 가는 길",
+   "variant": "exception"
+  },
+  {
+   "id": "measure",
+   "label": "측정 (jw 기준)"
+  }
+ ],
+ "mainPath": [
+  "notice",
+  "plan",
+  "search",
+  "llm",
+  "incontext",
+  "guard",
+  "out"
+ ],
+ "nodes": [
+  {
+   "id": "ingest",
+   "lane": "ingest",
+   "col": 0,
+   "type": "external",
+   "label": "공고 수집",
+   "sublabel": "청약홈 API → notices",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice.py",
+     "line": 462,
+     "end_line": 470,
+     "label": "main"
+    }
+   ]
+  },
+  {
+   "id": "chunks",
+   "lane": "ingest",
+   "col": 2,
+   "type": "database",
+   "label": "법령·FAQ chunks",
+   "sublabel": "조문·FAQ를 잘라 임베딩",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/retrieval/index_db.py",
+     "line": 100,
+     "end_line": 111,
+     "label": "load"
+    }
+   ]
+  },
+  {
+   "id": "notice",
+   "lane": "input",
+   "col": 0,
+   "type": "external",
+   "label": "공고 값",
+   "sublabel": "규제 표시·특별공급·공고일",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 435,
+     "end_line": 436,
+     "label": "load_facts"
+    }
+   ]
+  },
+  {
+   "id": "profile",
+   "lane": "input",
+   "col": 1,
+   "type": "frontend",
+   "label": "프로필",
+   "sublabel": "#77 칸 15개 + 공고일 기준 점수",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 439,
+     "end_line": 439,
+     "label": "profile_payload"
+    }
+   ]
+  },
+  {
+   "id": "plan",
+   "lane": "retrieval",
+   "col": 1,
+   "type": "backend",
+   "label": "축 7개 켜고 끄기",
+   "sublabel": "꺼진 축은 여기서 끝",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 440,
+     "end_line": 440,
+     "label": "plan_from_facts"
+    }
+   ]
+  },
+  {
+   "id": "search",
+   "lane": "retrieval",
+   "col": 2,
+   "type": "database",
+   "label": "켜진 축만 검색",
+   "sublabel": "조문 5 · FAQ 3",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 441,
+     "end_line": 451,
+     "label": "axes.search"
+    }
+   ]
+  },
+  {
+   "id": "llm",
+   "lane": "judge",
+   "col": 2,
+   "type": "cloud",
+   "label": "LLM 판정 (guard 전)",
+   "sublabel": "판정값·이유·인용 · 캐시 135개",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 361,
+     "end_line": 377,
+     "label": "judge_one 호출"
+    }
+   ]
+  },
+  {
+   "id": "incontext",
+   "lane": "guard",
+   "col": 3,
+   "type": "security",
+   "label": "인용 대조",
+   "sublabel": "문맥 안에 있고 chunks에 실제로 있나",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 388,
+     "end_line": 388,
+     "label": "in_context"
+    },
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 389,
+     "end_line": 390,
+     "label": "present_in_chunks"
+    }
+   ]
+  },
+  {
+   "id": "guard",
+   "lane": "guard",
+   "col": 4,
+   "type": "security",
+   "label": "ELIGIBLE guard",
+   "sublabel": "[바뀜] 통장 축도 ELIGIBLE → NEED_INFO",
+   "tag": "조건 바뀜",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 395,
+     "end_line": 396,
+     "label": "guarded"
+    },
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 130,
+     "end_line": 146,
+     "label": "REQUIRED_FIELDS"
+    }
+   ]
+  },
+  {
+   "id": "out",
+   "lane": "guard",
+   "col": 5,
+   "type": "backend",
+   "label": "최종 판정",
+   "sublabel": "하위 질의마다 판정값·이유",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 452,
+     "end_line": 457,
+     "label": "verdicts"
+    }
+   ]
+  },
+  {
+   "id": "nocontext",
+   "lane": "stop",
+   "col": 2,
+   "type": "security",
+   "label": "근거 0개",
+   "sublabel": "LLM 안 부르고 UNVERIFIABLE",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 347,
+     "end_line": 350,
+     "label": "no_context"
+    }
+   ]
+  },
+  {
+   "id": "forced",
+   "lane": "stop",
+   "col": 3,
+   "type": "security",
+   "label": "남은 인용 0개",
+   "sublabel": "UNVERIFIABLE로 바꿈",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 393,
+     "end_line": 394,
+     "label": "forced"
+    }
+   ]
+  },
+  {
+   "id": "mrun",
+   "lane": "measure",
+   "col": 4,
+   "type": "backend",
+   "label": "표본 실행",
+   "sublabel": "공고 6건 × 프로필 3종",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict_report.py",
+     "line": 188,
+     "end_line": 195,
+     "label": "run"
+    }
+   ]
+  },
+  {
+   "id": "mreason",
+   "lane": "measure",
+   "col": 5,
+   "type": "backend",
+   "label": "최종 ELIGIBLE 이유 읽기",
+   "sublabel": "[새로] 단어 6개 · 「정보가 없」 문장",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict_report.py",
+     "line": 51,
+     "end_line": 53,
+     "label": "REASON_WORDS·NO_VALUE_RE"
+    },
+    {
+     "path": "src/cheongyak_rag/generate/verdict_report.py",
+     "line": 158,
+     "end_line": 159,
+     "label": "단어 검사"
+    },
+    {
+     "path": "src/cheongyak_rag/generate/verdict_report.py",
+     "line": 299,
+     "end_line": 299,
+     "label": "값이 없다는 문장"
+    }
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "id": "e1",
+   "from": "ingest",
+   "to": "notice",
+   "label": "공고 행"
+  },
+  {
+   "id": "e2",
+   "from": "chunks",
+   "to": "search",
+   "label": "조문·FAQ"
+  },
+  {
+   "id": "e3",
+   "from": "notice",
+   "to": "plan",
+   "label": "공고 값"
+  },
+  {
+   "id": "e4",
+   "from": "notice",
+   "to": "profile",
+   "label": "공고일"
+  },
+  {
+   "id": "e5",
+   "from": "plan",
+   "to": "search",
+   "label": "켜진 축"
+  },
+  {
+   "id": "e6",
+   "from": "profile",
+   "to": "llm",
+   "label": "프로필 값"
+  },
+  {
+   "id": "e7",
+   "from": "search",
+   "to": "llm",
+   "label": "근거 있음",
+   "variant": "emphasis"
+  },
+  {
+   "id": "e8",
+   "from": "search",
+   "to": "nocontext",
+   "label": "근거 0개",
+   "variant": "security",
+   "role": "error"
+  },
+  {
+   "id": "e9",
+   "from": "llm",
+   "to": "incontext",
+   "label": "인용 라벨"
+  },
+  {
+   "id": "e11",
+   "from": "incontext",
+   "to": "guard",
+   "label": "1개 이상",
+   "variant": "emphasis"
+  },
+  {
+   "id": "e12",
+   "from": "incontext",
+   "to": "forced",
+   "label": "0개",
+   "variant": "security",
+   "role": "error"
+  },
+  {
+   "id": "e13",
+   "from": "guard",
+   "to": "out",
+   "label": "판정"
+  },
+  {
+   "id": "e14",
+   "from": "out",
+   "to": "mreason",
+   "label": "최종 ELIGIBLE"
+  },
+  {
+   "id": "e15",
+   "from": "mrun",
+   "to": "mreason",
+   "label": "판정 135개"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "읽는 법",
+   "items": [
+    "[바뀜]·[새로]는 PR #13 대비 이번 PR이 바꾼 단계다",
+    "guard는 ELIGIBLE만 NEED_INFO로 바꾸고 다른 판정은 그대로 둔다",
+    "측정 줄은 guard 표를 읽지 않고 최종 ELIGIBLE의 이유 문장만 읽는다"
+   ]
+  }
+ ]
+}
