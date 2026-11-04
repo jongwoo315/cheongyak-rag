@@ -82,7 +82,7 @@
 
 | 경로 | 합치는 축 | 개수 |
 | --- | --- | --- |
-| 일반공급 | 켜진 일반 축 5개(`GENERAL_AXES`: `homeless`·`account`·`residence`·`rewin`·`householder`)의 판정을 합친다 | 공고마다 1개 |
+| 일반공급 | 일반 축 5개(`GENERAL_AXES`: `homeless`·`account`·`residence`·`rewin`·`householder`) 중 켜진 것의 판정을 합친다 | 공고마다 1개 |
 | 특별공급 유형별 | 켜진 일반 축 + 소득·자산 축(`income_asset`) + 그 유형의 `special_type` 하위 질의 | 공고에 세대수가 있는 유형마다 1개 |
 
 - 전역 판정 = 일반공급 경로 판정이다. 특별공급 경로는 전역 판정에 들어가지 않는다
