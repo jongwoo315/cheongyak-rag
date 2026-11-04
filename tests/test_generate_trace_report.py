@@ -42,7 +42,9 @@ def test_zone_hide_bands():
 def test_zone_calls_bands():
     assert tr.zone_calls(0, 0, True, False) == "통과"
     assert tr.zone_calls(0, None, True, False) == "미측정"
+    assert tr.zone_calls(1, 0, True, False) == "다시 잰다"
     assert tr.zone_calls(2, 0, True, False) == "다시 잰다"
+    assert tr.zone_calls(3, 0, True, False) == "다시 잰다"  # 경계: 1~3이 다시 잰다
     assert tr.zone_calls(4, 0, True, False) == "미완"
     assert tr.zone_calls(0, 0, False, False) == "미완"  # 분포가 다르다
     assert tr.zone_calls(0, 0, True, True) == "미완"  # 멈춘 실행
