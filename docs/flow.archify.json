@@ -2,14 +2,14 @@
  "schema_version": 2,
  "diagram_type": "workflow",
  "meta": {
-  "title": "청약 RAG 판정 흐름 — #80 PR #14",
+  "title": "청약 RAG 판정 흐름 — #81 PR #15",
   "locale": "ko",
-  "quality_profile": "showcase",
-  "output": ".archify/workflow-80c-flow-20261103/80c-flow.html",
+  "quality_profile": "standard",
+  "output": ".archify/workflow-81-flow/81-flow.html",
   "repository": {
    "url": "https://github.com/jongwoo315/cheongyak-rag",
    "provider": "github",
-   "revision": "6f7ba5177b90357a39047dc7a7cf977ed986a804"
+   "revision": "af8b6cff01de23af490a4336c689d0fe58aca18a"
   }
  },
  "lanes": [
@@ -34,13 +34,17 @@
    "label": "인용 대조와 guard"
   },
   {
+   "id": "answer",
+   "label": "B8 집계와 B9 응답"
+  },
+  {
    "id": "stop",
    "label": "UNVERIFIABLE로 가는 길",
    "variant": "exception"
   },
   {
    "id": "measure",
-   "label": "측정 (jw 기준)"
+   "label": "측정 (jw 기준, #81)"
   }
  ],
  "mainPath": [
@@ -201,8 +205,8 @@
    "col": 4,
    "type": "security",
    "label": "ELIGIBLE guard",
-   "sublabel": "[바뀜] 통장 축도 ELIGIBLE → NEED_INFO",
-   "tag": "조건 바뀜",
+   "sublabel": "칸 없는 축은 ELIGIBLE → NEED_INFO",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/verdict.py",
@@ -272,7 +276,7 @@
   {
    "id": "mrun",
    "lane": "measure",
-   "col": 4,
+   "col": 3,
    "type": "backend",
    "label": "표본 실행",
    "sublabel": "공고 6건 × 프로필 3종",
@@ -287,31 +291,70 @@
    ]
   },
   {
-   "id": "mreason",
-   "lane": "measure",
-   "col": 5,
+   "id": "b8",
+   "lane": "answer",
+   "col": 4,
    "type": "backend",
-   "label": "최종 ELIGIBLE 이유 읽기",
-   "sublabel": "[새로] 단어 6개 · 「정보가 없」 문장",
+   "label": "B8 집계",
+   "sublabel": "[새로] 일반공급 + 특별공급 유형별 경로 판정",
    "tag": "새로 생김",
    "sources": [
     {
-     "path": "src/cheongyak_rag/generate/verdict_report.py",
-     "line": 51,
-     "end_line": 53,
-     "label": "REASON_WORDS·NO_VALUE_RE"
-    },
+     "path": "src/cheongyak_rag/generate/aggregate.py",
+     "line": 59,
+     "end_line": 95,
+     "label": "merge·aggregate"
+    }
+   ]
+  },
+  {
+   "id": "b9",
+   "lane": "answer",
+   "col": 5,
+   "type": "backend",
+   "label": "B9 응답",
+   "sublabel": "[새로] 체크리스트·근거 원문·출처·검색 밖 언급",
+   "tag": "새로 생김",
+   "sources": [
     {
-     "path": "src/cheongyak_rag/generate/verdict_report.py",
-     "line": 158,
-     "end_line": 159,
-     "label": "단어 검사"
-    },
+     "path": "src/cheongyak_rag/generate/aggregate.py",
+     "line": 217,
+     "end_line": 260,
+     "label": "build_answer"
+    }
+   ]
+  },
+  {
+   "id": "mroute",
+   "lane": "measure",
+   "col": 4,
+   "type": "security",
+   "label": "경로 판정 다시 계산",
+   "sublabel": "[새로] B8 코드 없이 같은 규칙",
+   "tag": "새로 생김",
+   "sources": [
     {
-     "path": "src/cheongyak_rag/generate/verdict_report.py",
-     "line": 299,
-     "end_line": 299,
-     "label": "값이 없다는 문장"
+     "path": "src/cheongyak_rag/generate/aggregate_report.py",
+     "line": 110,
+     "end_line": 125,
+     "label": "expected_routes"
+    }
+   ]
+  },
+  {
+   "id": "mment",
+   "lane": "measure",
+   "col": 5,
+   "type": "security",
+   "label": "검색 밖 언급 다시 세기",
+   "sublabel": "[새로] 이유 원문 · 검색 결과 대조",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/aggregate_report.py",
+     "line": 127,
+     "end_line": 142,
+     "label": "indep_outside"
     }
    ]
   }
@@ -396,16 +439,34 @@
    "label": "판정"
   },
   {
-   "id": "e14",
+   "id": "a1",
    "from": "out",
-   "to": "mreason",
-   "label": "최종 ELIGIBLE"
+   "to": "b8",
+   "label": "하위 질의 판정"
   },
   {
-   "id": "e15",
+   "id": "a2",
+   "from": "b8",
+   "to": "b9",
+   "label": "경로 판정"
+  },
+  {
+   "id": "a3",
+   "from": "b8",
+   "to": "mroute",
+   "label": "경로 판정 72개"
+  },
+  {
+   "id": "a4",
+   "from": "b9",
+   "to": "mment",
+   "label": "표시 135개"
+  },
+  {
+   "id": "a5",
    "from": "mrun",
-   "to": "mreason",
-   "label": "판정 135개"
+   "to": "mroute",
+   "label": "18쌍"
   }
  ],
  "cards": [
@@ -413,9 +474,9 @@
    "dot": "amber",
    "title": "읽는 법",
    "items": [
-    "[바뀜]·[새로]는 PR #13 대비 이번 PR이 바꾼 단계다",
-    "guard는 ELIGIBLE만 NEED_INFO로 바꾸고 다른 판정은 그대로 둔다",
-    "측정 줄은 guard 표를 읽지 않고 최종 ELIGIBLE의 이유 문장만 읽는다"
+    "[새로]는 PR #14 대비 이번 PR이 더한 단계다",
+    "B8·B9는 LLM을 부르지 않는다. 프롬프트는 LLM 판정 한 곳뿐이다",
+    "측정 줄은 B8·B9 코드를 부르지 않고 같은 규칙을 다시 계산해 비교한다"
    ]
   }
  ]
