@@ -11,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 from cheongyak_rag import profile as prof
 from cheongyak_rag import trace
 from cheongyak_rag.config import Settings
+from cheongyak_rag.generate import answer as ans
 from cheongyak_rag.generate import verdict as vd
 from cheongyak_rag.retrieval import axes
 from tests.fakes import FakeChat, FakeEmbedder
@@ -150,6 +151,19 @@ def test_steps_record_axes_queries_and_totals(pg_engine, hmn):
                       "guarded", "invalid_citations", "input_tokens", "output_tokens", "usd",
                       "cached", "error"}  # fmt: skip
     assert steps["total"]["llm_calls"] == len(out.verdicts)
+
+
+def test_cached_run_makes_no_llm_call_and_records_zero_calls(pg_engine, hmn, tmp_path):
+    path = tmp_path / "v.jsonl"
+    _run(pg_engine, FakeChat([_reply("INELIGIBLE")]), hmn, cache=ans.GenCache(path))
+    again = FakeChat([])  # 호출되면 IndexError
+    out = _run(pg_engine, again, hmn, cache=ans.GenCache(path))
+    first, second = (r["steps"] for r in _rows(pg_engine))
+    assert again.calls == []
+    assert first["total"]["llm_calls"] > 0
+    assert second["total"]["llm_calls"] == 0 and second["total"]["usd"] == 0
+    assert all(q["cached"] for q in second["queries"] if not q["no_context"])
+    assert out.answer.verdict == _rows(pg_engine)[1]["verdict"]
 
 
 def test_guarded_query_keeps_the_model_verdict_in_steps(pg_engine, hmn):
