@@ -283,3 +283,20 @@ def test_cli_write_failure_prints_the_answer_then_exits_1(
     cap = capsys.readouterr()
     assert code == 1 and cap.out.startswith("전역 판정(일반공급)")
     assert "trace 행을 못 썼다" in cap.err
+
+
+def test_non_sql_failure_while_building_the_row_still_returns_the_response(
+    pg_engine, hmn, monkeypatch
+):
+    def bad_steps(*a, **k):
+        raise TypeError("직렬화 못 하는 값")
+
+    monkeypatch.setattr(trace, "steps", bad_steps)
+    out = _run(pg_engine, FakeChat([_reply("INELIGIBLE")]), hmn)
+    assert out.answer.verdict == "INELIGIBLE" and out.trace_id is None
+    assert "TypeError" in out.trace_error and _rows(pg_engine) == []
+
+
+def test_whitespace_only_key_is_missing(pg_engine):
+    with pytest.raises(trace.MissingKey):
+        _run(pg_engine, FakeChat([_reply()]), "없음", key="  ")

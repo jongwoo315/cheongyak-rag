@@ -172,7 +172,8 @@ def measure(
     base = max_id(engine)
     search_cache: axes.Cache = {}
     queries, stop = [], None
-    for hmn, pname, extra in sample_pairs(notices, list(profiles)):
+    pairs = sample_pairs(notices, list(profiles))
+    for hmn, pname, extra in pairs:
         t0 = time.perf_counter()
         q = {"notice": hmn, "profile": pname, "extra": extra, "ok": False, "error": None}
         try:
@@ -181,12 +182,12 @@ def measure(
                 search_cache=search_cache,
             )  # fmt: skip
         except HardApiError as e:
-            q["error"] = f"{type(e).__name__}: {e}"
+            q["error"] = hide(f"{type(e).__name__}: {e}", profiles[pname])
             queries.append(q | {"seconds": time.perf_counter() - t0})
             stop = ("hard", f"{hmn} × {pname}: {e}")
             break
         except Exception as e:  # noqa: BLE001 — 질의 하나의 실패로 리포트 전체를 잃지 않는다
-            q["error"] = f"{type(e).__name__}: {e}"
+            q["error"] = hide(f"{type(e).__name__}: {e}", profiles[pname])
             queries.append(q | {"seconds": time.perf_counter() - t0})
             continue
         queries.append(
@@ -204,7 +205,10 @@ def measure(
                 ],
             }
         )  # fmt: skip
-    return {"base": base, "queries": queries, "rows": new_rows(engine, base), "stop": stop}
+    return {
+        "base": base, "queries": queries, "rows": new_rows(engine, base), "stop": stop,
+        "expected": len(pairs),
+    }  # fmt: skip
 
 
 # ── 징후 1 — 행이 한 건씩 쌓이는가 ────────────────────────────────────────
@@ -354,7 +358,7 @@ def attach_runs(run: dict, prev: dict | None) -> None:
 
 def symptoms(m: dict, profiles: dict, baseline: dict, notices: list[str], retry: bool) -> dict:
     q, rows = m["queries"], m["rows"]
-    a = abs(len(q) - len(rows))
+    a = abs(m.get("expected", len(q)) - len(rows))  # 기대값은 표본이 정한 질의 수(20)다
     bad = row_mismatches(q, rows, profiles)
     lk = leaks(q, rows, profiles)
     e = hash_problems(q, rows, profiles)
@@ -680,7 +684,7 @@ def main(
     ap.add_argument("--model", default=settings.openai_gen_model)
     args = ap.parse_args(argv)
     key = settings.trace_hash_key if trace_key is None else trace_key
-    if not key:
+    if not key.strip():
         print("`TRACE_HASH_KEY`가 없다. .env에 채운다 (.env.example 참고)", file=sys.stderr)
         return 2
     try:

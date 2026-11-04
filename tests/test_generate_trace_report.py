@@ -356,3 +356,10 @@ def test_report_without_key_exits_2(world, capsys):
     assert _run(world) == 2
     assert "TRACE_HASH_KEY" in capsys.readouterr().err
     assert not world[2]["out_md"].exists()
+
+
+def test_a_uses_the_sample_size_not_the_number_of_queries_that_ran():
+    qs = [_q("full"), _q("partial")]
+    m = _m(qs, _good(qs)) | {"expected": 3}
+    s = tr.symptoms(m, _profiles(), {"cells": []}, ["n1"], False)
+    assert s["A"] == 1 and s["zones"]["rows"] == "미완"

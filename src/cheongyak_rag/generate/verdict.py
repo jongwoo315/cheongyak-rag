@@ -537,7 +537,7 @@ def main(
         print(f"프로필을 못 읽었다: {e}", file=sys.stderr)
         return 2
     key = settings.trace_hash_key if trace_key is None else trace_key
-    if not key:  # 행 없이 응답만 내면 기록이 조용히 빠진다 — 흐름 전에 멈춘다
+    if not key.strip():  # 행 없이 응답만 내면 기록이 조용히 빠진다 — 흐름 전에 멈춘다
         print("`TRACE_HASH_KEY`가 없다. .env에 채운다 (.env.example 참고)", file=sys.stderr)
         return 2
     try:

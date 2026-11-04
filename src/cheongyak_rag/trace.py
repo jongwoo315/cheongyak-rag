@@ -43,7 +43,7 @@ class Traced:
 
 def profile_hash(profile: prof.Profile, key: str) -> str:
     """HMAC-SHA256 16진수 64자. 입력은 `Profile.to_dict()`를 키 정렬한 JSON이다."""
-    if not key:
+    if not key.strip():
         raise MissingKey("TRACE_HASH_KEY가 없다")
     body = json.dumps(profile.to_dict(), sort_keys=True)
     return hmac.new(key.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -172,17 +172,17 @@ def run_traced(
         except SQLAlchemyError as we:
             e.add_note(f"trace 행도 못 썼다: {type(we).__name__}")
         raise
-    row = base | {
-        "pblanc_no": notice.pblanc_no,
-        "status": OK,
-        "error": None,
-        "verdict": answer.verdict,
-        "seconds": time.perf_counter() - t0,
-        "steps": mask(steps(notice, plans, verdicts), profile),
-        "answer": mask(dataclasses.asdict(answer), profile),
-    }
-    try:
+    try:  # 응답을 만든 뒤에는 어떤 예외도 응답을 버리게 두지 않는다
+        row = base | {
+            "pblanc_no": notice.pblanc_no,
+            "status": OK,
+            "error": None,
+            "verdict": answer.verdict,
+            "seconds": time.perf_counter() - t0,
+            "steps": mask(steps(notice, plans, verdicts), profile),
+            "answer": mask(dataclasses.asdict(answer), profile),
+        }
         trace_id, trace_error = write(engine, row), None
-    except SQLAlchemyError as e:
+    except Exception as e:  # noqa: BLE001
         trace_id, trace_error = None, f"{type(e).__name__}: {getattr(e, 'orig', e)}"
     return Traced(notice, plans, verdicts, answer, trace_id, trace_error)
