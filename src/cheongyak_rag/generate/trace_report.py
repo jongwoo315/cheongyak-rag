@@ -574,7 +574,7 @@ def render(run: dict, baseline: dict) -> str:
     if ex is not None and ex < len(rows):
         r = rows[ex]
         out += [
-            f"행 {r['id']}. 가린 자리는 `{MASK_TEXT}`로 보인다.",
+            f"행 {r['id']}. 가린 자리에는 `{MASK_TEXT}`가 적혀 있다.",
             "",
             "`steps`",
             "",
