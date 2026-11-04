@@ -521,7 +521,10 @@ def main(
     embedder=None,
     client=None,
     cache_path: Path | None = None,
+    trace_key: str | None = None,
 ) -> int:
+    from cheongyak_rag import trace  # trace가 이 모듈을 import하므로 여기서 읽는다
+
     ap = argparse.ArgumentParser(prog="cheongyak_rag.generate.verdict")
     ap.add_argument("house_manage_no")
     ap.add_argument("--profile", required=True, help="프로필 JSON (#77 칸)")
@@ -533,6 +536,10 @@ def main(
     except (OSError, ValueError) as e:  # ProfileError · JSONDecodeError는 ValueError다
         print(f"프로필을 못 읽었다: {e}", file=sys.stderr)
         return 2
+    key = settings.trace_hash_key if trace_key is None else trace_key
+    if not key:  # 행 없이 응답만 내면 기록이 조용히 빠진다 — 흐름 전에 멈춘다
+        print("`TRACE_HASH_KEY`가 없다. .env에 채운다 (.env.example 참고)", file=sys.stderr)
+        return 2
     try:
         check_model(args.model)
         client = RetryingClient(client or make_client())
@@ -542,7 +549,7 @@ def main(
     own = engine is None
     engine = engine or sa.create_engine(settings.database_url)
     try:
-        notice, plans, verdicts = judge(
+        traced = trace.run_traced(
             engine,
             embedder or Embedder(settings.openai_embed_model),
             client,
@@ -551,12 +558,16 @@ def main(
             profile,
             args.pblanc_no,
             GenCache(cache_path or cache_path_for(args.model)),
+            key=key,
         )
+        notice, plans, verdicts = traced.notice, traced.plans, traced.verdicts
         # 맨 위가 응답(전역 판정 · 경로별 판정 · 체크리스트), 그 아래는 #80 출력 그대로다
-        answer = aggregate.build_answer(engine, notice, plans, verdicts, profile)
-        print(aggregate.render_text(answer))
+        print(aggregate.render_text(traced.answer))
         print("\n---\n")
         print(format_report(notice, plans, verdicts))
+        if traced.trace_error:  # 응답은 낸 뒤에 기록 실패를 알린다
+            print(f"trace 행을 못 썼다: {traced.trace_error}", file=sys.stderr)
+            return 1
         return 1 if any(v.error for v in verdicts) else 0
     except (axes.NoticeNotFound, prof.ProfileError) as e:
         print(e, file=sys.stderr)

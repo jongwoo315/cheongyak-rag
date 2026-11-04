@@ -220,3 +220,66 @@ def test_run_traced_is_the_same_flow_as_judge(pg_engine, hmn):
         prof.Profile(birth_date=BIRTH),
     )  # fmt: skip
     assert [(v.query, v.verdict) for v in out.verdicts] == [(v.query, v.verdict) for v in again]
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+
+def _cli(engine, hmn, tmp_path, profile_json='{"birth_date": "1990-01-01"}', **kw):
+    pf = tmp_path / "p.json"
+    pf.write_text(profile_json, encoding="utf-8")
+    return vd.main(
+        [hmn, "--profile", str(pf)],
+        engine=engine,
+        embedder=FakeEmbedder(dim=1536),
+        client=FakeChat([_reply("INELIGIBLE")]),
+        cache_path=tmp_path / "c.jsonl",
+        **kw,
+    )
+
+
+def test_cli_without_key_exits_2_before_the_flow_and_writes_nothing(
+    pg_engine, hmn, tmp_path, capsys
+):
+    code = _cli(pg_engine, hmn, tmp_path, trace_key="")
+    cap = capsys.readouterr()
+    assert code == 2 and "TRACE_HASH_KEY" in cap.err and cap.out == ""
+    assert _rows(pg_engine) == []
+
+
+def test_cli_defaults_to_the_settings_key(pg_engine, hmn, tmp_path, monkeypatch):
+    from cheongyak_rag.config import settings
+
+    monkeypatch.setattr(settings, "trace_hash_key", "")
+    assert _cli(pg_engine, hmn, tmp_path) == 2
+    monkeypatch.setattr(settings, "trace_hash_key", KEY)
+    assert _cli(pg_engine, hmn, tmp_path) == 0
+    assert len(_rows(pg_engine)) == 1
+
+
+def test_cli_run_writes_one_row_and_prints_the_same_output(pg_engine, hmn, tmp_path, capsys):
+    code = _cli(pg_engine, hmn, tmp_path, trace_key=KEY)
+    out = capsys.readouterr().out
+    assert code == 0 and out.startswith("전역 판정(일반공급): INELIGIBLE")
+    assert "\n---\n" in out and "판정 " in out
+    (row,) = _rows(pg_engine)
+    assert row["status"] == "ok" and row["verdict"] == "INELIGIBLE"
+
+
+def test_cli_unknown_notice_exits_2_and_leaves_an_error_row(pg_engine, tmp_path):
+    assert _cli(pg_engine, "0000000000", tmp_path, trace_key=KEY) == 2
+    (row,) = _rows(pg_engine)
+    assert row["status"] == "error"
+
+
+def test_cli_write_failure_prints_the_answer_then_exits_1(
+    pg_engine, hmn, tmp_path, capsys, monkeypatch
+):
+    def boom(engine, row):
+        raise OperationalError("INSERT", {}, Exception("연결 끊김"))
+
+    monkeypatch.setattr(trace, "write", boom)
+    code = _cli(pg_engine, hmn, tmp_path, trace_key=KEY)
+    cap = capsys.readouterr()
+    assert code == 1 and cap.out.startswith("전역 판정(일반공급)")
+    assert "trace 행을 못 썼다" in cap.err

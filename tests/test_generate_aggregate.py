@@ -275,7 +275,7 @@ def test_verdict_cli_prints_the_answer_above_the_old_report(tmp_path, capsys, wo
     )
     code = vd.main(
         [hmn, "--profile", str(pf)], engine=engine, embedder=FakeEmbedder(dim=1536),
-        client=FakeChat([reply]), cache_path=tmp_path / "c.jsonl",
+        client=FakeChat([reply]), cache_path=tmp_path / "c.jsonl", trace_key="k",
     )  # fmt: skip
     out = capsys.readouterr().out
     assert code == 0
