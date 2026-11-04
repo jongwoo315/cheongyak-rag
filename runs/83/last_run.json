@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-05T00:40:54+09:00",
+  "run_at": "2026-11-05T00:50:04+09:00",
   "model": "gpt-5.4-mini",
   "system_sha": "92f338a4",
   "notices": [
@@ -33,7 +33,7 @@
       ],
       "size_median": 25900.5,
       "size_max": 38878,
-      "seconds_median": 0.08658627094700933
+      "seconds_median": 0.09225524961948395
     },
     "C": 0,
     "D": 0,
@@ -43,89 +43,89 @@
       "D": [],
       "masked": [
         {
-          "id": 21,
+          "id": 42,
           "n": 1
         },
         {
-          "id": 22,
+          "id": 43,
           "n": 0
         },
         {
-          "id": 23,
+          "id": 44,
           "n": 0
         },
         {
-          "id": 24,
+          "id": 45,
           "n": 1
         },
         {
-          "id": 25,
+          "id": 46,
           "n": 1
         },
         {
-          "id": 26,
+          "id": 47,
           "n": 0
         },
         {
-          "id": 27,
+          "id": 48,
           "n": 2
         },
         {
-          "id": 28,
+          "id": 49,
           "n": 1
         },
         {
-          "id": 29,
+          "id": 50,
           "n": 0
         },
         {
-          "id": 30,
+          "id": 51,
           "n": 1
         },
         {
-          "id": 31,
+          "id": 52,
           "n": 1
         },
         {
-          "id": 32,
+          "id": 53,
           "n": 0
         },
         {
-          "id": 33,
+          "id": 54,
           "n": 0
         },
         {
-          "id": 34,
+          "id": 55,
           "n": 1
         },
         {
-          "id": 35,
+          "id": 56,
           "n": 0
         },
         {
-          "id": 36,
+          "id": 57,
           "n": 0
         },
         {
-          "id": 37,
+          "id": 58,
           "n": 1
         },
         {
-          "id": 38,
+          "id": 59,
           "n": 0
         },
         {
-          "id": 39,
+          "id": 60,
           "n": 0
         },
         {
-          "id": 40,
+          "id": 61,
           "n": 1
         }
       ],
       "derived": [
         {
-          "id": 21,
+          "id": 42,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -140,7 +140,7 @@
           ]
         },
         {
-          "id": 22,
+          "id": 43,
           "profile": "partial",
           "found": [
             "0년10월0일",
@@ -154,7 +154,7 @@
           ]
         },
         {
-          "id": 23,
+          "id": 44,
           "profile": "empty",
           "found": [
             "2023년 12월 31일",
@@ -163,7 +163,7 @@
           ]
         },
         {
-          "id": 24,
+          "id": 45,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -178,7 +178,7 @@
           ]
         },
         {
-          "id": 25,
+          "id": 46,
           "profile": "partial",
           "found": [
             "0년10월0일",
@@ -194,7 +194,7 @@
           ]
         },
         {
-          "id": 26,
+          "id": 47,
           "profile": "empty",
           "found": [
             "2023년 12월 31일",
@@ -203,7 +203,7 @@
           ]
         },
         {
-          "id": 27,
+          "id": 48,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -218,7 +218,7 @@
           ]
         },
         {
-          "id": 28,
+          "id": 49,
           "profile": "partial",
           "found": [
             "0년10월0일",
@@ -234,7 +234,7 @@
           ]
         },
         {
-          "id": 29,
+          "id": 50,
           "profile": "empty",
           "found": [
             "2023년 12월 31일",
@@ -243,7 +243,7 @@
           ]
         },
         {
-          "id": 30,
+          "id": 51,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -258,7 +258,7 @@
           ]
         },
         {
-          "id": 31,
+          "id": 52,
           "profile": "partial",
           "found": [
             "0년10월0일",
@@ -273,7 +273,7 @@
           ]
         },
         {
-          "id": 32,
+          "id": 53,
           "profile": "empty",
           "found": [
             "0년10월0일",
@@ -287,7 +287,7 @@
           ]
         },
         {
-          "id": 33,
+          "id": 54,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -301,7 +301,7 @@
           ]
         },
         {
-          "id": 34,
+          "id": 55,
           "profile": "partial",
           "found": [
             "0년10월0일",
@@ -317,7 +317,7 @@
           ]
         },
         {
-          "id": 35,
+          "id": 56,
           "profile": "empty",
           "found": [
             "2023년 12월 31일",
@@ -326,7 +326,7 @@
           ]
         },
         {
-          "id": 36,
+          "id": 57,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -342,7 +342,7 @@
           ]
         },
         {
-          "id": 37,
+          "id": 58,
           "profile": "partial",
           "found": [
             "0년10월0일",
@@ -358,7 +358,7 @@
           ]
         },
         {
-          "id": 38,
+          "id": 59,
           "profile": "empty",
           "found": [
             "0년10월0일",
@@ -372,7 +372,7 @@
           ]
         },
         {
-          "id": 40,
+          "id": 61,
           "profile": "full",
           "found": [
             "0년10월0일",
@@ -415,8 +415,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 2.264226916246116,
-      "trace_id": 21,
+      "seconds": 2.2261830838397145,
+      "trace_id": 42,
       "trace_error": null
     },
     {
@@ -425,8 +425,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.11113087460398674,
-      "trace_id": 22,
+      "seconds": 0.11379420850425959,
+      "trace_id": 43,
       "trace_error": null
     },
     {
@@ -435,8 +435,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.10389654245227575,
-      "trace_id": 23,
+      "seconds": 0.09852558374404907,
+      "trace_id": 44,
       "trace_error": null
     },
     {
@@ -445,8 +445,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.09082858264446259,
-      "trace_id": 24,
+      "seconds": 0.09295037481933832,
+      "trace_id": 45,
       "trace_error": null
     },
     {
@@ -455,8 +455,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.09074537456035614,
-      "trace_id": 25,
+      "seconds": 0.10239841602742672,
+      "trace_id": 46,
       "trace_error": null
     },
     {
@@ -465,8 +465,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.08948412537574768,
-      "trace_id": 26,
+      "seconds": 0.13216358330100775,
+      "trace_id": 47,
       "trace_error": null
     },
     {
@@ -475,8 +475,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.0931423744186759,
-      "trace_id": 27,
+      "seconds": 0.12035787478089333,
+      "trace_id": 48,
       "trace_error": null
     },
     {
@@ -485,8 +485,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.0780147910118103,
-      "trace_id": 28,
+      "seconds": 0.0948911253362894,
+      "trace_id": 49,
       "trace_error": null
     },
     {
@@ -495,8 +495,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.09336266666650772,
-      "trace_id": 29,
+      "seconds": 0.08890049997717142,
+      "trace_id": 50,
       "trace_error": null
     },
     {
@@ -505,8 +505,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.05293958354741335,
-      "trace_id": 30,
+      "seconds": 0.052433665841817856,
+      "trace_id": 51,
       "trace_error": null
     },
     {
@@ -515,8 +515,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.042842707596719265,
-      "trace_id": 31,
+      "seconds": 0.05050562508404255,
+      "trace_id": 52,
       "trace_error": null
     },
     {
@@ -525,8 +525,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.037515792064368725,
-      "trace_id": 32,
+      "seconds": 0.05410275049507618,
+      "trace_id": 53,
       "trace_error": null
     },
     {
@@ -535,8 +535,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.027638625353574753,
-      "trace_id": 33,
+      "seconds": 0.04513354133814573,
+      "trace_id": 54,
       "trace_error": null
     },
     {
@@ -545,8 +545,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.04096325021237135,
-      "trace_id": 34,
+      "seconds": 0.05468837544322014,
+      "trace_id": 55,
       "trace_error": null
     },
     {
@@ -555,8 +555,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.045991250313818455,
-      "trace_id": 35,
+      "seconds": 0.05209774989634752,
+      "trace_id": 56,
       "trace_error": null
     },
     {
@@ -565,8 +565,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.07773329131305218,
-      "trace_id": 36,
+      "seconds": 0.09156012441962957,
+      "trace_id": 57,
       "trace_error": null
     },
     {
@@ -575,8 +575,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.08387474995106459,
-      "trace_id": 37,
+      "seconds": 0.09602795913815498,
+      "trace_id": 58,
       "trace_error": null
     },
     {
@@ -585,8 +585,8 @@
       "extra": false,
       "ok": true,
       "error": null,
-      "seconds": 0.08929779194295406,
-      "trace_id": 38,
+      "seconds": 0.07777445763349533,
+      "trace_id": 59,
       "trace_error": null
     },
     {
@@ -595,7 +595,7 @@
       "extra": true,
       "ok": false,
       "error": "NoticeNotFound: 공고 0000000000 (pblanc_no=None) 없음",
-      "seconds": 0.002390165813267231
+      "seconds": 0.0018984591588377953
     },
     {
       "notice": "2026000103",
@@ -603,232 +603,232 @@
       "extra": true,
       "ok": true,
       "error": null,
-      "seconds": 0.1642310842871666,
-      "trace_id": 40,
+      "seconds": 0.09515229240059853,
+      "trace_id": 61,
       "trace_error": null
     }
   ],
   "rows": [
     {
-      "id": 21,
+      "id": 42,
       "house_manage_no": "2026000103",
       "pblanc_no": "2026000103",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 2.2583071244880557,
+      "seconds": 2.221713208593428,
       "size": 36842
     },
     {
-      "id": 22,
+      "id": 43,
       "house_manage_no": "2026000103",
       "pblanc_no": "2026000103",
       "profile_hash": "42fe8f8b3a7a",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.10752054117619991,
+      "seconds": 0.11020550038665533,
       "size": 38878
     },
     {
-      "id": 23,
+      "id": 44,
       "house_manage_no": "2026000103",
       "pblanc_no": "2026000103",
       "profile_hash": "026ebfe9ffe7",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.10051599983125925,
+      "seconds": 0.09539395850151777,
       "size": 38286
     },
     {
-      "id": 24,
+      "id": 45,
       "house_manage_no": "2026000202",
       "pblanc_no": "2026000202",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.087374416179955,
+      "seconds": 0.08979600016027689,
       "size": 38705
     },
     {
-      "id": 25,
+      "id": 46,
       "house_manage_no": "2026000202",
       "pblanc_no": "2026000202",
       "profile_hash": "42fe8f8b3a7a",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.0875193327665329,
+      "seconds": 0.09887983277440071,
       "size": 37724
     },
     {
-      "id": 26,
+      "id": 47,
       "house_manage_no": "2026000202",
       "pblanc_no": "2026000202",
       "profile_hash": "026ebfe9ffe7",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.08618074934929609,
+      "seconds": 0.12776579149067402,
       "size": 38388
     },
     {
-      "id": 27,
+      "id": 48,
       "house_manage_no": "2026000314",
       "pblanc_no": "2026000314",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.09014620911329985,
+      "seconds": 0.11591937486082315,
       "size": 28804
     },
     {
-      "id": 28,
+      "id": 49,
       "house_manage_no": "2026000314",
       "pblanc_no": "2026000314",
       "profile_hash": "42fe8f8b3a7a",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.07508966699242592,
+      "seconds": 0.09067320916801691,
       "size": 31975
     },
     {
-      "id": 29,
+      "id": 50,
       "house_manage_no": "2026000314",
       "pblanc_no": "2026000314",
       "profile_hash": "026ebfe9ffe7",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.09000070951879025,
+      "seconds": 0.08585512544959784,
       "size": 30224
     },
     {
-      "id": 30,
+      "id": 51,
       "house_manage_no": "2026000401",
       "pblanc_no": "2026000401",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.050803417339921,
+      "seconds": 0.05034041590988636,
       "size": 13289
     },
     {
-      "id": 31,
+      "id": 52,
       "house_manage_no": "2026000401",
       "pblanc_no": "2026000401",
       "profile_hash": "42fe8f8b3a7a",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.04108262527734041,
+      "seconds": 0.04851175006479025,
       "size": 13177
     },
     {
-      "id": 32,
+      "id": 53,
       "house_manage_no": "2026000401",
       "pblanc_no": "2026000401",
       "profile_hash": "026ebfe9ffe7",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.03579312562942505,
+      "seconds": 0.052090791054069996,
       "size": 13390
     },
     {
-      "id": 33,
+      "id": 54,
       "house_manage_no": "2026000444",
       "pblanc_no": "2026000444",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.026102624833583832,
+      "seconds": 0.043021959252655506,
       "size": 10706
     },
     {
-      "id": 34,
+      "id": 55,
       "house_manage_no": "2026000444",
       "pblanc_no": "2026000444",
       "profile_hash": "42fe8f8b3a7a",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.03925895784050226,
+      "seconds": 0.048477958887815475,
       "size": 12165
     },
     {
-      "id": 35,
+      "id": 56,
       "house_manage_no": "2026000444",
       "pblanc_no": "2026000444",
       "profile_hash": "026ebfe9ffe7",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.04405554197728634,
+      "seconds": 0.04923637490719557,
       "size": 11266
     },
     {
-      "id": 36,
+      "id": 57,
       "house_manage_no": "2026820006",
       "pblanc_no": "2026820006",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "NEED_INFO",
-      "seconds": 0.0747485002502799,
+      "seconds": 0.08805566746741533,
       "size": 20373
     },
     {
-      "id": 37,
+      "id": 58,
       "house_manage_no": "2026820006",
       "pblanc_no": "2026820006",
       "profile_hash": "42fe8f8b3a7a",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.08056816644966602,
+      "seconds": 0.09251129254698753,
       "size": 22997
     },
     {
-      "id": 38,
+      "id": 59,
       "house_manage_no": "2026820006",
       "pblanc_no": "2026820006",
       "profile_hash": "026ebfe9ffe7",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.08622862491756678,
+      "seconds": 0.07513545826077461,
       "size": 20273
     },
     {
-      "id": 39,
+      "id": 60,
       "house_manage_no": "0000000000",
       "pblanc_no": null,
       "profile_hash": "d30bc73028ba",
       "status": "error",
       "error": "NoticeNotFound: 공고 0000000000 (pblanc_no=None) 없음",
       "verdict": null,
-      "seconds": 0.0013371258974075317,
+      "seconds": 0.0010688751935958862,
       "size": 229
     },
     {
-      "id": 40,
+      "id": 61,
       "house_manage_no": "2026000103",
       "pblanc_no": "2026000103",
       "profile_hash": "d30bc73028ba",
       "status": "ok",
       "error": null,
       "verdict": "UNVERIFIABLE",
-      "seconds": 0.1588427498936653,
+      "seconds": 0.09152504242956638,
       "size": 36842
     }
   ],
-  "base": 20
+  "base": 41
 }
