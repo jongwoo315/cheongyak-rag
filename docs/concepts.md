@@ -76,6 +76,31 @@
 
 - 예치금·납입 횟수·소득·자산·거주 지역·당첨 이력 칸은 없다. 그래서 청약통장·거주·소득자산·재당첨·특별공급 유형 축은 ELIGIBLE을 낼 수 없다(#80 guard)
 
+## 경로 — 신청할 수 있는 길 하나의 합친 판정
+
+정의: `src/cheongyak_rag/generate/aggregate.py:71` `aggregate`, 일반 축 목록은 같은 파일 29줄 `GENERAL_AXES`. 만든 티켓 #81.
+
+| 경로 | 합치는 축 | 개수 |
+| --- | --- | --- |
+| 일반공급 | 켜진 일반 축 5개(`GENERAL_AXES`: `homeless`·`account`·`residence`·`rewin`·`householder`)의 판정을 합친다 | 공고마다 1개 |
+| 특별공급 유형별 | 켜진 일반 축 + 소득·자산 축(`income_asset`) + 그 유형의 `special_type` 하위 질의 | 공고에 세대수가 있는 유형마다 1개 |
+
+- 전역 판정 = 일반공급 경로 판정이다. 특별공급 경로는 전역 판정에 들어가지 않는다
+- 신청 가능한 경로 = 판정이 `ELIGIBLE`·`CONDITIONAL`인 경로다
+- 합치는 규칙은 판정값 5개 절의 우선순위다. 꺼진 축의 판정은 합치지 않고, 호출이 실패해 판정이 없는 하위 질의는 `UNVERIFIABLE`로 센다
+
+## trace 상태 2개
+
+정의: `src/cheongyak_rag/trace.py:27` `OK`·`ERROR`, `traces.status` 칸에 들어간다. 만든 티켓 #83.
+
+| 값 | 뜻 |
+| --- | --- |
+| `ok` | 질의가 B9 응답까지 갔다. `answer`·`verdict`·`steps`에 값이 있다 |
+| `error` | 흐름 중간에 예외가 났다. `error`에 예외 이름과 메시지(프로필 값 가린 뒤)가 있고 `answer`·`verdict`는 null, `steps`는 빈 객체다 |
+
+- 행 쓰기가 실패한 질의는 행이 없으므로 어느 상태도 아니다. 응답은 돌려주고 `trace_error`로 알린다
+- `error` 행을 쓴 뒤 예외는 그대로 다시 올라간다
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.
