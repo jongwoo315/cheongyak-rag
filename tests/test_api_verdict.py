@@ -103,7 +103,21 @@ def test_missing_trace_key_is_503_before_anything_runs(make, hmn, pg_engine):
 def test_hard_api_error_is_503(make, hmn):
     client, _ = make([HardApiError("insufficient_quota")])
     r = _post(client, hmn, {})
-    assert r.status_code == 503 and "insufficient_quota" not in r.text  # 내부 오류 문구를 숨긴다
+    assert r.status_code == 503 and r.json()["detail"] == api.NO_DETAIL  # 내부 오류 문구를 숨긴다
+    assert "insufficient_quota" not in r.text
+
+
+def test_db_error_is_503_with_only_the_class_name(make, hmn, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    def boom(*a, **kw):
+        raise OperationalError("SELECT secret_column", {}, Exception("dsn=postgres://u:pw@h"))
+
+    monkeypatch.setattr(trace, "run_traced", boom)
+    client, _ = make()
+    r = _post(client, hmn, {})
+    assert r.status_code == 503 and r.json()["detail"] == "DB 오류: OperationalError"
+    assert "secret_column" not in r.text and "pw@h" not in r.text
 
 
 def test_failed_checklist_item_error_text_is_hidden(make, hmn):
