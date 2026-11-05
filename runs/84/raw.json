@@ -1,0 +1,1087 @@
+{
+  "pages": [
+    {
+      "house_manage_no": "2026000103",
+      "status": 200,
+      "title": "더샵 분당하이스트 청약 자격 판정",
+      "rows": 13
+    },
+    {
+      "house_manage_no": "2026000202",
+      "status": 200,
+      "title": "대전 경남아너스빌 센텀스카이 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000267",
+      "status": 200,
+      "title": "아산 그랑시티필하우스 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000295",
+      "status": 200,
+      "title": "아산테크노밸리 더원 7차 (Ab4BL) 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000314",
+      "status": 200,
+      "title": "중동역 다채로움 더원 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000323",
+      "status": 200,
+      "title": "세종 우미 린 센터파크(행정중심복합도시 5-2생활권 S1블록, 글미마을 9단지) 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000342",
+      "status": 200,
+      "title": "제일풍경채 첨단3지구(A6BL) 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000354",
+      "status": 200,
+      "title": "상동역 롯데캐슬 시그니처 청약 자격 판정",
+      "rows": 12
+    },
+    {
+      "house_manage_no": "2026000356",
+      "status": 200,
+      "title": "두산위브더제니스 대연 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000358",
+      "status": 200,
+      "title": "충정로역자이르네 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000364",
+      "status": 200,
+      "title": "써밋 클라비온 청약 자격 판정",
+      "rows": 7
+    },
+    {
+      "house_manage_no": "2026000365",
+      "status": 200,
+      "title": "오남역 서희스타힐스 여의재 1단지 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000367",
+      "status": 200,
+      "title": "한강 푸르지오 리버프론트 청약 자격 판정",
+      "rows": 12
+    },
+    {
+      "house_manage_no": "2026000368",
+      "status": 200,
+      "title": "아르티엠 라 테라스 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000371",
+      "status": 200,
+      "title": "용인반도체클러스터 동일하이빌 파크밸리(D1-1블록) 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000372",
+      "status": 200,
+      "title": "쌍용 더 플래티넘 서대문 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000373",
+      "status": 200,
+      "title": "고덕강일지구 3단지 토지임대부(본청약) 청약 자격 판정",
+      "rows": 20
+    },
+    {
+      "house_manage_no": "2026000374",
+      "status": 200,
+      "title": "더샵 신길센트럴시티(조합원 취소분) 청약 자격 판정",
+      "rows": 13
+    },
+    {
+      "house_manage_no": "2026000376",
+      "status": 200,
+      "title": "달서자이 제니크 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000377",
+      "status": 200,
+      "title": "의왕역 한신더휴 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000382",
+      "status": 200,
+      "title": "두산위브더제니스 부천 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000383",
+      "status": 200,
+      "title": "포레나힐스테이트 진주 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000386",
+      "status": 200,
+      "title": "용인 양지 서희스타힐스 하이뷰 (조합원 취소분) 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000388",
+      "status": 200,
+      "title": "시티오씨엘 9단지 오션파크뷰 청약 자격 판정",
+      "rows": 10
+    },
+    {
+      "house_manage_no": "2026000393",
+      "status": 200,
+      "title": "시흥 은계 에피트(조합원 취소분) 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000394",
+      "status": 200,
+      "title": "더샵 여주역더퍼스트 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000399",
+      "status": 200,
+      "title": "브라운스톤 월곡 센트럴 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000401",
+      "status": 200,
+      "title": "문수데시앙2단지 공가세대 일반공급 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000402",
+      "status": 200,
+      "title": "익산 부송에코르 10년 공공임대주택 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000403",
+      "status": 200,
+      "title": "그랑라크 에일린의 뜰 청약 자격 판정",
+      "rows": 7
+    },
+    {
+      "house_manage_no": "2026000404",
+      "status": 200,
+      "title": "검암역 푸르지오 프라베뉴 (B-1BL) 공공분양주택 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000409",
+      "status": 200,
+      "title": "의정부우정 A2블록 공공분양주택(본청약) 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000414",
+      "status": 200,
+      "title": "인천계양지구 A6블록 공공분양주택(본청약) 청약 자격 판정",
+      "rows": 13
+    },
+    {
+      "house_manage_no": "2026000416",
+      "status": 200,
+      "title": "양주회천지구 A-26블록 공공분양주택 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000419",
+      "status": 200,
+      "title": "올 뉴 챔피언스시티 1차 청약 자격 판정",
+      "rows": 16
+    },
+    {
+      "house_manage_no": "2026000420",
+      "status": 200,
+      "title": "남울산 노르웨이숲(조합원 취소분)(2회차) 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000422",
+      "status": 200,
+      "title": "천안 아이파크 시티 3단지 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000423",
+      "status": 200,
+      "title": "두정역 푸르지오 그랑피크 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000424",
+      "status": 200,
+      "title": "쌍용 더 플래티넘 센텀 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000426",
+      "status": 200,
+      "title": "천안 아이파크 시티 4단지 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000431",
+      "status": 200,
+      "title": "오남역 서희스타힐스 여의재 3단지 (조합원 취소분) 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000436",
+      "status": 200,
+      "title": "더샵 시에르네(조합원취소분)(2회차) 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000437",
+      "status": 200,
+      "title": "힐스테이트 고덕엘리스트 A12BL 공공분양주택 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000438",
+      "status": 200,
+      "title": "힐스테이트 고덕엘리스트 A65BL 공공분양주택 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000441",
+      "status": 200,
+      "title": "문수로 비스타 더파크 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000443",
+      "status": 200,
+      "title": "에코델타시티 금강펜테리움 에코리버 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000444",
+      "status": 200,
+      "title": "제주시 이도이동 아이린8차 아파트 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000445",
+      "status": 200,
+      "title": "삼천 하늘채 라비엘 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000446",
+      "status": 200,
+      "title": "진주 판문지구 레이크써밋 웰가 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000448",
+      "status": 200,
+      "title": "숭의역 노르웨이숲 더 스카이 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000449",
+      "status": 200,
+      "title": "화서역 호수공원 아너스빌 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000453",
+      "status": 200,
+      "title": "광명 시티프라디움 에듀하임 청약 자격 판정",
+      "rows": 7
+    },
+    {
+      "house_manage_no": "2026000454",
+      "status": 200,
+      "title": "천안 용곡 두산위브(조합원 취소분) 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000455",
+      "status": 200,
+      "title": "신분평 에피트 더웨이시티 청약 자격 판정",
+      "rows": 7
+    },
+    {
+      "house_manage_no": "2026000458",
+      "status": 200,
+      "title": "산곡역자이힐스테이트앤하늘채 청약 자격 판정",
+      "rows": 9
+    },
+    {
+      "house_manage_no": "2026000463",
+      "status": 200,
+      "title": "향남역 그로브 스위첸 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000464",
+      "status": 200,
+      "title": "힐스테이트 거제시그니처(1회차) 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000466",
+      "status": 200,
+      "title": "진도 승원팰리체 더 테라스 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000468",
+      "status": 200,
+      "title": "쌍용 더 플래티넘 한강 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000469",
+      "status": 200,
+      "title": "연제갤러리자이 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000471",
+      "status": 200,
+      "title": "한양립스 에듀포레(조합원 취소분) 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000491",
+      "status": 200,
+      "title": "청주 가경 아이파크 7단지 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000492",
+      "status": 200,
+      "title": "청주 가경 아이파크 8단지 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000494",
+      "status": 200,
+      "title": "더샵 동인센트리체 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000495",
+      "status": 200,
+      "title": "연산 센텀 월드메르디앙 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000496",
+      "status": 200,
+      "title": "청라 아크원 푸르지오 청약 자격 판정",
+      "rows": 6
+    },
+    {
+      "house_manage_no": "2026000498",
+      "status": 200,
+      "title": "천안 아이파크 시티 2단지(2회차) 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000502",
+      "status": 200,
+      "title": "화성 향남 롯데캐슬 시그니처 청약 자격 판정",
+      "rows": 10
+    },
+    {
+      "house_manage_no": "2026000507",
+      "status": 200,
+      "title": "광안센텀 비스타동원(조합원 취소분) 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026000508",
+      "status": 200,
+      "title": "아크메르 동탄 95 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000509",
+      "status": 200,
+      "title": "아크메르 동탄 99 청약 자격 판정",
+      "rows": 9
+    },
+    {
+      "house_manage_no": "2026000513",
+      "status": 200,
+      "title": "트리븐센텀 1단지 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000514",
+      "status": 200,
+      "title": "트리븐센텀 2단지 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000517",
+      "status": 200,
+      "title": "GTX운정중앙역 시티프라디움 3단지(후속사업) 청약 자격 판정",
+      "rows": 5
+    },
+    {
+      "house_manage_no": "2026000518",
+      "status": 200,
+      "title": "GTX운정중앙역 시티프라디움 4단지(후속사업) 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026000530",
+      "status": 200,
+      "title": "계양신도시 카이브 유보라(AC3BL) 청약 자격 판정",
+      "rows": 8
+    },
+    {
+      "house_manage_no": "2026000531",
+      "status": 200,
+      "title": "시흥거모지구 S-1블록 공공분양(본청약) 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026000532",
+      "status": 200,
+      "title": "계양신도시 카이브 유보라(AC4BL) 청약 자격 판정",
+      "rows": 7
+    },
+    {
+      "house_manage_no": "2026820006",
+      "status": 200,
+      "title": "시흥거모 A-5블록 신혼희망타운(공공분양)(본청약) 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026820008",
+      "status": 200,
+      "title": "성남복정2 A1블록 신혼희망타운(공공분양)(본청약) 청약 자격 판정",
+      "rows": 4
+    },
+    {
+      "house_manage_no": "2026820009",
+      "status": 200,
+      "title": "남양주진접2지구 A-4블록 신혼희망타운(공공분양) 잔여세대 추가입주자모집공고 청약 자격 판정",
+      "rows": 1
+    },
+    {
+      "house_manage_no": "2026820010",
+      "status": 200,
+      "title": "인천계양 A17블록 신혼희망타운(공공분양)(본청약) 청약 자격 판정",
+      "rows": 3
+    },
+    {
+      "house_manage_no": "2026820011",
+      "status": 200,
+      "title": "시흥하중지구 A-4블록 신혼희망타운(공공분양) 추가입주자모집 청약 자격 판정",
+      "rows": 2
+    },
+    {
+      "house_manage_no": "2026820012",
+      "status": 200,
+      "title": "시흥하중지구 A1블록 신혼희망타운(공공분양) 추가입주자모집공고 청약 자격 판정",
+      "rows": 3
+    }
+  ],
+  "links": 84,
+  "pairs": [
+    {
+      "notice": "2026000103",
+      "profile": "empty",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 2.862,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "다자녀가구",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신혼부부",
+                "UNVERIFIABLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "노부모 부양",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 12
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000103",
+      "profile": "partial",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.836,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "다자녀가구",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신혼부부",
+                "UNVERIFIABLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "노부모 부양",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 12
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000103",
+      "profile": "full",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.847,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "다자녀가구",
+                "INELIGIBLE"
+              ],
+              [
+                "신혼부부",
+                "INELIGIBLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "노부모 부양",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 12
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000202",
+      "profile": "empty",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.847,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "다자녀가구",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신혼부부",
+                "UNVERIFIABLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "노부모 부양",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 11
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000202",
+      "profile": "partial",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.835,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ],
+              [
+                "다자녀가구",
+                "NEED_INFO"
+              ],
+              [
+                "신혼부부",
+                "NEED_INFO"
+              ],
+              [
+                "생애최초",
+                "NEED_INFO"
+              ],
+              [
+                "노부모 부양",
+                "NEED_INFO"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "NEED_INFO"
+              ]
+            ],
+            "n_checklist": 11
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000202",
+      "profile": "full",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.832,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ],
+              [
+                "다자녀가구",
+                "INELIGIBLE"
+              ],
+              [
+                "신혼부부",
+                "UNVERIFIABLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "노부모 부양",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 11
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000314",
+      "profile": "empty",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.844,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "다자녀가구",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신혼부부",
+                "UNVERIFIABLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 9
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000314",
+      "profile": "partial",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.832,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ],
+              [
+                "다자녀가구",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신혼부부",
+                "UNVERIFIABLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 9
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000314",
+      "profile": "full",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.831,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ],
+              [
+                "다자녀가구",
+                "INELIGIBLE"
+              ],
+              [
+                "신혼부부",
+                "INELIGIBLE"
+              ],
+              [
+                "생애최초",
+                "UNVERIFIABLE"
+              ],
+              [
+                "기관추천",
+                "UNVERIFIABLE"
+              ],
+              [
+                "신생아",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 9
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000401",
+      "profile": "empty",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.849,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ]
+            ],
+            "n_checklist": 4
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000401",
+      "profile": "partial",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.832,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ]
+            ],
+            "n_checklist": 4
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000401",
+      "profile": "full",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.829,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ]
+            ],
+            "n_checklist": 4
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000444",
+      "profile": "empty",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.845,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ]
+            ],
+            "n_checklist": 3
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000444",
+      "profile": "partial",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.836,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ]
+            ],
+            "n_checklist": 3
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026000444",
+      "profile": "full",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.831,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 3
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026820006",
+      "profile": "empty",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.846,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "유형 미상",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 6
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026820006",
+      "profile": "partial",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.839,
+          "screen": {
+            "verdict": "UNVERIFIABLE",
+            "routes": [
+              [
+                "general",
+                "UNVERIFIABLE"
+              ],
+              [
+                "유형 미상",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 6
+          }
+        }
+      ]
+    },
+    {
+      "notice": "2026820006",
+      "profile": "full",
+      "attempts": [
+        {
+          "shown": true,
+          "seconds": 1.828,
+          "screen": {
+            "verdict": "NEED_INFO",
+            "routes": [
+              [
+                "general",
+                "NEED_INFO"
+              ],
+              [
+                "유형 미상",
+                "UNVERIFIABLE"
+              ]
+            ],
+            "n_checklist": 6
+          }
+        }
+      ]
+    }
+  ]
+}
