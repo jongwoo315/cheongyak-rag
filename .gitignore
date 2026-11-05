@@ -9,3 +9,5 @@ data/raw/
 .DS_Store
 data/processed/
 data/cache/
+node_modules/
+.next/
