@@ -32,6 +32,7 @@ log = logging.getLogger(__name__)
 # ponytail: 판정을 한 번에 하나씩 돌린다. 동시 판정이 필요하면 구성 요소마다 잠금을 건다 (#85)
 _LOCK = threading.Lock()
 NO_DETAIL = "판정 서비스를 지금 쓸 수 없다"
+ITEM_FAILED = "이 질의의 판정에 실패했다"
 
 
 @lru_cache
@@ -157,8 +158,13 @@ def verdict(
         raise HTTPException(503, f"DB 오류: {type(e).__name__}") from e
     if traced.trace_error:
         log.error("trace 행 쓰기 실패: %s", traced.trace_error)
+    answer = dataclasses.asdict(traced.answer)
+    for item in answer["checklist"]:
+        if item["error"]:  # 예외 문구에 요청 id·조직 정보가 섞일 수 있어 브라우저에는 안 보낸다
+            log.error("체크리스트 항목 판정 실패 (%s): %s", item["axis"], item["error"])
+            item["error"] = ITEM_FAILED
     return {
-        **dataclasses.asdict(traced.answer),
+        **answer,
         "trace_id": traced.trace_id,
         "trace_error": "trace 행을 쓰지 못했다" if traced.trace_error else None,
     }

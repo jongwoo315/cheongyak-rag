@@ -105,6 +105,14 @@ def test_hard_api_error_is_503(make, hmn):
     assert r.status_code == 503 and "insufficient_quota" not in r.text  # 내부 오류 문구를 숨긴다
 
 
+def test_failed_checklist_item_error_text_is_hidden(make, hmn):
+    client, _ = make([_reply("INELIGIBLE"), RuntimeError("org-secret-123")])
+    r = _post(client, hmn, {})
+    assert r.status_code == 200 and "org-secret-123" not in r.text
+    errors = [i["error"] for i in r.json()["checklist"] if i["error"]]
+    assert errors and set(errors) == {api.ITEM_FAILED}
+
+
 def test_row_write_failure_still_returns_200_with_trace_error(make, hmn, monkeypatch):
     def boom(engine, row):
         raise RuntimeError("disk full")
