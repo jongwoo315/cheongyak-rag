@@ -113,6 +113,13 @@ def test_failed_checklist_item_error_text_is_hidden(make, hmn):
     assert errors and set(errors) == {api.ITEM_FAILED}
 
 
+def test_all_items_failing_is_503_not_a_null_verdict(make, hmn):
+    client, _ = make([RuntimeError("org-secret-123")])
+    r = _post(client, hmn, {})
+    assert r.status_code == 503 and r.json()["detail"] == api.NO_DETAIL
+    assert "org-secret-123" not in r.text
+
+
 def test_row_write_failure_still_returns_200_with_trace_error(make, hmn, monkeypatch):
     def boom(engine, row):
         raise RuntimeError("disk full")

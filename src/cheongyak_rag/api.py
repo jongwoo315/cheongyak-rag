@@ -159,6 +159,10 @@ def verdict(
     if traced.trace_error:
         log.error("trace 행 쓰기 실패: %s", traced.trace_error)
     answer = dataclasses.asdict(traced.answer)
+    if answer["checklist"] and all(i["error"] for i in answer["checklist"]):
+        # 질의가 전부 실패하면 verdict가 null이라 「판정을 낼 근거가 없다」로 읽힌다. 장애를 알린다
+        log.error("체크리스트 항목 %d개 전부 판정 실패", len(answer["checklist"]))
+        raise HTTPException(503, NO_DETAIL)
     for item in answer["checklist"]:
         if item["error"]:  # 예외 문구에 요청 id·조직 정보가 섞일 수 있어 브라우저에는 안 보낸다
             log.error("체크리스트 항목 판정 실패 (%s): %s", item["axis"], item["error"])
