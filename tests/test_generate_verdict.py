@@ -421,6 +421,7 @@ def test_cli_prints_seven_axes_and_each_verdict_line(pg_engine, tmp_path, capsys
         embedder=FakeEmbedder(dim=1536),
         client=FakeChat([_echo()]),
         cache_path=tmp_path / "c.jsonl",
+        trace_key="k",
     )
     out = capsys.readouterr().out
     assert code == 0
@@ -444,6 +445,7 @@ def test_cli_prints_the_guarded_verdict_with_the_original_one(pg_engine, tmp_pat
         embedder=FakeEmbedder(dim=1536),
         client=FakeChat([_echo("ELIGIBLE")]),
         cache_path=tmp_path / "c.jsonl",
+        trace_key="k",
     )
     out = capsys.readouterr().out
     assert code == 0 and "판정: ELIGIBLE" not in out
@@ -456,7 +458,8 @@ def test_cli_exits_2_for_unknown_notice_and_bad_profile(pg_engine, tmp_path):
 
     pf = tmp_path / "p.json"
     pf.write_text("{}", encoding="utf-8")
-    kw = {"engine": pg_engine, "embedder": FakeEmbedder(dim=1536), "client": FakeChat([_echo()])}
+    kw = {"engine": pg_engine, "embedder": FakeEmbedder(dim=1536), "client": FakeChat([_echo()]),
+          "trace_key": "k"}  # fmt: skip
     assert vd.main(["없음", "--profile", str(pf)], cache_path=tmp_path / "c", **kw) == 2
     pf.write_text('{"nope": 1}', encoding="utf-8")
     assert vd.main(["없음", "--profile", str(pf)], cache_path=tmp_path / "c", **kw) == 2

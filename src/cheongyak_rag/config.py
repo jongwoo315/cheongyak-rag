@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     law_oc: str = ""
     data_go_kr_key: str = ""
 
+    # trace — 프로필 해시(HMAC) 비밀 키. 비어 있으면 판정 CLI가 흐름 전에 멈춘다
+    trace_hash_key: str = ""
+
     log_level: str = "INFO"
 
 

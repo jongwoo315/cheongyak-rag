@@ -1,0 +1,834 @@
+{
+  "run_at": "2026-11-05T00:50:04+09:00",
+  "model": "gpt-5.4-mini",
+  "system_sha": "92f338a4",
+  "notices": [
+    "2026000103",
+    "2026000202",
+    "2026000314",
+    "2026000401",
+    "2026000444",
+    "2026820006"
+  ],
+  "profiles": [
+    "full",
+    "partial",
+    "empty"
+  ],
+  "retry": false,
+  "stop": null,
+  "symptoms": {
+    "queries": 20,
+    "new_rows": 20,
+    "A": 0,
+    "B": 0,
+    "diffs_b": [],
+    "stats": {
+      "status": {
+        "ok": 19,
+        "error": 1
+      },
+      "errors": [
+        "NoticeNotFound: 공고 0000000000 (pblanc_no=None) 없음"
+      ],
+      "size_median": 25900.5,
+      "size_max": 38878,
+      "seconds_median": 0.09225524961948395
+    },
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "leaks": {
+      "C": [],
+      "D": [],
+      "masked": [
+        {
+          "id": 42,
+          "n": 1
+        },
+        {
+          "id": 43,
+          "n": 0
+        },
+        {
+          "id": 44,
+          "n": 0
+        },
+        {
+          "id": 45,
+          "n": 1
+        },
+        {
+          "id": 46,
+          "n": 1
+        },
+        {
+          "id": 47,
+          "n": 0
+        },
+        {
+          "id": 48,
+          "n": 2
+        },
+        {
+          "id": 49,
+          "n": 1
+        },
+        {
+          "id": 50,
+          "n": 0
+        },
+        {
+          "id": 51,
+          "n": 1
+        },
+        {
+          "id": 52,
+          "n": 1
+        },
+        {
+          "id": 53,
+          "n": 0
+        },
+        {
+          "id": 54,
+          "n": 0
+        },
+        {
+          "id": 55,
+          "n": 1
+        },
+        {
+          "id": 56,
+          "n": 0
+        },
+        {
+          "id": 57,
+          "n": 0
+        },
+        {
+          "id": 58,
+          "n": 1
+        },
+        {
+          "id": 59,
+          "n": 0
+        },
+        {
+          "id": 60,
+          "n": 0
+        },
+        {
+          "id": 61,
+          "n": 1
+        }
+      ],
+      "derived": [
+        {
+          "id": 42,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "1년2월0일",
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 43,
+          "profile": "partial",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 44,
+          "profile": "empty",
+          "found": [
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일"
+          ]
+        },
+        {
+          "id": 45,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년6월3일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 46,
+          "profile": "partial",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년6월3일",
+            "1년2월0일",
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 47,
+          "profile": "empty",
+          "found": [
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일"
+          ]
+        },
+        {
+          "id": 48,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년6월10일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 49,
+          "profile": "partial",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년6월10일",
+            "1년2월0일",
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 50,
+          "profile": "empty",
+          "found": [
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일"
+          ]
+        },
+        {
+          "id": 51,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "14년3월9일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 52,
+          "profile": "partial",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년5월28일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 53,
+          "profile": "empty",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 54,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 55,
+          "profile": "partial",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년7월2일",
+            "1년2월0일",
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 56,
+          "profile": "empty",
+          "found": [
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일"
+          ]
+        },
+        {
+          "id": 57,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년 5월 7일",
+            "14년2월19일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 58,
+          "profile": "partial",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "12년5월7일",
+            "1년2월0일",
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 59,
+          "profile": "empty",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "1년2월0일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        },
+        {
+          "id": 61,
+          "profile": "full",
+          "found": [
+            "0년10월0일",
+            "0년4월10일",
+            "1년2월0일",
+            "2023년 12월 31일",
+            "2024년 12월 31일",
+            "2024년 1월 1일",
+            "2년4월0일",
+            "4년0월21일",
+            "8년1월25일"
+          ]
+        }
+      ]
+    },
+    "diffs_e": [],
+    "dist_diffs": [],
+    "zones": {
+      "rows": "통과",
+      "hide": "통과",
+      "calls": "통과"
+    }
+  },
+  "usage": {
+    "calls": 0,
+    "retries": 0
+  },
+  "first_run": {
+    "calls": 0,
+    "retries": 0
+  },
+  "second_run": {
+    "calls": 0,
+    "retries": 0
+  },
+  "queries": [
+    {
+      "notice": "2026000103",
+      "profile": "full",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 2.2261830838397145,
+      "trace_id": 42,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000103",
+      "profile": "partial",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.11379420850425959,
+      "trace_id": 43,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000103",
+      "profile": "empty",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.09852558374404907,
+      "trace_id": 44,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000202",
+      "profile": "full",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.09295037481933832,
+      "trace_id": 45,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000202",
+      "profile": "partial",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.10239841602742672,
+      "trace_id": 46,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000202",
+      "profile": "empty",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.13216358330100775,
+      "trace_id": 47,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000314",
+      "profile": "full",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.12035787478089333,
+      "trace_id": 48,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000314",
+      "profile": "partial",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.0948911253362894,
+      "trace_id": 49,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000314",
+      "profile": "empty",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.08890049997717142,
+      "trace_id": 50,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000401",
+      "profile": "full",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.052433665841817856,
+      "trace_id": 51,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000401",
+      "profile": "partial",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.05050562508404255,
+      "trace_id": 52,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000401",
+      "profile": "empty",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.05410275049507618,
+      "trace_id": 53,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000444",
+      "profile": "full",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.04513354133814573,
+      "trace_id": 54,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000444",
+      "profile": "partial",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.05468837544322014,
+      "trace_id": 55,
+      "trace_error": null
+    },
+    {
+      "notice": "2026000444",
+      "profile": "empty",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.05209774989634752,
+      "trace_id": 56,
+      "trace_error": null
+    },
+    {
+      "notice": "2026820006",
+      "profile": "full",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.09156012441962957,
+      "trace_id": 57,
+      "trace_error": null
+    },
+    {
+      "notice": "2026820006",
+      "profile": "partial",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.09602795913815498,
+      "trace_id": 58,
+      "trace_error": null
+    },
+    {
+      "notice": "2026820006",
+      "profile": "empty",
+      "extra": false,
+      "ok": true,
+      "error": null,
+      "seconds": 0.07777445763349533,
+      "trace_id": 59,
+      "trace_error": null
+    },
+    {
+      "notice": "0000000000",
+      "profile": "full",
+      "extra": true,
+      "ok": false,
+      "error": "NoticeNotFound: 공고 0000000000 (pblanc_no=None) 없음",
+      "seconds": 0.0018984591588377953
+    },
+    {
+      "notice": "2026000103",
+      "profile": "full",
+      "extra": true,
+      "ok": true,
+      "error": null,
+      "seconds": 0.09515229240059853,
+      "trace_id": 61,
+      "trace_error": null
+    }
+  ],
+  "rows": [
+    {
+      "id": 42,
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 2.221713208593428,
+      "size": 36842
+    },
+    {
+      "id": 43,
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "profile_hash": "42fe8f8b3a7a",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.11020550038665533,
+      "size": 38878
+    },
+    {
+      "id": 44,
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "profile_hash": "026ebfe9ffe7",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.09539395850151777,
+      "size": 38286
+    },
+    {
+      "id": 45,
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.08979600016027689,
+      "size": 38705
+    },
+    {
+      "id": 46,
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "profile_hash": "42fe8f8b3a7a",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.09887983277440071,
+      "size": 37724
+    },
+    {
+      "id": 47,
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "profile_hash": "026ebfe9ffe7",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.12776579149067402,
+      "size": 38388
+    },
+    {
+      "id": 48,
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.11591937486082315,
+      "size": 28804
+    },
+    {
+      "id": 49,
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "profile_hash": "42fe8f8b3a7a",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.09067320916801691,
+      "size": 31975
+    },
+    {
+      "id": 50,
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "profile_hash": "026ebfe9ffe7",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.08585512544959784,
+      "size": 30224
+    },
+    {
+      "id": 51,
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.05034041590988636,
+      "size": 13289
+    },
+    {
+      "id": 52,
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "profile_hash": "42fe8f8b3a7a",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.04851175006479025,
+      "size": 13177
+    },
+    {
+      "id": 53,
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "profile_hash": "026ebfe9ffe7",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.052090791054069996,
+      "size": 13390
+    },
+    {
+      "id": 54,
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.043021959252655506,
+      "size": 10706
+    },
+    {
+      "id": 55,
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "profile_hash": "42fe8f8b3a7a",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.048477958887815475,
+      "size": 12165
+    },
+    {
+      "id": 56,
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "profile_hash": "026ebfe9ffe7",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.04923637490719557,
+      "size": 11266
+    },
+    {
+      "id": 57,
+      "house_manage_no": "2026820006",
+      "pblanc_no": "2026820006",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "NEED_INFO",
+      "seconds": 0.08805566746741533,
+      "size": 20373
+    },
+    {
+      "id": 58,
+      "house_manage_no": "2026820006",
+      "pblanc_no": "2026820006",
+      "profile_hash": "42fe8f8b3a7a",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.09251129254698753,
+      "size": 22997
+    },
+    {
+      "id": 59,
+      "house_manage_no": "2026820006",
+      "pblanc_no": "2026820006",
+      "profile_hash": "026ebfe9ffe7",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.07513545826077461,
+      "size": 20273
+    },
+    {
+      "id": 60,
+      "house_manage_no": "0000000000",
+      "pblanc_no": null,
+      "profile_hash": "d30bc73028ba",
+      "status": "error",
+      "error": "NoticeNotFound: 공고 0000000000 (pblanc_no=None) 없음",
+      "verdict": null,
+      "seconds": 0.0010688751935958862,
+      "size": 229
+    },
+    {
+      "id": 61,
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "profile_hash": "d30bc73028ba",
+      "status": "ok",
+      "error": null,
+      "verdict": "UNVERIFIABLE",
+      "seconds": 0.09152504242956638,
+      "size": 36842
+    }
+  ],
+  "base": 41
+}
