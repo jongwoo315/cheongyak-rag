@@ -11,7 +11,10 @@ async function get<T>(path: string): Promise<T | null> {
 }
 
 export async function listNotices(): Promise<NoticeSummary[]> {
-  return (await get<NoticeSummary[]>("/api/notices")) ?? [];
+  // 목록 경로의 404는 「공고 0건」이 아니라 API_BASE_URL이 엉뚱한 서버를 가리킨다는 뜻이다
+  const list = await get<NoticeSummary[]>("/api/notices");
+  if (list === null) throw new Error(`FastAPI /api/notices → 404 (API_BASE_URL=${apiBase()})`);
+  return list;
 }
 
 export const getNotice = (houseManageNo: string) =>
