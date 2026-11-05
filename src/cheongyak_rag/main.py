@@ -4,9 +4,11 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cheongyak_rag.api import router as api_router
 from cheongyak_rag.db import get_session
 
 app = FastAPI(title="주택청약 RAG", version="0.1.0")
+app.include_router(api_router)
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
