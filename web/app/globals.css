@@ -134,3 +134,78 @@ button:disabled {
   color: var(--err);
   font-weight: 600;
 }
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.v-ELIGIBLE {
+  color: #067647;
+  border-color: #067647;
+}
+.v-CONDITIONAL {
+  color: #b54708;
+  border-color: #b54708;
+}
+.v-INELIGIBLE {
+  color: var(--err);
+  border-color: var(--err);
+}
+.v-NEED_INFO,
+.v-UNVERIFIABLE,
+.v-NONE {
+  color: var(--muted);
+}
+.result h3 {
+  font-size: 1.05rem;
+  margin: 24px 0 8px;
+}
+.global {
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+.item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+}
+.item h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+.item p {
+  margin: 6px 0;
+}
+.item .query,
+.item .label,
+.note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.item ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.evidence {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.evidence pre {
+  white-space: pre-wrap;
+  font: inherit;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--line) 30%, transparent);
+  padding: 8px;
+  border-radius: 6px;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+details summary {
+  cursor: pointer;
+  margin-top: 6px;
+}

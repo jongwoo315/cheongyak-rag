@@ -81,7 +81,13 @@ export type Answer = {
   special: Route[];
   applicable: Route[];
   checklist: ChecklistItem[];
-  score: { total?: Range; missing?: string[]; [k: string]: unknown };
+  score: {
+    homeless?: Range;
+    dependents?: Range;
+    savings?: Range;
+    total?: Range;
+    missing?: string[];
+  };
   questions: unknown[];
   trace_id: number | null;
   trace_error: string | null;
