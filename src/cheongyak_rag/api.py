@@ -3,14 +3,24 @@
 Next.js는 이 API만 부른다. 판정은 CLI와 같은 `trace.run_traced`를 부른다.
 """
 
+import dataclasses
+from dataclasses import dataclass
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Any
 
 import sqlalchemy as sa
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import SQLAlchemyError
 
+from cheongyak_rag import profile as prof
+from cheongyak_rag import trace
 from cheongyak_rag.config import settings
+from cheongyak_rag.generate.answer import GenCache, HardApiError, check_model, make_client
+from cheongyak_rag.generate.evaluate import RetryingClient
+from cheongyak_rag.generate.verdict import cache_path_for
+from cheongyak_rag.retrieval import axes
+from cheongyak_rag.retrieval.embed import Embedder
 
 router = APIRouter(prefix="/api")
 
@@ -69,3 +79,70 @@ def get_notice(house_manage_no: str, engine: EngineDep) -> dict:
         ).mappings()
         notice["models"] = [_plain(dict(m)) for m in models]
     return notice
+
+
+@dataclass
+class VerdictDeps:
+    embedder: Any
+    client: Any
+    cache: GenCache
+    model: str
+    key: str  # trace 해시 키. 비어 있으면 판정 요청은 흐름 전에 503이다
+
+
+@lru_cache
+def get_verdict_deps() -> VerdictDeps:
+    """`verdict.main`과 같은 임베더·클라이언트·캐시를 처음 요청 때 한 번 만든다."""
+    model = settings.openai_gen_model
+    try:
+        check_model(model)
+        client = RetryingClient(make_client())
+    except HardApiError as e:
+        raise HTTPException(503, f"판정을 할 수 없다: {e}") from e
+    return VerdictDeps(
+        Embedder(settings.openai_embed_model),
+        client,
+        GenCache(cache_path_for(model)),
+        model,
+        settings.trace_hash_key,
+    )
+
+
+@router.post("/notices/{house_manage_no}/verdict")
+def verdict(
+    house_manage_no: str,
+    engine: EngineDep,
+    deps: Annotated[VerdictDeps, Depends(get_verdict_deps)],
+    body: Annotated[dict, Body()],
+) -> dict:
+    """본문 = 프로필 JSON(#77 칸). 응답 = `Answer` + `trace_id` · `trace_error`.
+
+    동기 함수라 FastAPI 스레드풀에서 돈다 — `run_traced`가 동기 `Engine`을 쓴다.
+    """
+    if not deps.key.strip():  # 행 없이 응답만 내면 기록이 조용히 빠진다 — 흐름 전에 멈춘다
+        raise HTTPException(503, "TRACE_HASH_KEY가 없다")
+    try:
+        profile = prof.Profile.from_dict(body)
+        traced = trace.run_traced(
+            engine,
+            deps.embedder,
+            deps.client,
+            deps.model,
+            house_manage_no,
+            profile,
+            cache=deps.cache,
+            key=deps.key,
+        )
+    except prof.ProfileError as e:
+        raise HTTPException(422, str(e)) from e
+    except axes.NoticeNotFound as e:
+        raise HTTPException(404, str(e)) from e
+    except HardApiError as e:
+        raise HTTPException(503, f"판정을 할 수 없다: {e}") from e
+    except SQLAlchemyError as e:
+        raise HTTPException(503, f"DB 오류: {type(e).__name__}") from e
+    return {
+        **dataclasses.asdict(traced.answer),
+        "trace_id": traced.trace_id,
+        "trace_error": traced.trace_error,
+    }
