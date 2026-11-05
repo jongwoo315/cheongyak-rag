@@ -43,6 +43,22 @@ uv run uvicorn cheongyak_rag.main:app --reload
 
 `pgvector: "missing"` 이면 마이그레이션이 안 돈 것.
 
+### 화면 띄우기
+
+FastAPI를 위 명령으로 띄운 채(기본 포트 8000) 다른 터미널에서 Next.js를 띄운다. 판정은 `.env`에
+`OPENAI_API_KEY`와 `TRACE_HASH_KEY`가 있어야 한다.
+
+```bash
+cd web
+cp .env.example .env.local    # API_BASE_URL — FastAPI 주소, 기본 http://127.0.0.1:8000
+npm ci
+npm run dev                   # http://localhost:3000
+```
+
+- 브라우저는 FastAPI를 직접 부르지 않는다. Next.js 서버가 `API_BASE_URL`로 넘긴다
+- FastAPI를 다른 포트로 띄웠으면 `API_BASE_URL=http://127.0.0.1:8171 npm run dev`처럼 넘긴다
+- 배포용 실행은 `npm run build` 뒤 `npm run start -- -p 3184`
+
 ## 검증
 
 ```bash
