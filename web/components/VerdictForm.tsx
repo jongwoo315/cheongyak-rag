@@ -101,7 +101,7 @@ export default function VerdictForm({ houseManageNo }: { houseManageNo: string }
         </button>
       </form>
       <div aria-live="polite">
-        {loading && <p data-testid="loading">판정 중… 처음 묻는 조합은 1분 가까이 걸릴 수 있습니다.</p>}
+        {loading && <p data-testid="loading">판정 중… 처음 묻는 조합은 오래 걸릴 수 있습니다.</p>}
         {status.kind === "error" && (
           <p role="alert" className="error" data-testid="error">
             {status.message}
