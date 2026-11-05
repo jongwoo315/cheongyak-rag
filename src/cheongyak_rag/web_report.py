@@ -131,12 +131,17 @@ def judge(exp: dict, raw: dict, after: dict) -> dict:
             why.append(f"주택형 표 행 {p.get('rows')} ≠ DB {n['n_models']}")
         if why:
             failed.append({"house_manage_no": p["house_manage_no"], "why": why})
+    # 측정이 중간에 끊겨 페이지가 덜 들어와도 F 0이 통과로 읽히지 않게 한다
+    pages_missing = sorted(set(by_hmn) - {p["house_manage_no"] for p in raw["pages"]})
     s1 = {
         "F": len(failed),
+        "pages_missing": pages_missing,
         "L": raw["links"],
         "n_pages": len(raw["pages"]),
         "failed": failed,
-        "band": "통과" if not failed and raw["links"] == len(exp["notices"]) else "미완",
+        "band": "통과"
+        if not failed and not pages_missing and raw["links"] == len(exp["notices"])
+        else "미완",
     }
 
     g1, still, diff, secs = [], [], [], []
@@ -159,7 +164,13 @@ def judge(exp: dict, raw: dict, after: dict) -> dict:
         )
         if not _same(want, final["screen"]):
             diff.append({"pair": key, "screen": final["screen"], "expected": want})
-    if diff or still:
+    done = {(pr["notice"], pr["profile"]) for pr in raw["pairs"]}
+    pairs_missing = [
+        f"{p['notice']}×{p['profile']}"
+        for p in exp["pairs"]
+        if (p["notice"], p["profile"]) not in done
+    ]
+    if diff or still or pairs_missing:
         band2 = "미완"
     elif g1:
         band2 = "다시 잰다"
@@ -171,6 +182,7 @@ def judge(exp: dict, raw: dict, after: dict) -> dict:
         "G1_after_retry": len(still),
         "G2": len(diff),
         "diff": diff,
+        "pairs_missing": pairs_missing,
         "n_pairs": len(raw["pairs"]),
         "retries": retries,
         "seconds_median": statistics.median(secs) if secs else None,
@@ -228,6 +240,8 @@ def render(exp: dict, res: dict) -> str:
         "",
         "- 성공 = HTTP 200 · `<title>`에 공고 이름 · 주택형 표 행 수 = DB `notice_models` 행 수",
     ]
+    if s1["pages_missing"]:
+        out.append(f"- 측정되지 않은 공고 페이지: {', '.join(s1['pages_missing'])}")
     for f in s1["failed"]:
         out.append(f"- 실패 {f['house_manage_no']}: {'; '.join(f['why'])}")
     out += [
@@ -248,6 +262,8 @@ def render(exp: dict, res: dict) -> str:
     ]
     if s2["G1_pairs"]:
         out.append(f"- 첫 질의에 안 뜬 쌍: {', '.join(s2['G1_pairs'])}")
+    if s2["pairs_missing"]:
+        out.append(f"- 측정되지 않은 쌍: {', '.join(s2['pairs_missing'])}")
     for d in s2["diff"]:
         out += [
             f"- 다른 쌍 {d['pair']}",

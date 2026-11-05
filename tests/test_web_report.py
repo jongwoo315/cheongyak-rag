@@ -72,6 +72,18 @@ def test_link_count_other_than_the_notice_count_is_incomplete():
     assert wr.judge(_exp(), _raw(links=1), _after())["s1"]["band"] == "미완"
 
 
+def test_pages_that_were_not_measured_are_incomplete_not_pass():
+    r = wr.judge(_exp(), _raw(pages=[_page("A")]), _after())["s1"]
+    assert r["F"] == 0 and r["pages_missing"] == ["B"] and r["band"] == "미완"
+
+
+def test_pairs_that_were_not_measured_are_incomplete_not_pass():
+    raw = _raw()
+    raw["pairs"] = []
+    r = wr.judge(_exp(), raw, _after(new=0))["s2"]
+    assert r["pairs_missing"] == ["A×full"] and r["band"] == "미완"
+
+
 def test_different_screen_value_is_g2_and_incomplete():
     bad = {"shown": True, "seconds": 1.0, "screen": _screen(verdict="ELIGIBLE")}
     r = wr.judge(_exp(), _raw(attempts=[bad]), _after())["s2"]
