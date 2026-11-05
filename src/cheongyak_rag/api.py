@@ -155,6 +155,9 @@ def verdict(
         log.error("판정 중 API 오류: %s", e)
         raise HTTPException(503, NO_DETAIL) from e
     except SQLAlchemyError as e:
+        log.exception(
+            "판정 중 DB 오류"
+        )  # 스키마·코드 결함도 여기로 와서 로그가 없으면 원인을 못 찾는다
         raise HTTPException(503, f"DB 오류: {type(e).__name__}") from e
     if traced.trace_error:
         log.error("trace 행 쓰기 실패: %s", traced.trace_error)
