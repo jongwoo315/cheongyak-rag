@@ -4,6 +4,8 @@ Next.js는 이 API만 부른다. 판정은 CLI와 같은 `trace.run_traced`를 �
 """
 
 import dataclasses
+import logging
+import threading
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Annotated, Any
@@ -23,6 +25,13 @@ from cheongyak_rag.retrieval import axes
 from cheongyak_rag.retrieval.embed import Embedder
 
 router = APIRouter(prefix="/api")
+log = logging.getLogger(__name__)
+
+# 임베더·클라이언트·캐시는 CLI처럼 한 스레드를 전제로 만들어졌다
+# (지연 시간 기록, 캐시 파일 이어 쓰기).
+# ponytail: 판정을 한 번에 하나씩 돌린다. 동시 판정이 필요하면 구성 요소마다 잠금을 건다 (#85)
+_LOCK = threading.Lock()
+NO_DETAIL = "판정 서비스를 지금 쓸 수 없다"
 
 
 @lru_cache
@@ -94,18 +103,20 @@ class VerdictDeps:
 def get_verdict_deps() -> VerdictDeps:
     """`verdict.main`과 같은 임베더·클라이언트·캐시를 처음 요청 때 한 번 만든다."""
     model = settings.openai_gen_model
-    try:
-        check_model(model)
-        client = RetryingClient(make_client())
-    except HardApiError as e:
-        raise HTTPException(503, f"판정을 할 수 없다: {e}") from e
-    return VerdictDeps(
-        Embedder(settings.openai_embed_model),
-        client,
-        GenCache(cache_path_for(model)),
-        model,
-        settings.trace_hash_key,
-    )
+    with _LOCK:
+        try:
+            check_model(model)
+            client = RetryingClient(make_client())
+        except HardApiError as e:
+            log.error("판정 준비 실패: %s", e)  # 키·결제 정보가 섞일 수 있어 브라우저에는 안 보낸다
+            raise HTTPException(503, NO_DETAIL) from e
+        return VerdictDeps(
+            Embedder(settings.openai_embed_model),
+            client,
+            GenCache(cache_path_for(model)),
+            model,
+            settings.trace_hash_key,
+        )
 
 
 @router.post("/notices/{house_manage_no}/verdict")
@@ -123,26 +134,31 @@ def verdict(
         raise HTTPException(503, "TRACE_HASH_KEY가 없다")
     try:
         profile = prof.Profile.from_dict(body)
-        traced = trace.run_traced(
-            engine,
-            deps.embedder,
-            deps.client,
-            deps.model,
-            house_manage_no,
-            profile,
-            cache=deps.cache,
-            key=deps.key,
-        )
+        axes.load_facts(engine, house_manage_no)  # 없는 공고는 trace 행을 만들기 전에 404
+        with _LOCK:
+            traced = trace.run_traced(
+                engine,
+                deps.embedder,
+                deps.client,
+                deps.model,
+                house_manage_no,
+                profile,
+                cache=deps.cache,
+                key=deps.key,
+            )
     except prof.ProfileError as e:
         raise HTTPException(422, str(e)) from e
     except axes.NoticeNotFound as e:
         raise HTTPException(404, str(e)) from e
     except HardApiError as e:
-        raise HTTPException(503, f"판정을 할 수 없다: {e}") from e
+        log.error("판정 중 API 오류: %s", e)
+        raise HTTPException(503, NO_DETAIL) from e
     except SQLAlchemyError as e:
         raise HTTPException(503, f"DB 오류: {type(e).__name__}") from e
+    if traced.trace_error:
+        log.error("trace 행 쓰기 실패: %s", traced.trace_error)
     return {
         **dataclasses.asdict(traced.answer),
         "trace_id": traced.trace_id,
-        "trace_error": traced.trace_error,
+        "trace_error": "trace 행을 쓰지 못했다" if traced.trace_error else None,
     }

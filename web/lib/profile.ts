@@ -46,7 +46,8 @@ const KEY = "cheongyak-profile";
 
 export function loadState(): FormState {
   try {
-    return JSON.parse(sessionStorage.getItem(KEY) ?? "{}") as FormState;
+    const v: unknown = JSON.parse(sessionStorage.getItem(KEY) ?? "{}");
+    return typeof v === "object" && v !== null && !Array.isArray(v) ? (v as FormState) : {};
   } catch {
     return {};
   }

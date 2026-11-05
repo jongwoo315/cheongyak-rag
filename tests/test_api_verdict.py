@@ -86,9 +86,10 @@ def test_body_that_is_not_an_object_is_422(make, hmn):
     assert _post(client, hmn, [1, 2]).status_code == 422
 
 
-def test_unknown_notice_is_404(make):
-    client, _ = make()
+def test_unknown_notice_is_404_and_leaves_no_trace_row(make, pg_engine):
+    client, chat = make()
     assert _post(client, "없는번호", {}).status_code == 404
+    assert chat.calls == [] and _n_traces(pg_engine) == 0
 
 
 def test_missing_trace_key_is_503_before_anything_runs(make, hmn, pg_engine):
@@ -101,7 +102,7 @@ def test_missing_trace_key_is_503_before_anything_runs(make, hmn, pg_engine):
 def test_hard_api_error_is_503(make, hmn):
     client, _ = make([HardApiError("insufficient_quota")])
     r = _post(client, hmn, {})
-    assert r.status_code == 503 and "insufficient_quota" in r.json()["detail"]
+    assert r.status_code == 503 and "insufficient_quota" not in r.text  # 내부 오류 문구를 숨긴다
 
 
 def test_row_write_failure_still_returns_200_with_trace_error(make, hmn, monkeypatch):
@@ -113,7 +114,8 @@ def test_row_write_failure_still_returns_200_with_trace_error(make, hmn, monkeyp
     r = _post(client, hmn, {})
     assert r.status_code == 200
     body = r.json()
-    assert body["trace_id"] is None and "disk full" in body["trace_error"]
+    assert body["trace_id"] is None and body["trace_error"]
+    assert "disk full" not in r.text  # DB 오류 문구를 숨긴다
     assert body["verdict"] == "INELIGIBLE"
 
 
