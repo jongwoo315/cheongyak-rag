@@ -60,7 +60,7 @@ export default function VerdictForm({ houseManageNo }: { houseManageNo: string }
   return (
     <>
       <form onSubmit={submit} data-ready={ready ? "true" : "false"} data-testid="profile-form">
-        <p className="hint">모르는 칸은 비워 두세요. 입력은 이 탭에만 남고 서버에 저장되지 않습니다.</p>
+        <p className="hint">모르는 칸은 비워 두세요. 입력은 이 탭에만 남습니다. 원본 프로필은 서버에 저장하지 않고, 판정 기록에는 프로필의 해시와 판정 결과가 남습니다.</p>
         <div className="fields">
           {FIELDS.map((f) => (
             <label key={f.name}>
