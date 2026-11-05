@@ -20,7 +20,7 @@ from cheongyak_rag import trace
 from cheongyak_rag.config import settings
 from cheongyak_rag.generate.answer import GenCache, HardApiError, check_model, make_client
 from cheongyak_rag.generate.evaluate import RetryingClient
-from cheongyak_rag.generate.verdict import cache_path_for
+from cheongyak_rag.generate.verdict import _notice_date, cache_path_for
 from cheongyak_rag.retrieval import axes
 from cheongyak_rag.retrieval.embed import Embedder
 
@@ -135,7 +135,9 @@ def verdict(
         raise HTTPException(503, "TRACE_HASH_KEY가 없다")
     try:
         profile = prof.Profile.from_dict(body)
-        axes.load_facts(engine, house_manage_no)  # 없는 공고는 trace 행을 만들기 전에 404
+        # 없는 공고와 모순된 프로필은 trace 행을 만들기 전에 404·422로 멈춘다
+        pblanc_no, _, _ = axes.load_facts(engine, house_manage_no)
+        prof.score(profile, _notice_date(engine, house_manage_no, pblanc_no))
         with _LOCK:
             traced = trace.run_traced(
                 engine,

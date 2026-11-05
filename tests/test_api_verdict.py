@@ -75,10 +75,11 @@ def test_bad_date_is_422(make, hmn):
     assert r.status_code == 422 and "birth_date" in r.json()["detail"]
 
 
-def test_contradicting_profile_is_422(make, hmn):
-    client, _ = make()
+def test_contradicting_profile_is_422_and_leaves_no_trace_row(make, hmn, pg_engine):
+    client, chat = make()
     r = _post(client, hmn, {"ever_owned": False, "homeless_since": "2020-01-01"})
     assert r.status_code == 422
+    assert chat.calls == [] and _n_traces(pg_engine) == 0
 
 
 def test_body_that_is_not_an_object_is_422(make, hmn):
