@@ -2,20 +2,24 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "청약 RAG 판정 흐름 — #83 PR #16",
+    "title": "청약 RAG 판정 흐름 — #84 PR #17",
     "locale": "ko",
     "quality_profile": "standard",
-    "output": ".archify/workflow-83-flow/83-flow.html",
+    "output": ".archify/workflow-84-flow/84-flow.html",
     "repository": {
       "url": "https://github.com/jongwoo315/cheongyak-rag",
       "provider": "github",
-      "revision": "ef18a43c60fd0ee7cb1e8ba390ce9bbfc56900bf"
+      "revision": "0fd1d564ab196940857acc20d644dd6a59b1b5e5"
     }
   },
   "lanes": [
     {
       "id": "ingest",
       "label": "데이터 적재"
+    },
+    {
+      "id": "web",
+      "label": "#84 화면 (Next.js + FastAPI)"
     },
     {
       "id": "input",
@@ -48,7 +52,7 @@
     },
     {
       "id": "measure",
-      "label": "측정 (jw 기준, #83)"
+      "label": "측정 (jw 기준, #84)"
     }
   ],
   "mainPath": [
@@ -317,8 +321,8 @@
       "col": 4,
       "type": "security",
       "label": "가리기",
-      "sublabel": "[새로] 프로필 날짜 → [프로필 값]",
-      "tag": "새로 생김",
+      "sublabel": "프로필 날짜 → [프로필 값]",
+      "tag": "그대로",
       "sources": [
         {
           "path": "src/cheongyak_rag/trace.py",
@@ -334,8 +338,8 @@
       "col": 5,
       "type": "database",
       "label": "traces 테이블",
-      "sublabel": "[새로] 질의 한 건 = 행 하나 · 프로필은 해시만",
-      "tag": "새로 생김",
+      "sublabel": "질의 한 건 = 행 하나 · 프로필은 해시만",
+      "tag": "그대로",
       "sources": [
         {
           "path": "alembic/versions/0005_traces.py",
@@ -352,53 +356,104 @@
       ]
     },
     {
-      "id": "mrun",
-      "lane": "measure",
-      "col": 3,
+      "id": "wpage",
+      "lane": "web",
+      "col": 0,
+      "type": "frontend",
+      "label": "공고 목록 · 공고 페이지",
+      "sublabel": "[새로] 서버에서 그린 HTML 84건",
+      "tag": "새로 생김",
+      "sources": [
+        {
+          "path": "web/app/notices/[houseManageNo]/page.tsx",
+          "line": 1,
+          "end_line": 89,
+          "label": "공고 페이지"
+        }
+      ]
+    },
+    {
+      "id": "wform",
+      "lane": "web",
+      "col": 1,
+      "type": "frontend",
+      "label": "프로필 입력 칸 15개",
+      "sublabel": "[새로] 탭 안에서 값 유지",
+      "tag": "새로 생김",
+      "sources": [
+        {
+          "path": "web/components/VerdictForm.tsx",
+          "line": 1,
+          "end_line": 114,
+          "label": "VerdictForm"
+        }
+      ]
+    },
+    {
+      "id": "wapi",
+      "lane": "web",
+      "col": 2,
       "type": "backend",
-      "label": "질의 20건 실행",
-      "sublabel": "[새로] 공고 6 × 프로필 3 + 없는 공고 1 + 같은 쌍 1",
+      "label": "판정 API",
+      "sublabel": "[새로] run_traced를 부른다 · 422·404·503",
       "tag": "새로 생김",
       "sources": [
         {
-          "path": "src/cheongyak_rag/generate/trace_report.py",
-          "line": 167,
-          "end_line": 215,
-          "label": "measure"
+          "path": "src/cheongyak_rag/api.py",
+          "line": 123,
+          "end_line": 175,
+          "label": "verdict"
         }
       ]
     },
     {
-      "id": "mrows",
+      "id": "wres",
+      "lane": "web",
+      "col": 5,
+      "type": "frontend",
+      "label": "결과 화면",
+      "sublabel": "[새로] 전역·경로별 판정 · 체크리스트 · 근거",
+      "tag": "새로 생김",
+      "sources": [
+        {
+          "path": "web/components/Result.tsx",
+          "line": 1,
+          "end_line": 156,
+          "label": "Result"
+        }
+      ]
+    },
+    {
+      "id": "m1",
       "lane": "measure",
-      "col": 4,
+      "col": 1,
       "type": "security",
-      "label": "행 수·내용 대조",
-      "sublabel": "[새로] 새 행 20 · 안 맞는 행 0",
+      "label": "공고 페이지 검사",
+      "sublabel": "[새로] 실패 0 / 84 · 링크 84",
       "tag": "새로 생김",
       "sources": [
         {
-          "path": "src/cheongyak_rag/generate/trace_report.py",
-          "line": 217,
-          "end_line": 245,
-          "label": "row_mismatches"
+          "path": "src/cheongyak_rag/web_report.py",
+          "line": 119,
+          "end_line": 213,
+          "label": "judge"
         }
       ]
     },
     {
-      "id": "mleak",
+      "id": "m2",
       "lane": "measure",
       "col": 5,
       "type": "security",
-      "label": "원본 날짜·해시 검사",
-      "sublabel": "[새로] 날짜 남은 행 0 · 해시 문제 0",
+      "label": "18쌍 화면 대조",
+      "sublabel": "[새로] 다른 쌍 0 · LLM 호출 0 · 새 행 18",
       "tag": "새로 생김",
       "sources": [
         {
-          "path": "src/cheongyak_rag/generate/trace_report.py",
-          "line": 261,
-          "end_line": 311,
-          "label": "leaks · hash_problems"
+          "path": "src/cheongyak_rag/web_report.py",
+          "line": 111,
+          "end_line": 118,
+          "label": "_same"
         }
       ]
     }
@@ -508,22 +563,47 @@
       "label": "ok 행"
     },
     {
-      "id": "t7",
-      "from": "traces",
-      "to": "mrows",
-      "label": "새 행"
+      "id": "w1",
+      "from": "notice",
+      "to": "wpage",
+      "label": "공고 조회 API"
     },
     {
-      "id": "t8",
-      "from": "traces",
-      "to": "mleak",
-      "label": "새 행"
+      "id": "w2",
+      "from": "wpage",
+      "to": "wform",
+      "label": "공고 고름"
     },
     {
-      "id": "t6",
-      "from": "mrun",
-      "to": "mrows",
-      "label": "질의 20건"
+      "id": "w3",
+      "from": "wform",
+      "to": "wapi",
+      "label": "프로필 JSON",
+      "variant": "emphasis"
+    },
+    {
+      "id": "w4",
+      "from": "wapi",
+      "to": "profile",
+      "label": "프로필"
+    },
+    {
+      "id": "w5",
+      "from": "b9",
+      "to": "wres",
+      "label": "응답"
+    },
+    {
+      "id": "w6",
+      "from": "wpage",
+      "to": "m1",
+      "label": "HTML"
+    },
+    {
+      "id": "w7",
+      "from": "wres",
+      "to": "m2",
+      "label": "화면 값"
     }
   ],
   "cards": [
@@ -531,10 +611,10 @@
       "dot": "amber",
       "title": "읽는 법",
       "items": [
-        "[새로]는 PR #15 대비 이번 PR이 더한 단계다",
-        "흐름 중간에 예외가 나도 traces에 error 행을 쓰고 예외를 다시 올린다",
-        "trace 저장은 판정 CLI가 부를 때만 돈다. 측정 리포트(#80·#81)는 행을 쓰지 않는다",
-        "측정 줄은 trace 코드를 부르지 않고 행 수·가리기·해시를 따로 다시 계산해 비교한다"
+        "[새로]는 PR #16 대비 이번 PR이 더한 단계다",
+        "판정 API는 CLI와 같은 run_traced를 불러 질의마다 traces 행을 쓴다. 없는 공고·모순된 프로필은 행을 쓰기 전에 404·422로 멈춘다",
+        "Next.js는 DB를 직접 읽지 않고 FastAPI만 부른다",
+        "측정 줄의 기대값은 실제 DB를 따로 읽은 값과 #81 측정 파일이다"
       ]
     }
   ]
