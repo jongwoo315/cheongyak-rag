@@ -145,7 +145,7 @@ uv run python -m cheongyak_rag.web_report after --deploy --api-url <API> \
 
 ### 징후 2 — 캐시 없는 판정 시간 (시간 제한 값의 근거)
 
-`CACHE_DIR`을 빈 임시 디렉터리로 두고 FastAPI를 다시 띄워, 공고 1건(더샵 분당하이스트 `2026000103`) × 프로필 3종 = 3쌍을 잰다. LLM을 실제로 불렀다. 측정 뒤 임시 디렉터리는 지웠다. 원본: `runs/85/cold/raw.json`·`last_run.json`.
+`CACHE_DIR`을 빈 임시 디렉터리로 두고 FastAPI를 다시 띄워, 공고 1건(더샵 분당하이스트 `2026000103`) × 프로필 3종 = 3쌍을 잰다. LLM을 실제로 불렀다. 측정 뒤 임시 디렉터리는 지웠다. 원본: `runs/85/cold/raw.json`. 쌍별 시간은 `raw.json`에서 읽는다. `last_run.json`은 로컬 모드(G2)로 계산돼 있어 아래 G2'·판정값 비교와 숫자가 다르다(G2 2) — G2'와 판정값 1/3은 `raw.json`을 배포 모드(`--deploy`)로 다시 계산한 값이다.
 
 | 쌍 | 걸린 시간 | 비고 |
 | --- | --- | --- |
