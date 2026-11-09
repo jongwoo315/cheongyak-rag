@@ -278,6 +278,8 @@ def _collect_link(
         sha256=hashlib.sha256(body).hexdigest(),
         note=note,
     )
+    if not body:
+        return row | {"result": "error", "error": "HTTP 200인데 본문이 비어 있다"}, None
     if magic == "unknown" and b"netfunnel" in body[:4096].lower():
         # 대기 페이지를 공고문으로 저장하면 이후 실행이 계속 재사용한다
         return row | {"result": "error", "error": "NetFUNNEL 대기 페이지가 첨부 대신 왔다"}, None

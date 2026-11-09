@@ -325,3 +325,11 @@ def test_second_link_crash_keeps_first_links_row(tmp_path, monkeypatch):
     assert [r["result"] for r in out.rows] == ["pdf", "error"]
     assert out.rows[1]["url"].endswith("atchmnflSn=7") and "disk full" in out.rows[1]["error"]
     assert out.new_downloads == 1  # 저장된 첫 링크는 센다
+
+
+def test_empty_body_is_error_not_other(tmp_path):
+    out = run(Site(doc=attach(b"", None)), tmp_path)
+    row = out.rows[0]
+    assert row["result"] == "error" and "비어" in row["error"] and row["path"] is None
+    assert not (tmp_path / "notices" / "quarantine").exists()
+    assert out.new_downloads == 0
