@@ -1,5 +1,4 @@
 import hashlib
-import itertools
 from pathlib import Path
 
 import httpx
@@ -150,6 +149,7 @@ def test_pdf_that_does_not_open_is_error_and_keeps_no_file(tmp_path):
     assert "PDF" in row["error"] and row["path"] is None
     assert row["bytes"] == len(body) and row["sha256"] == hashlib.sha256(body).hexdigest()
     assert not list((tmp_path / "notices").glob("*.pdf"))
+    assert (out.new_downloads, out.downloaded_bytes) == (1, len(body))  # 받았으나 저장은 안 했다
 
 
 def test_pdf_without_text_is_pdf_with_zero_chars(tmp_path):
@@ -158,11 +158,24 @@ def test_pdf_without_text_is_pdf_with_zero_chars(tmp_path):
     assert row["result"] == "pdf" and row["pages"] == 1 and row["text_chars"] == 0
 
 
+PAGE_LIMIT = len(WITH_LINK.encode("utf-8")) + 100  # 상세 페이지는 통과하고 첨부만 넘는 한도
+
+
 def test_size_limit_stops_download_and_counts_error(tmp_path, monkeypatch):
-    monkeypatch.setattr(nd, "MAX_BYTES", 100)
-    out = run(Site(doc=attach(b"%PDF-" + b"x" * 500)), tmp_path)
+    monkeypatch.setattr(nd, "MAX_BYTES", PAGE_LIMIT)
+
+    def chunks():  # Content-Length 없이 보내므로 받는 도중에 끊어야 한다
+        yield b"%PDF-"
+        for _ in range(10):
+            yield b"x" * PAGE_LIMIT
+
+    resp = httpx.Response(
+        200, content=chunks(), headers={"Content-Disposition": RFC5987.encode("utf-8")}
+    )
+    assert "content-length" not in resp.headers
+    out = run(Site(doc=resp), tmp_path)
     row = out.rows[0]
-    assert row["result"] == "error" and "50MB" in row["error"] and row["path"] is None
+    assert row["result"] == "error" and "받다 멈춤" in row["error"] and row["path"] is None
     assert out.new_downloads == 0
 
 
@@ -286,9 +299,11 @@ def test_notice_result_is_the_worst_of_its_links(tmp_path):
 
 
 def test_content_length_over_limit_is_refused_before_reading(tmp_path, monkeypatch):
-    monkeypatch.setattr(nd, "MAX_BYTES", 100)
-    out = run(Site(doc=attach(make_pdf())), tmp_path)  # make_pdf()는 100바이트를 넘는다
-    assert out.rows[0]["result"] == "error" and "받기 전에" in out.rows[0]["error"]
+    monkeypatch.setattr(nd, "MAX_BYTES", PAGE_LIMIT)
+    out = run(Site(doc=attach(b"%PDF-" + b"x" * PAGE_LIMIT)), tmp_path)
+    row = out.rows[0]
+    assert row["url"] == DOC_URL  # 상세 페이지가 아니라 첨부에서 막혔다
+    assert row["result"] == "error" and "받기 전에" in row["error"]
 
 
 def test_netfunnel_page_in_place_of_attachment_is_error_not_other(tmp_path):
@@ -300,10 +315,24 @@ def test_netfunnel_page_in_place_of_attachment_is_error_not_other(tmp_path):
 
 
 def test_total_time_limit_counts_as_timeout_and_retries(tmp_path, monkeypatch):
-    ticks = itertools.count(0, 500)  # 부를 때마다 500초가 지난다
-    monkeypatch.setattr(nd.time, "monotonic", lambda: next(ticks))
-    out = run(Site(doc=attach(make_pdf())), tmp_path)
+    clock = [0.0]
+    monkeypatch.setattr(nd.time, "monotonic", lambda: clock[0])
+
+    def slow():  # 첨부를 받는 도중에 500초가 지난다. 상세 페이지는 제때 온다
+        yield b"%PDF-"
+        clock[0] += 500
+        yield b"x" * 10
+
+    site = Site(
+        doc=[
+            httpx.Response(200, content=slow(), headers={"Content-Disposition": RFC5987.encode()})
+            for _ in range(5)
+        ]
+    )
+    out = run(site, tmp_path)
+    assert site.doc_requests == 5  # 첨부 시간 제한도 재시도 대상이다(통과 기준 7)
     assert out.rows[0]["result"] == "error" and "ReadTimeout" in out.rows[0]["error"]
+    assert "120" in out.rows[0]["error"]
 
 
 def test_second_link_crash_keeps_first_links_row(tmp_path, monkeypatch):
