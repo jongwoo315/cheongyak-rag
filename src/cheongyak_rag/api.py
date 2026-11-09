@@ -7,6 +7,7 @@ import dataclasses
 import logging
 import threading
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Annotated, Any
 
@@ -42,6 +43,27 @@ def get_engine() -> Engine:
 
 
 EngineDep = Annotated[Engine, Depends(get_engine)]
+
+# Asia/Seoul = UTC+9, 서머타임 없음. 고정 오프셋이라 서버리스 이미지에 tz 데이터가 없어도 된다
+KST = timezone(timedelta(hours=9))
+_BUMP = (
+    "INSERT INTO verdict_daily_count (day, count) VALUES (:d, 1)"
+    " ON CONFLICT (day) DO UPDATE SET count = verdict_daily_count.count + 1 RETURNING count"
+)
+
+
+def today_kst(now: datetime | None = None) -> date:
+    return (now or datetime.now(KST)).astimezone(KST).date()
+
+
+def _take_one_of_todays_limit(engine: Engine) -> None:
+    """오늘 판정 수를 1 올리고 한도를 넘었으면 429. 행 쓰기 한 번이라 인스턴스가 여럿이어도 맞다."""
+    limit = settings.verdict_daily_limit
+    with engine.begin() as conn:
+        used = conn.execute(sa.text(_BUMP), {"d": today_kst()}).scalar_one()
+    if used > limit:
+        raise HTTPException(429, f"오늘 판정 한도({limit}건)를 다 썼다. 내일 다시 시도해 달라")
+
 
 _LIST = (
     "SELECT house_manage_no, pblanc_no, house_nm, subscrpt_area_nm, rcrit_pblanc_de,"
@@ -138,6 +160,7 @@ def verdict(
         # 없는 공고와 모순된 프로필은 trace 행을 만들기 전에 404·422로 멈춘다
         pblanc_no, _, _ = axes.load_facts(engine, house_manage_no)
         prof.score(profile, _notice_date(engine, house_manage_no, pblanc_no))
+        _take_one_of_todays_limit(engine)  # 404·422 뒤, 흐름 전
         with _LOCK:
             traced = trace.run_traced(
                 engine,
