@@ -327,7 +327,13 @@ def collect_notice(
         if _reusable(prev):
             rows.append(dict(prev))
             continue
-        row, got = _collect_link(client, hm, pb, url, out_dir, sleep)
+        try:
+            row, got = _collect_link(client, hm, pb, url, out_dir, sleep)
+        except Exception as e:  # noqa: BLE001 — 한 링크가 죽어도 앞서 받은 링크의 줄을 남긴다
+            row, got = (
+                _row(hm, pb, url, result="error", error=f"{type(e).__name__}: {str(e)[:200]}"),
+                None,
+            )
         rows.append(row)
         if got is not None:
             new += 1

@@ -304,3 +304,24 @@ def test_total_time_limit_counts_as_timeout_and_retries(tmp_path, monkeypatch):
     monkeypatch.setattr(nd.time, "monotonic", lambda: next(ticks))
     out = run(Site(doc=attach(make_pdf())), tmp_path)
     assert out.rows[0]["result"] == "error" and "ReadTimeout" in out.rows[0]["error"]
+
+
+def test_second_link_crash_keeps_first_links_row(tmp_path, monkeypatch):
+    two = WITH_LINK.replace(
+        "</dl>",
+        f'<dd><a href="{DOC_URL.replace("atchmnflSn=6", "atchmnflSn=7")}">second</a></dd></dl>',
+    )
+    real_save = nd._save
+    calls = []
+
+    def flaky(path, body):
+        calls.append(path)
+        if len(calls) == 2:
+            raise OSError("disk full")
+        real_save(path, body)
+
+    monkeypatch.setattr(nd, "_save", flaky)
+    out = run(Site(page=two, doc=attach(make_pdf())), tmp_path)
+    assert [r["result"] for r in out.rows] == ["pdf", "error"]
+    assert out.rows[1]["url"].endswith("atchmnflSn=7") and "disk full" in out.rows[1]["error"]
+    assert out.new_downloads == 1  # 저장된 첫 링크는 센다
