@@ -114,7 +114,7 @@
 | `error` | 받기가 실패했거나(HTTP·시간 초과·크기 초과), PDF라는데 안 열린다 |
 
 - 링크가 둘 이상이면 링크마다 줄이 남고, 공고의 결과는 가장 나쁜 줄을 따른다(`error` > `other` > `hwp` > `pdf`)
-- `pdf`는 HTTP 200이고 앞 바이트가 `%PDF-`이며 `pymupdf`로 열려 쪽수가 1 이상일 때만이다. 셋 중 하나라도 아니면 `error`다
+- `pdf`는 HTTP 200이고 앞 바이트가 `%PDF-`이며 `pymupdf`로 열려 쪽수가 1 이상일 때만이다. 앞 바이트가 `%PDF-`가 아니면 `hwp`나 `other`로 격리하고, 앞 바이트가 `%PDF-`인데 안 열리거나 HTTP 200이 아니면 `error`다
 - 목록은 `data/raw/notices/manifest.jsonl`(링크 하나가 한 줄)이고, 격리한 파일은 `data/raw/notices/quarantine/`에 있다
 
 ## 용어
