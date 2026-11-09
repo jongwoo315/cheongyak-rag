@@ -81,6 +81,8 @@ def movable_tables(engine: sa.Engine) -> list[str]:
         )
         names = [r[0] for r in rows]
     tables = [n for n in names if n not in EXCLUDED]
+    if not tables:  # 빈 DB를 가리키면 0 = 0으로 「전부 같다」가 찍히는 거짓 성공이 된다
+        raise LoadError("원본에 옮길 테이블이 없다. 원본 DATABASE_URL을 확인해 달라")
     bad = [n for n in tables if not _SAFE_NAME.match(n)]
     if bad:
         raise LoadError(f"테이블 이름을 덤프 인자로 쓸 수 없다: {bad}")

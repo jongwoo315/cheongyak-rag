@@ -142,3 +142,22 @@ def test_psql_failure_is_reported_as_psql_not_as_pg_dump_broken_pipe(target_url)
         dl.copy_data(make_url(settings.database_url), bad, ["notices"])
     assert str(e.value).startswith("psql 적재 실패")
     assert "wrong-password" not in str(e.value)
+
+
+def test_movable_tables_refuses_a_source_with_nothing_to_move():
+    class Conn:
+        def execute(self, *_):
+            return iter([("traces",), ("alembic_version",)])
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    class Engine:
+        def connect(self):
+            return Conn()
+
+    with pytest.raises(dl.LoadError, match="옮길 테이블이 없다"):
+        dl.movable_tables(Engine())
