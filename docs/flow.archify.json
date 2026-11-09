@@ -2,20 +2,24 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "청약 RAG 판정 흐름 — #84 PR #17",
+    "title": "청약 RAG 판정 흐름 — #85 PR #18",
     "locale": "ko",
     "quality_profile": "standard",
-    "output": ".archify/workflow-84-flow/84-flow.html",
+    "output": ".archify/workflow-85-flow/85-flow.html",
     "repository": {
       "url": "https://github.com/jongwoo315/cheongyak-rag",
       "provider": "github",
-      "revision": "0fd1d564ab196940857acc20d644dd6a59b1b5e5"
+      "revision": "92b00dc267c55ae346423c7ca967da355ba56c05"
     }
   },
   "lanes": [
     {
       "id": "ingest",
       "label": "데이터 적재"
+    },
+    {
+      "id": "deploy",
+      "label": "#85 배포 (Vercel + Neon, 싱가포르)"
     },
     {
       "id": "web",
@@ -52,7 +56,7 @@
     },
     {
       "id": "measure",
-      "label": "측정 (jw 기준, #84)"
+      "label": "측정 (jw 기준, #85 — 배포 사이트)"
     }
   ],
   "mainPath": [
@@ -361,8 +365,8 @@
       "col": 0,
       "type": "frontend",
       "label": "공고 목록 · 공고 페이지",
-      "sublabel": "[새로] 서버에서 그린 HTML 84건",
-      "tag": "새로 생김",
+      "sublabel": "서버에서 그린 HTML 84건",
+      "tag": "그대로",
       "sources": [
         {
           "path": "web/app/notices/[houseManageNo]/page.tsx",
@@ -378,8 +382,8 @@
       "col": 1,
       "type": "frontend",
       "label": "프로필 입력 칸 15개",
-      "sublabel": "[새로] 탭 안에서 값 유지",
-      "tag": "새로 생김",
+      "sublabel": "탭 안에서 값 유지",
+      "tag": "그대로",
       "sources": [
         {
           "path": "web/components/VerdictForm.tsx",
@@ -395,8 +399,8 @@
       "col": 2,
       "type": "backend",
       "label": "판정 API",
-      "sublabel": "[새로] run_traced를 부른다 · 422·404·503",
-      "tag": "새로 생김",
+      "sublabel": "run_traced를 부른다 · 422·404·503",
+      "tag": "그대로",
       "sources": [
         {
           "path": "src/cheongyak_rag/api.py",
@@ -412,8 +416,8 @@
       "col": 5,
       "type": "frontend",
       "label": "결과 화면",
-      "sublabel": "[새로] 전역·경로별 판정 · 체크리스트 · 근거",
-      "tag": "새로 생김",
+      "sublabel": "전역·경로별 판정 · 체크리스트 · 근거",
+      "tag": "그대로",
       "sources": [
         {
           "path": "web/components/Result.tsx",
@@ -424,38 +428,90 @@
       ]
     },
     {
-      "id": "m1",
-      "lane": "measure",
+      "id": "neon",
+      "lane": "deploy",
       "col": 1,
-      "type": "security",
-      "label": "공고 페이지 검사",
-      "sublabel": "[새로] 실패 0 / 84 · 링크 84",
+      "type": "database",
+      "label": "Neon Postgres",
+      "sublabel": "[새로] 로컬 DB에서 4개 테이블 적재 · traces 제외",
       "tag": "새로 생김",
       "sources": [
         {
-          "path": "src/cheongyak_rag/web_report.py",
-          "line": 119,
-          "end_line": 213,
-          "label": "judge"
+          "path": "src/cheongyak_rag/deploy_load.py",
+          "line": 1,
+          "end_line": 207,
+          "label": "deploy_load"
         }
       ]
     },
     {
-      "id": "m2",
-      "lane": "measure",
-      "col": 5,
-      "type": "security",
-      "label": "18쌍 화면 대조",
-      "sublabel": "[새로] 다른 쌍 0 · LLM 호출 0 · 새 행 18",
+      "id": "vapi",
+      "lane": "deploy",
+      "col": 3,
+      "type": "backend",
+      "label": "cheongyak-api (Vercel)",
+      "sublabel": "[새로] FastAPI 함수 · 캐시는 /tmp",
       "tag": "새로 생김",
       "sources": [
         {
-          "path": "src/cheongyak_rag/web_report.py",
-          "line": 111,
-          "end_line": 118,
-          "label": "_same"
+          "path": "app.py",
+          "line": 1,
+          "end_line": 13,
+          "label": "진입점"
         }
       ]
+    },
+    {
+      "id": "vweb",
+      "lane": "deploy",
+      "col": 0,
+      "type": "frontend",
+      "label": "cheongyak-web (Vercel)",
+      "sublabel": "[새로] Next.js · API_BASE_URL로 api 호출",
+      "tag": "새로 생김",
+      "sources": [
+        {
+          "path": "web/vercel.json",
+          "line": 1,
+          "end_line": 3,
+          "label": "web 설정"
+        }
+      ]
+    },
+    {
+      "id": "limit",
+      "lane": "web",
+      "col": 3,
+      "type": "security",
+      "label": "하루 판정 한도",
+      "sublabel": "[새로] 50건 넘으면 429 · 잠금 대기 60초",
+      "tag": "새로 생김",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/api.py",
+          "line": 70,
+          "end_line": 77,
+          "label": "한도"
+        }
+      ]
+    },
+    {
+      "id": "m1",
+      "lane": "measure",
+      "col": 2,
+      "type": "security",
+      "label": "배포 공고 페이지 검사",
+      "sublabel": "[새로] 실패 0 / 84 · 링크 84 · health ok",
+      "tag": "새로 생김"
+    },
+    {
+      "id": "m2",
+      "lane": "measure",
+      "col": 4,
+      "type": "security",
+      "label": "배포 18쌍 화면 대조",
+      "sublabel": "[새로] 안 뜬 쌍 0 · 경로 키·항목 수 다른 쌍 0",
+      "tag": "새로 생김"
     }
   ],
   "edges": [
@@ -594,16 +650,40 @@
       "label": "응답"
     },
     {
-      "id": "w6",
-      "from": "wpage",
+      "id": "d1",
+      "from": "chunks",
+      "to": "neon",
+      "label": "적재"
+    },
+    {
+      "id": "d2",
+      "from": "neon",
+      "to": "vapi",
+      "label": "DATABASE_URL"
+    },
+    {
+      "id": "d3",
+      "from": "vweb",
+      "to": "vapi",
+      "label": "판정 요청"
+    },
+    {
+      "id": "d4",
+      "from": "limit",
+      "to": "wapi",
+      "label": "한도 안이면"
+    },
+    {
+      "id": "d5",
+      "from": "vweb",
       "to": "m1",
       "label": "HTML"
     },
     {
-      "id": "w7",
-      "from": "wres",
+      "id": "d6",
+      "from": "vapi",
       "to": "m2",
-      "label": "화면 값"
+      "label": "배포 응답"
     }
   ],
   "cards": [
@@ -611,10 +691,9 @@
       "dot": "amber",
       "title": "읽는 법",
       "items": [
-        "[새로]는 PR #16 대비 이번 PR이 더한 단계다",
-        "판정 API는 CLI와 같은 run_traced를 불러 질의마다 traces 행을 쓴다. 없는 공고·모순된 프로필은 행을 쓰기 전에 404·422로 멈춘다",
-        "Next.js는 DB를 직접 읽지 않고 FastAPI만 부른다",
-        "측정 줄의 기대값은 실제 DB를 따로 읽은 값과 #81 측정 파일이다"
+        "[새로]는 PR #17(#84) 대비 이번 PR이 더한 단계다",
+        "배포 사이트는 판정 흐름 코드가 로컬과 같다. 캐시만 /tmp라 비어서 LLM을 새로 부른다",
+        "traces는 Neon에 새로 쌓인다. 로컬 traces는 옮기지 않았다"
       ]
     }
   ]
