@@ -59,6 +59,13 @@ npm run dev                   # http://localhost:3000
 - FastAPI를 다른 포트로 띄웠으면 `API_BASE_URL=http://127.0.0.1:8171 npm run dev`처럼 넘긴다
 - 배포용 실행은 `npm run build` 뒤 `npm run start -- -p 3184`
 
+### 배포
+
+Vercel(web·api 프로젝트 둘) + Neon Postgres로 배포한다. 코드는 서버리스에 맞게 고쳐 두었다 —
+캐시 위치(`CACHE_DIR`), 하루 판정 한도(`VERDICT_DAILY_LIMIT`), 잠금 대기 제한, 화면의 시간 제한.
+Neon 적재는 `uv run python -m cheongyak_rag.deploy_load --target-url <주소>`로 한다.
+절차·환경 변수 표·배포 사이트 측정 명령·로컬 리허설 결과는 [`docs/85-deploy.md`](docs/85-deploy.md)에 있다.
+
 ## 검증
 
 ```bash

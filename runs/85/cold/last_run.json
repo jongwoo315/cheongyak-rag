@@ -1,0 +1,199 @@
+{
+  "expected_taken_at": "2026-11-09T09:48:55+09:00",
+  "after": {
+    "new_traces": 3,
+    "new_trace_rows": [
+      [
+        "2026000103",
+        "ok"
+      ],
+      [
+        "2026000103",
+        "ok"
+      ],
+      [
+        "2026000103",
+        "ok"
+      ]
+    ],
+    "verdict_cache_lines": 540,
+    "embed_cache_lines": 3085
+  },
+  "s1": {
+    "F": 0,
+    "pages_missing": [],
+    "L": 84,
+    "n_pages": 84,
+    "failed": [],
+    "band": "통과"
+  },
+  "s2": {
+    "G1": 0,
+    "G1_pairs": [],
+    "G1_after_retry": 0,
+    "G2": 2,
+    "diff": [
+      {
+        "pair": "2026000103×partial",
+        "screen": {
+          "verdict": "NEED_INFO",
+          "routes": [
+            [
+              "general",
+              "NEED_INFO"
+            ],
+            [
+              "다자녀가구",
+              "UNVERIFIABLE"
+            ],
+            [
+              "신혼부부",
+              "UNVERIFIABLE"
+            ],
+            [
+              "생애최초",
+              "UNVERIFIABLE"
+            ],
+            [
+              "노부모 부양",
+              "UNVERIFIABLE"
+            ],
+            [
+              "기관추천",
+              "UNVERIFIABLE"
+            ],
+            [
+              "신생아",
+              "UNVERIFIABLE"
+            ]
+          ],
+          "n_checklist": 12
+        },
+        "expected": {
+          "verdict": "UNVERIFIABLE",
+          "routes": [
+            [
+              "general",
+              "UNVERIFIABLE"
+            ],
+            [
+              "기관추천",
+              "UNVERIFIABLE"
+            ],
+            [
+              "노부모 부양",
+              "UNVERIFIABLE"
+            ],
+            [
+              "다자녀가구",
+              "UNVERIFIABLE"
+            ],
+            [
+              "생애최초",
+              "UNVERIFIABLE"
+            ],
+            [
+              "신생아",
+              "UNVERIFIABLE"
+            ],
+            [
+              "신혼부부",
+              "UNVERIFIABLE"
+            ]
+          ],
+          "n_checklist": 12
+        }
+      },
+      {
+        "pair": "2026000103×full",
+        "screen": {
+          "verdict": "NEED_INFO",
+          "routes": [
+            [
+              "general",
+              "NEED_INFO"
+            ],
+            [
+              "다자녀가구",
+              "INELIGIBLE"
+            ],
+            [
+              "신혼부부",
+              "INELIGIBLE"
+            ],
+            [
+              "생애최초",
+              "NEED_INFO"
+            ],
+            [
+              "노부모 부양",
+              "NEED_INFO"
+            ],
+            [
+              "기관추천",
+              "NEED_INFO"
+            ],
+            [
+              "신생아",
+              "INELIGIBLE"
+            ]
+          ],
+          "n_checklist": 12
+        },
+        "expected": {
+          "verdict": "UNVERIFIABLE",
+          "routes": [
+            [
+              "general",
+              "UNVERIFIABLE"
+            ],
+            [
+              "기관추천",
+              "UNVERIFIABLE"
+            ],
+            [
+              "노부모 부양",
+              "UNVERIFIABLE"
+            ],
+            [
+              "다자녀가구",
+              "INELIGIBLE"
+            ],
+            [
+              "생애최초",
+              "UNVERIFIABLE"
+            ],
+            [
+              "신생아",
+              "UNVERIFIABLE"
+            ],
+            [
+              "신혼부부",
+              "INELIGIBLE"
+            ]
+          ],
+          "n_checklist": 12
+        }
+      }
+    ],
+    "pairs_missing": [],
+    "n_pairs": 3,
+    "retries": 0,
+    "seconds_median": 17.456,
+    "seconds_max": 19.504,
+    "verdict_same": 1,
+    "n_compared": 3,
+    "band": "미완"
+  },
+  "s3": {
+    "H": 0,
+    "H_verdict": 0,
+    "H_embed": 0,
+    "T": 3,
+    "T_expected": 3,
+    "statuses": {
+      "ok": 3
+    },
+    "band": "통과"
+  }
+}

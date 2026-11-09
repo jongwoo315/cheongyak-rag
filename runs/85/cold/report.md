@@ -1,0 +1,51 @@
+# #84 화면 — 측정 리포트
+
+- 징후 1: 공고 페이지 84개 중 실패 F 0 · 목록의 공고 링크 L 84 → 통과
+- 징후 2: 18쌍 중 120초 안에 안 뜬 쌍 G1 0(다시 질의한 뒤에도 0) · 기대값과 다른 쌍 G2 2 → 미완
+- 징후 3: 새 LLM 호출 H 0 · 새 trace 행 T 3(기대 3) → 통과
+
+측정 시작 2026-11-09T09:48:55+09:00 · Next.js `next start` + FastAPI(실제 DB·실제 캐시)
+
+## 1. 징후 1~3
+
+### 징후 1 — Next.js 서버가 뜬다
+
+| 값 | 측정 | 기준 |
+| --- | --- | --- |
+| F. 공고 페이지 중 실패한 수 | 0 / 84 | 0 |
+| L. `/` HTML의 공고 페이지 링크 수 | 84 | 84 |
+| 구간 | 통과 | 통과: F 0 · L 84 / 미완: 그 밖 |
+
+- 성공 = HTTP 200 · `<title>`에 공고 이름 · 주택형 표 행 수 = DB `notice_models` 행 수
+
+### 징후 2 — 유저 입장에서 청약별로 질의하고 결과를 확인한다
+
+| 값 | 측정 | 기준 |
+| --- | --- | --- |
+| G1. 120초 안에 결과가 안 뜬 쌍 | 0 (다시 질의한 뒤 0) | 0 |
+| G2. 결과가 떴는데 기대값과 다른 쌍 | 2 | 0 |
+| 구간 | 미완 | 통과: 둘 다 0 / 다시 잰다: G2 0·G1 1 이상 / 미완: G2 1 이상, 또는 다시 잰 뒤에도 G1 1 이상 |
+
+- 쌍 3개(공고 6건 × 프로필 3종) · 다시 질의한 횟수 0 · 걸린 시간 중앙값 17.5초 · 최대 19.5초
+- 같다 = 전역 판정 · 경로별 (key, 판정) 집합 · 체크리스트 항목 수가 셋 다 `runs/81/last_run.json`의 같은 쌍 `answer`와 같다
+- 다른 쌍 2026000103×partial
+  - 화면: {"verdict": "NEED_INFO", "routes": [["general", "NEED_INFO"], ["다자녀가구", "UNVERIFIABLE"], ["신혼부부", "UNVERIFIABLE"], ["생애최초", "UNVERIFIABLE"], ["노부모 부양", "UNVERIFIABLE"], ["기관추천", "UNVERIFIABLE"], ["신생아", "UNVERIFIABLE"]], "n_checklist": 12}
+  - 기대: {"verdict": "UNVERIFIABLE", "routes": [["general", "UNVERIFIABLE"], ["기관추천", "UNVERIFIABLE"], ["노부모 부양", "UNVERIFIABLE"], ["다자녀가구", "UNVERIFIABLE"], ["생애최초", "UNVERIFIABLE"], ["신생아", "UNVERIFIABLE"], ["신혼부부", "UNVERIFIABLE"]], "n_checklist": 12}
+- 다른 쌍 2026000103×full
+  - 화면: {"verdict": "NEED_INFO", "routes": [["general", "NEED_INFO"], ["다자녀가구", "INELIGIBLE"], ["신혼부부", "INELIGIBLE"], ["생애최초", "NEED_INFO"], ["노부모 부양", "NEED_INFO"], ["기관추천", "NEED_INFO"], ["신생아", "INELIGIBLE"]], "n_checklist": 12}
+  - 기대: {"verdict": "UNVERIFIABLE", "routes": [["general", "UNVERIFIABLE"], ["기관추천", "UNVERIFIABLE"], ["노부모 부양", "UNVERIFIABLE"], ["다자녀가구", "INELIGIBLE"], ["생애최초", "UNVERIFIABLE"], ["신생아", "UNVERIFIABLE"], ["신혼부부", "INELIGIBLE"]], "n_checklist": 12}
+
+### 징후 3 — 화면이 CLI와 같은 판정 흐름을 탔다
+
+| 값 | 측정 | 기준 |
+| --- | --- | --- |
+| H. 징후 2 동안 늘어난 LLM 호출 수(캐시 줄 수 차이) | 0 (판정 0 + 임베딩 0) | 0 |
+| T. 새 trace 행 수 | 3 | 3 |
+| 구간 | 통과 | 통과: H 0 · T = 기대 / 미완: 그 밖 |
+
+- 새 trace 행 상태 분포 {'ok': 3}
+
+## 2. 스크린샷
+
+- `docs/84-web/verdict-full.png` — 더샵 분당하이스트(`2026000103`) × `full`
+- `docs/84-web/verdict-empty.png` — 같은 공고 × `empty`

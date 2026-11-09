@@ -75,3 +75,10 @@ def test_verdict_limits_read_env_vars(monkeypatch):
     monkeypatch.setenv("VERDICT_LOCK_TIMEOUT_S", "2.5")
     s = Settings(_env_file=None)
     assert (s.verdict_daily_limit, s.verdict_lock_timeout_s) == (7, 2.5)
+
+
+def test_env_examples_list_the_new_variables():
+    root = (REPO / ".env.example").read_text(encoding="utf-8")
+    for name in ("CACHE_DIR", "VERDICT_DAILY_LIMIT", "VERDICT_LOCK_TIMEOUT_S"):
+        assert name in root
+    assert "VERDICT_TIMEOUT_MS" in (REPO / "web" / ".env.example").read_text(encoding="utf-8")
