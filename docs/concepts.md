@@ -101,6 +101,22 @@
 - 행 쓰기가 실패한 질의는 행이 없으므로 어느 상태도 아니다. 응답은 돌려주고 `trace_error`로 알린다
 - `error` 행을 쓴 뒤 예외는 그대로 다시 올라간다
 
+## 공고문 수집 결과 5개 — 공고 하나의 공고문 받기가 끝난 모습
+
+정의: `src/cheongyak_rag/ingest/notice_doc.py:40` `RESULTS`, 뜻은 `src/cheongyak_rag/ingest/notice_doc_report.py:39` `MEANING`. 만든 티켓 #72.
+
+| 값 | 뜻 |
+| --- | --- |
+| `pdf` | 공고문을 받았고 PDF로 열린다 |
+| `hwp` | 받은 파일이 HWP·HWPX라 격리했다 |
+| `other` | 받은 파일이 PDF·HWP가 아니라 격리했다 |
+| `no_link` | 상세 페이지에 공고문 링크가 없다(지금은 LH 10건) |
+| `error` | 받기가 실패했거나(HTTP·시간 초과·크기 초과), PDF라는데 안 열린다 |
+
+- 링크가 둘 이상이면 링크마다 줄이 남고, 공고의 결과는 가장 나쁜 줄을 따른다(`error` > `other` > `hwp` > `pdf`)
+- `pdf`는 HTTP 200이고 앞 바이트가 `%PDF-`이며 `pymupdf`로 열려 쪽수가 1 이상일 때만이다. 셋 중 하나라도 아니면 `error`다
+- 목록은 `data/raw/notices/manifest.jsonl`(링크 하나가 한 줄)이고, 격리한 파일은 `data/raw/notices/quarantine/`에 있다
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.

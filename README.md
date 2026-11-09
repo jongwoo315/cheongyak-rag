@@ -88,6 +88,13 @@ uv run python -m cheongyak_rag.ingest.law   # 법제처 「주택공급에 관�
 
 `.env`의 `LAW_OC`(법제처 OPEN API 인증값)가 필요하다. 비어 있으면 exit 1로 멈춘다. 본문은 `data/raw/`에 캐시되고 검색은 매번 한다. 실행 끝에 원본 JSON 대조 리포트(누락·중복, 조문·항·호·목 개수)가 나오고, 대조에 걸리면 이전 JSONL을 덮어쓰지 않는다. FAQ JSONL이 있으면 FAQ 인용과 현행 법령 대조도 같이 나온다.
 
+```bash
+uv run python -m cheongyak_rag.ingest.notice_doc         # 청약홈 공고문 첨부 → data/raw/notices/ (PDF) · quarantine/ (그 밖) · manifest.jsonl
+uv run python -m cheongyak_rag.ingest.notice_doc_report  # 결과 리포트 → docs/72-notice-doc.md
+```
+
+DB `notices`의 공고 상세 페이지에서 공고문 링크를 찾아 받는다(DB는 읽기만 한다). 같은 명령을 다시 돌리면 이미 받은 파일은 받지 않는다. 결과는 [`docs/72-notice-doc.md`](docs/72-notice-doc.md)에 있다.
+
 ## 메모
 
 - **DB 포트는 5433.** 호스트에 이미 Postgres 가 5432 를 점유 중이라 컨테이너를 5433 으로 매핑했다.
