@@ -1,4 +1,5 @@
 import hashlib
+import itertools
 from pathlib import Path
 
 import httpx
@@ -282,3 +283,24 @@ def test_notice_result_is_the_worst_of_its_links(tmp_path):
     assert [r["result"] for r in out.rows] == ["pdf", "hwp"]
     assert out.result == "hwp"
     assert out.rows[1]["path"].endswith("2026000517_2026000517_2001261_7.hwp")
+
+
+def test_content_length_over_limit_is_refused_before_reading(tmp_path, monkeypatch):
+    monkeypatch.setattr(nd, "MAX_BYTES", 100)
+    out = run(Site(doc=attach(make_pdf())), tmp_path)  # make_pdf()는 100바이트를 넘는다
+    assert out.rows[0]["result"] == "error" and "받기 전에" in out.rows[0]["error"]
+
+
+def test_netfunnel_page_in_place_of_attachment_is_error_not_other(tmp_path):
+    body = b"<html><script src='/netfunnel.js'></script>NetFUNNEL</html>"
+    out = run(Site(doc=attach(body, None)), tmp_path)
+    row = out.rows[0]
+    assert row["result"] == "error" and "NetFUNNEL" in row["error"] and row["path"] is None
+    assert not (tmp_path / "notices" / "quarantine").exists()
+
+
+def test_total_time_limit_counts_as_timeout_and_retries(tmp_path, monkeypatch):
+    ticks = itertools.count(0, 500)  # 부를 때마다 500초가 지난다
+    monkeypatch.setattr(nd.time, "monotonic", lambda: next(ticks))
+    out = run(Site(doc=attach(make_pdf())), tmp_path)
+    assert out.rows[0]["result"] == "error" and "ReadTimeout" in out.rows[0]["error"]

@@ -278,6 +278,9 @@ def _collect_link(
         sha256=hashlib.sha256(body).hexdigest(),
         note=note,
     )
+    if magic == "unknown" and b"netfunnel" in body[:4096].lower():
+        # 대기 페이지를 공고문으로 저장하면 이후 실행이 계속 재사용한다
+        return row | {"result": "error", "error": "NetFUNNEL 대기 페이지가 첨부 대신 왔다"}, None
     stem = f"{hm}_{pb}_{seq}_{sn}"
     if magic == "pdf":
         try:
@@ -395,6 +398,9 @@ def main(argv=None, client=None, engine=None, sleep=time.sleep) -> int:
     results: dict[str, int] = dict.fromkeys(RESULTS, 0)
     by_result: dict[str, list[str]] = {r: [] for r in RESULTS}
     new_downloads = received = 0
+    page_failed: set[tuple[str, str]] = (
+        set()
+    )  # 링크를 알기 전에 실패한 공고. 지난 줄을 지우지 않는다
     try:
         for hm, pb, url in notices:
             try:
@@ -422,22 +428,36 @@ def main(argv=None, client=None, engine=None, sleep=time.sleep) -> int:
                     ],
                     "error",
                 )
+            if out.result == "error" and out.rows[0]["url"] is None:
+                page_failed.add((hm, pb))
             new_rows += out.rows
             results[out.result] += 1
             by_result[out.result].append(f"{hm}/{pb}")
             new_downloads += out.new_downloads
             received += out.downloaded_bytes
     finally:
+        # 중간에 끊겨도 지금까지 받은 줄은 남긴다. 안 남기면 다음 실행이 받은 파일을 다시 받는다
+        done = {(r["house_manage_no"], r["pblanc_no"]) for r in new_rows} - page_failed
+        # 페이지 실패가 되풀이되면 지난 실행의 실패 줄(url 없는 error)은 새 줄로 바꾼다
+        kept = [
+            r
+            for r in old_rows
+            if (r["house_manage_no"], r["pblanc_no"]) not in done
+            and not (
+                (r["house_manage_no"], r["pblanc_no"]) in page_failed
+                and r["url"] is None
+                and r["result"] == "error"
+            )
+        ]
+        merged = sorted(
+            kept + new_rows,
+            key=lambda r: (r["house_manage_no"], r["pblanc_no"], r["url"] or ""),
+        )
+        _write_atomic(
+            manifest_path, "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in merged)
+        )
         if own_client:
             client.close()
-
-    done = {(r["house_manage_no"], r["pblanc_no"]) for r in new_rows}
-    kept = [r for r in old_rows if (r["house_manage_no"], r["pblanc_no"]) not in done]
-    merged = sorted(
-        kept + new_rows,
-        key=lambda r: (r["house_manage_no"], r["pblanc_no"], r["url"] or ""),
-    )
-    _write_atomic(manifest_path, "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in merged))
 
     ended = datetime.now().astimezone()
     summary = {

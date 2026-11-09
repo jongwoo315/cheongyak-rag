@@ -123,3 +123,42 @@ def test_limit_keeps_other_notices_rows_in_manifest(engine, tmp_path):
 def test_empty_notices_table_exits_1(pg_engine, tmp_path, capsys):
     assert run(Site(), pg_engine, tmp_path) == 1
     assert "공고" in capsys.readouterr().err
+
+
+def test_failed_page_on_rerun_keeps_previous_good_rows(engine, tmp_path):
+    assert run(Site(), engine, tmp_path) == 0
+    good = [r for r in manifest(tmp_path) if r["house_manage_no"] == N1]
+    assert good[0]["result"] == "pdf"
+
+    class Down(Site):
+        def handler(self, request):
+            if request.url.host == "www.applyhome.co.kr" and request.url.params["no"] == "1":
+                self.requests.append(str(request.url))
+                return httpx.Response(404, text="없음")
+            return super().handler(request)
+
+    assert run(Down(), engine, tmp_path) == 0
+    rows = [r for r in manifest(tmp_path) if r["house_manage_no"] == N1]
+    assert sorted(r["result"] for r in rows) == ["error", "pdf"]  # 받은 줄이 남아 있다
+    s = json.loads((tmp_path / "last_run.json").read_text(encoding="utf-8"))
+    assert s["results"]["error"] == 2  # N1(페이지 실패) + N3
+
+    third = Site()
+    assert run(third, engine, tmp_path) == 0
+    assert third.doc_requests == 0  # 세 번째 실행은 받은 파일을 다시 받지 않는다
+    assert [r["result"] for r in manifest(tmp_path) if r["house_manage_no"] == N1] == ["pdf"]
+
+
+def test_interrupt_still_writes_manifest_for_finished_notices(engine, tmp_path):
+    class Interrupt(Site):
+        def handler(self, request):
+            if request.url.host == "www.applyhome.co.kr" and request.url.params["no"] == "3":
+                raise KeyboardInterrupt
+            return super().handler(request)
+
+    with pytest.raises(KeyboardInterrupt):
+        run(Interrupt(), engine, tmp_path)
+    assert [(r["house_manage_no"], r["result"]) for r in manifest(tmp_path)] == [
+        (N1, "pdf"),
+        (N2, "no_link"),
+    ]
