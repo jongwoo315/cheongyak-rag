@@ -37,7 +37,7 @@ from cheongyak_rag.generate.answer import (
 from cheongyak_rag.generate.evaluate import RetryingClient
 from cheongyak_rag.retrieval import axes
 from cheongyak_rag.retrieval.chunk import Chunk
-from cheongyak_rag.retrieval.embed import CACHE_DIR, Embedder
+from cheongyak_rag.retrieval.embed import Embedder
 
 VERDICTS = ("ELIGIBLE", "INELIGIBLE", "CONDITIONAL", "NEED_INFO", "UNVERIFIABLE")
 TITLE_CHARS = 40
@@ -196,7 +196,7 @@ class NoticeInfo:
 
 
 def cache_path_for(model: str) -> Path:
-    return CACHE_DIR / f"verdict-{model}.jsonl"
+    return settings.cache_dir / f"verdict-{model}.jsonl"
 
 
 def cache_key(model: str, messages: list[dict]) -> str:

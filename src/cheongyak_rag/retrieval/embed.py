@@ -1,6 +1,7 @@
 """OpenAI 임베딩 + 디스크 캐시 (#131).
 
-`data/cache/embed-<model>.jsonl` — 텍스트 sha256 → 벡터. 캐시에 없는 것만 한 요청에 묶어 보낸다.
+`<cache_dir>/embed-<model>.jsonl`(기본 `data/cache`) — 텍스트 sha256 → 벡터.
+캐시에 없는 것만 한 요청에 묶어 보낸다.
 두 번째 실행은 API를 안 부르므로 같은 입력의 결과가 같다(재현성).
 """
 
@@ -13,7 +14,6 @@ import numpy as np
 
 from cheongyak_rag.config import settings
 
-CACHE_DIR = Path(__file__).resolve().parents[3] / "data" / "cache"
 BATCH = 256  # 한 요청의 입력 수. OpenAI 한도(2048개)보다 훨씬 작게 둔다
 
 
@@ -22,7 +22,7 @@ def text_key(text: str) -> str:
 
 
 def cache_path_for(model: str) -> Path:
-    return CACHE_DIR / f"embed-{model}.jsonl"
+    return settings.cache_dir / f"embed-{model}.jsonl"
 
 
 class Embedder:

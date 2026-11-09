@@ -19,7 +19,7 @@ from pathlib import Path
 from cheongyak_rag.config import settings
 from cheongyak_rag.retrieval.chunk import Chunk, strip_head
 from cheongyak_rag.retrieval.chunk_eval import RUNS73
-from cheongyak_rag.retrieval.embed import CACHE_DIR, Embedder
+from cheongyak_rag.retrieval.embed import Embedder
 from cheongyak_rag.retrieval.query import Index, selected_candidate
 
 # 가격 $ / 1M 토큰 (입력, 출력).
@@ -128,7 +128,7 @@ class GenCache:
 
 
 def cache_path_for(model: str) -> Path:
-    return CACHE_DIR / f"gen-{model}.jsonl"
+    return settings.cache_dir / f"gen-{model}.jsonl"
 
 
 def _label(raw: str) -> str:
