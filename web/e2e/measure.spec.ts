@@ -14,7 +14,7 @@ const REPO = path.resolve(__dirname, "../..");
 const RUN_DIR = path.resolve(REPO, process.env.MEASURE_RUN_DIR ?? "runs/84");
 const SHOT_DIR = path.resolve(REPO, process.env.MEASURE_SHOT_DIR ?? "docs/84-web");
 const WEB = process.env.WEB_BASE_URL ?? "http://127.0.0.1:3184";
-const WAIT_MS = Number(process.env.MEASURE_WAIT_MS ?? 120_000);
+const WAIT_MS = Number(process.env.MEASURE_WAIT_MS) || 120_000;
 
 type Expected = {
   notices: { house_manage_no: string; house_nm: string; n_models: number }[];

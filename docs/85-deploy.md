@@ -33,7 +33,7 @@ Neon Postgres 17 + pgvector  (싱가포르)
 | Neon 적재 스크립트 | `src/cheongyak_rag/deploy_load.py` | |
 | 배포 측정 모드 | `web/e2e/measure.spec.ts`, `src/cheongyak_rag/web_report.py` | |
 
-- 하루 판정 한도를 넘으면 429 「오늘 판정 한도(N건)를 다 썼다. 내일 다시 시도해 달라」를 낸다. 없는 공고(404)·모순된 프로필(422)은 세지 않는다. 잠금 대기 시간 초과(503)와 판정 중 오류는 센다 — 세는 자리가 `run_traced` 앞이기 때문이다
+- 하루 판정 한도를 넘으면 429 「오늘 판정 한도(N건)를 다 썼다. 내일 다시 시도해 달라」를 낸다. 없는 공고(404)·모순된 프로필(422)은 세지 않는다. 잠금 대기 시간 초과(503)는 세었다가 되돌린다. 판정 중 오류는 세는 자리가 `run_traced` 앞이라 센다
 - 한국 날짜는 `Asia/Seoul`(UTC+9, 서머타임 없음) 기준이다. 코드는 고정 오프셋을 쓴다(서버리스 이미지에 시간대 데이터가 없어도 돌게)
 
 ## 환경 변수
@@ -63,7 +63,7 @@ Neon Postgres 17 + pgvector  (싱가포르)
 2. Vercel Marketplace에서 Neon을 붙여 Postgres를 만든다 — 리전 싱가포르, PG17. pgvector는 모든 플랜에서 쓸 수 있다
    - 직접 연결(pooler가 아닌) 주소를 복사해 둔다. 판정 흐름이 `SET LOCAL hnsw.*`를 쓰는데 pooler(PgBouncer transaction 모드)는 세션 `SET`을 지원하지 않는다
 3. OpenAI 대시보드에서 사용 한도를 건다(코드 밖 안전장치)
-4. 로컬 `.env`가 아니라 **셸 환경에서** 비밀 값을 준비한다 — `OPENAI_API_KEY`·`DATABASE_URL`(Neon 주소)·`TRACE_HASH_KEY`
+4. 비밀 값을 준비한다 — `OPENAI_API_KEY`·`TRACE_HASH_KEY`, Neon 직접 연결 주소. Neon 주소는 `DATABASE_URL`이 아니라 셸 변수 `NEON_DIRECT_URL`에 둔다(로컬 `.env`의 `DATABASE_URL`은 적재 스크립트의 원본이라 Neon으로 바꾸면 거부된다)
 5. Vercel 프로젝트 ② api에 위 표의 `api` 환경 변수를 넣는다. 비밀 값은 jw가 직접 입력 칸에 넣는다
 6. `vercel login`
 
@@ -94,6 +94,7 @@ Neon Postgres 17 + pgvector  (싱가포르)
 
 ### 배포 때 확인할 것 (설계 열린 질문)
 
+- web 함수가 300초까지 기다릴 수 있나. 라우트에 `maxDuration = 300`을 적었지만 Hobby·Fluid Compute 설정에 따라 한도가 다를 수 있다. 안 되면 `VERDICT_TIMEOUT_MS`를 그 한도보다 작게 낮춘다
 - Hobby에서 함수 리전 `sin1`을 고를 수 있나. 안 되면 함수 기본 리전(`iad1`)에 맞춰 Neon을 미국 동부로 만든다. 그 결정은 배포 때 jw가 하고 리포트에 적는다
 - Vercel이 `src/` 아래 패키지를 어떻게 설치하나. 루트 `app.py`가 `src`를 `sys.path` 맨 앞에 넣어 어느 쪽이든 import된다
 - 콜드 스타트(Kiwi 로드 + BM25 만들기)가 몇 초인가. 배포 측정의 첫 쌍 시간으로 본다

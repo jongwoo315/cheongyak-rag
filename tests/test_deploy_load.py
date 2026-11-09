@@ -133,3 +133,12 @@ def test_count_mismatch_after_copy_exits_nonzero(target_url, monkeypatch):
 def test_main_requires_target_url():
     with pytest.raises(SystemExit):
         dl.main([])
+
+
+def test_psql_failure_is_reported_as_psql_not_as_pg_dump_broken_pipe(target_url):
+    """psql이 먼저 죽으면 pg_dump는 파이프가 끊겨 따라 죽는다. 원인인 psql 쪽을 보여 준다."""
+    bad = make_url(target_url).set(password="wrong-password")
+    with pytest.raises(dl.LoadError) as e:
+        dl.copy_data(make_url(settings.database_url), bad, ["notices"])
+    assert str(e.value).startswith("psql 적재 실패")
+    assert "wrong-password" not in str(e.value)

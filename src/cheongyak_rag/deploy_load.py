@@ -142,13 +142,16 @@ def copy_data(source: URL, target: URL, tables: list[str], container: str = CONT
     _, load_err = load.communicate()
     dump_err = dump.stderr.read() if dump.stderr else b""
     dump.wait()
-    if dump.returncode:
-        raise LoadError(
-            "pg_dump 실패:\n" + redact(dump_err.decode(errors="replace")[-2000:], target)
-        )
+    # psql이 먼저 죽으면 pg_dump는 파이프가 끊겨 따라 죽는다 — 원인인 psql 쪽을 먼저 보여 준다
     if load.returncode:
         raise LoadError(
-            "psql 적재 실패:\n" + redact(load_err.decode(errors="replace")[-2000:], target)
+            "psql 적재 실패 (한 트랜잭션이라 대상에는 아무것도 안 들어갔다):\n"
+            + redact(load_err.decode(errors="replace")[-2000:], target)
+        )
+    if dump.returncode:
+        raise LoadError(
+            "pg_dump 실패. 일부가 들어갔을 수 있으니 대상을 비우고 다시 해야 한다:\n"
+            + redact(dump_err.decode(errors="replace")[-2000:], target)
         )
 
 

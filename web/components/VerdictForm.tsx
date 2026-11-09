@@ -53,8 +53,9 @@ export default function VerdictForm({ houseManageNo }: { houseManageNo: string }
         setStatus({ kind: "error", message: errorMessage(res.status, typeof d === "string" ? d : "") });
         return;
       }
-      if (!obj) {
-        // 200인데 JSON이 아니다 — 플랫폼 오류 페이지가 끼면 나온다. 결과 대신 오류를 보인다
+      const a = body as { general?: unknown; checklist?: unknown };
+      if (!obj || typeof a.general !== "object" || !Array.isArray(a.checklist)) {
+        // 200인데 JSON이 아니거나 답 모양이 아니다 — 플랫폼 오류 페이지가 끼면 나온다. 결과 대신 오류를 보인다
         setStatus({ kind: "error", message: errorMessage(502, "") });
         return;
       }

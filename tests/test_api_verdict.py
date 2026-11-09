@@ -235,7 +235,9 @@ def test_today_kst_is_the_seoul_date_not_the_utc_date():
 # ── 판정 잠금 대기 제한 (#85) ────────────────────────────────────────────
 
 
-def test_busy_lock_is_503_after_the_timeout_and_never_reaches_the_flow(make, hmn, monkeypatch, spy):
+def test_busy_lock_is_503_after_the_timeout_and_never_reaches_the_flow(
+    make, hmn, pg_engine, monkeypatch, spy
+):
     monkeypatch.setattr(settings, "verdict_lock_timeout_s", 0.05)
     client, chat = make()
     assert api._LOCK.acquire(timeout=1)  # 앞 판정이 진행 중인 것처럼 잠근다
@@ -246,7 +248,9 @@ def test_busy_lock_is_503_after_the_timeout_and_never_reaches_the_flow(make, hmn
     assert r.status_code == 503
     assert r.json()["detail"] == "다른 판정이 진행 중이다. 잠시 뒤 다시 시도해 달라"
     assert spy == [] and chat.calls == []
+    assert [r[1] for r in _count_rows(pg_engine)] == [0]  # 판정을 못 받았으니 한도에서 되돌린다
     assert _post(client, hmn, {}).status_code == 200  # 풀리면 다시 받는다
+    assert [r[1] for r in _count_rows(pg_engine)] == [1]
 
 
 def test_lock_is_released_when_the_flow_raises(make, hmn, monkeypatch):

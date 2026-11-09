@@ -2,8 +2,10 @@
 import { apiBase } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
-// Vercel 함수 제한(300초) 안쪽. 이 시간 안에 FastAPI가 답하지 않으면 끊고 504를 낸다
-const TIMEOUT_MS = Number(process.env.VERDICT_TIMEOUT_MS ?? 280_000);
+// 이 함수가 FastAPI를 기다릴 수 있는 최대 시간. 기본값이 짧으면 캐시 없는 판정(약 20초)도 끊긴다
+export const maxDuration = 300;
+// 300초 안쪽. 이 시간 안에 FastAPI가 답하지 않으면 끊고 504를 낸다. 빈 값·숫자 아님은 기본값이다
+const TIMEOUT_MS = Number(process.env.VERDICT_TIMEOUT_MS) || 280_000;
 
 export async function POST(
   req: Request,

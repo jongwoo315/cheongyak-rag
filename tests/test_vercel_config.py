@@ -34,6 +34,7 @@ def test_python_version_file_is_3_12():
 
 def test_vercelignore_files_list_the_heavy_directories():
     assert _lines(".vercelignore") >= {"data/", "runs/", "docs/", "tests/", "web/", ".venv/"}
+    assert ".env*" in _lines(".vercelignore")  # 로컬 .env(키·DB 주소)가 함수 번들에 안 들어가게
     assert _lines("web/.vercelignore") >= {"node_modules/", ".next/", "e2e/"}
 
 
@@ -52,3 +53,10 @@ def test_root_app_py_imports_the_fastapi_app_from_the_repo_root():
 def test_root_app_py_puts_src_first_on_the_path():
     src = (REPO / "app.py").read_text(encoding="utf-8")
     assert "sys.path.insert(0," in src and "from cheongyak_rag.main import app" in src
+
+
+def test_web_verdict_route_asks_for_the_300_second_function_limit():
+    route = (REPO / "web" / "app" / "api" / "verdict" / "[houseManageNo]" / "route.ts").read_text(
+        encoding="utf-8"
+    )
+    assert "export const maxDuration = 300" in route

@@ -4,3 +4,4 @@ docs/
 tests/
 web/
 .venv/
+.env*

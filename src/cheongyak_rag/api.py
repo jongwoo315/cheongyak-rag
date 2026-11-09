@@ -58,6 +58,15 @@ def today_kst(now: datetime | None = None) -> date:
     return (now or datetime.now(KST)).astimezone(KST).date()
 
 
+_GIVE_BACK = "UPDATE verdict_daily_count SET count = greatest(count - 1, 0) WHERE day = :d"
+
+
+def _give_back_one(engine: Engine) -> None:
+    """판정을 못 받고 끝난 질의(잠금 대기 초과)는 한도에서 되돌린다."""
+    with engine.begin() as conn:
+        conn.execute(sa.text(_GIVE_BACK), {"d": today_kst()})
+
+
 def _take_one_of_todays_limit(engine: Engine) -> None:
     """오늘 판정 수를 1 올리고 한도를 넘었으면 429. 행 쓰기 한 번이라 인스턴스가 여럿이어도 맞다."""
     limit = settings.verdict_daily_limit
@@ -165,6 +174,7 @@ def verdict(
         _take_one_of_todays_limit(engine)  # 404·422 뒤, 흐름 전
         # 앞 판정이 길면 뒤 요청이 함수 시간 제한까지 묶이지 않도록 기다리는 시간을 자른다
         if not _LOCK.acquire(timeout=settings.verdict_lock_timeout_s):
+            _give_back_one(engine)
             raise HTTPException(503, BUSY)
         try:
             traced = trace.run_traced(
