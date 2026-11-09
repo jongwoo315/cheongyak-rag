@@ -94,6 +94,10 @@ def pg_engine(pg_test_url):
     engine = create_engine(pg_test_url)
     assert make_url(pg_test_url).database.startswith(TEST_DB_PREFIX)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE notice_models, notices, law_versions, chunks, traces"))
+        conn.execute(
+            text(
+                "TRUNCATE notice_models, notices, law_versions, chunks, traces, verdict_daily_count"
+            )
+        )
     yield engine
     engine.dispose()

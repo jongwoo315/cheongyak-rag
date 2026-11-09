@@ -1,0 +1,48 @@
+{
+  "expected_taken_at": "2026-11-09T09:56:19+09:00",
+  "after": {
+    "health": {
+      "status_code": 200,
+      "body": {
+        "status": "ok",
+        "db": "ok",
+        "pgvector": "ok"
+      }
+    }
+  },
+  "s1": {
+    "F": 0,
+    "pages_missing": [],
+    "L": 84,
+    "n_pages": 84,
+    "failed": [],
+    "band": "통과"
+  },
+  "s2": {
+    "G1": 0,
+    "G1_pairs": [],
+    "G1_after_retry": 0,
+    "G2": 0,
+    "diff": [],
+    "pairs_missing": [],
+    "n_pairs": 18,
+    "retries": 0,
+    "seconds_median": 1.833,
+    "seconds_max": 2.85,
+    "verdict_same": 18,
+    "n_compared": 18,
+    "band": "통과"
+  },
+  "s3": {
+    "A": "ok",
+    "health": {
+      "status_code": 200,
+      "body": {
+        "status": "ok",
+        "db": "ok",
+        "pgvector": "ok"
+      }
+    },
+    "band": "통과"
+  }
+}

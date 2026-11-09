@@ -11,3 +11,4 @@ data/processed/
 data/cache/
 node_modules/
 .next/
+.vercel

@@ -1,0 +1,7 @@
+data/
+runs/
+docs/
+tests/
+web/
+.venv/
+.env*

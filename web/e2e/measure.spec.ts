@@ -1,15 +1,20 @@
 // #84 징후 1·2 측정. 화면 코드(web/app)를 import하지 않는다.
 // 먼저 `python -m cheongyak_rag.web_report before`로 runs/84/expected.json을 만든다.
 // 화면에서 읽은 값만 runs/84/raw.json에 쓰고, 기대값과 맞추는 계산은 파이썬(`after`)이 한다.
+// #85: 아래 환경 변수로 배포 사이트를 잰다. 안 주면 #84와 똑같이 동작한다.
+//   WEB_BASE_URL     잴 사이트 (기본 http://127.0.0.1:3184)
+//   MEASURE_RUN_DIR  expected.json을 읽고 raw.json을 쓰는 디렉터리 (기본 runs/84, repo 기준)
+//   MEASURE_WAIT_MS  쌍마다 결과를 기다리는 시간 (기본 120000)
+//   MEASURE_SHOT_DIR 스크린샷 디렉터리 (기본 docs/84-web, repo 기준)
 import { expect, test, type Browser } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
 const REPO = path.resolve(__dirname, "../..");
-const RUN_DIR = path.join(REPO, "runs/84");
-const SHOT_DIR = path.join(REPO, "docs/84-web");
+const RUN_DIR = path.resolve(REPO, process.env.MEASURE_RUN_DIR ?? "runs/84");
+const SHOT_DIR = path.resolve(REPO, process.env.MEASURE_SHOT_DIR ?? "docs/84-web");
 const WEB = process.env.WEB_BASE_URL ?? "http://127.0.0.1:3184";
-const WAIT_MS = 120_000;
+const WAIT_MS = Number(process.env.MEASURE_WAIT_MS) || 120_000;
 
 type Expected = {
   notices: { house_manage_no: string; house_nm: string; n_models: number }[];
@@ -119,6 +124,7 @@ test("징후 1·2 — 공고 페이지 84개와 18쌍 질의", async ({ browser 
     if (!attempts[0].shown) attempts.push(await ask(browser, p.notice, p.profile_json, shot)); // 그 쌍만 한 번 더
     pairs.push({ notice: p.notice, profile: p.profile, attempts });
   }
+  fs.mkdirSync(RUN_DIR, { recursive: true });
   fs.writeFileSync(path.join(RUN_DIR, "raw.json"), JSON.stringify({ pages, links, pairs }, null, 2));
   expect(pairs.length).toBe(exp.pairs.length); // 값의 통과 여부는 파이썬 `after`가 판정한다
 });

@@ -121,3 +121,98 @@ def test_render_puts_the_three_symptoms_on_top():
     text = wr.render(exp, wr.judge(exp, _raw(), _after()))
     top = text.split("## 1.")[0]
     assert "징후 1" in top and "징후 2" in top and "징후 3" in top
+
+
+# ── 배포 측정 모드 (#85) ─────────────────────────────────────────────────
+
+
+def _health(ok=True):
+    body = {"status": "ok", "db": "ok", "pgvector": "ok" if ok else "missing"}
+    return {"status_code": 200, "body": body}
+
+
+def test_health_is_ok_only_with_200_and_db_and_pgvector_ok():
+    assert wr.health_ok(_health())
+    assert not wr.health_ok(_health(ok=False))
+    assert not wr.health_ok({"status_code": 500, "body": {}})
+    assert not wr.health_ok({"error": "ConnectError"})
+
+
+def test_deploy_g2_ignores_verdict_but_counts_route_keys_and_checklist_size():
+    other_verdict = {"shown": True, "seconds": 1.0, "screen": _screen(verdict="ELIGIBLE")}
+    r = wr.judge(_exp(), _raw(attempts=[other_verdict]), None, deploy=True, health=_health())
+    assert r["s2"]["G2"] == 0 and r["s2"]["band"] == "통과"
+    assert r["s2"]["verdict_same"] == 0 and r["s2"]["n_compared"] == 1
+
+
+def test_deploy_g2_catches_a_different_route_key_set_or_checklist_size():
+    for screen in (_screen(n=4), _screen(routes=[["general", "판정 없음"]])):
+        att = [{"shown": True, "seconds": 1.0, "screen": screen}]
+        r = wr.judge(_exp(), _raw(attempts=att), None, deploy=True, health=_health())
+        assert r["s2"]["G2"] == 1 and r["s2"]["band"] == "미완"
+
+
+def test_deploy_counts_pairs_with_the_same_verdict_as_81():
+    r = wr.judge(_exp(), _raw(), None, deploy=True, health=_health())
+    assert r["s2"]["verdict_same"] == 1 and r["s2"]["G2"] == 0
+
+
+def test_deploy_replaces_h_and_t_with_a():
+    r = wr.judge(_exp(), _raw(), None, deploy=True, health=_health())
+    assert "H" not in r["s3"] and "T" not in r["s3"]
+    assert r["s3"]["A"] == "ok" and r["s3"]["band"] == "통과"
+    bad = wr.judge(_exp(), _raw(), None, deploy=True, health=_health(ok=False))
+    assert bad["s3"]["A"] == "not ok" and bad["s3"]["band"] == "미완"
+
+
+def test_deploy_render_shows_a_and_g2_prime_and_not_h_t():
+    exp = _exp()
+    text = wr.render(exp, wr.judge(exp, _raw(), None, deploy=True, health=_health()), deploy=True)
+    top = text.split("## 1.")[0]
+    assert "A" in top and "G2'" in top and "판정값이 #81과 같은 쌍" in top
+    assert "새 trace 행 T" not in text and "새 LLM 호출 H" not in text
+
+
+def test_only_notice_keeps_the_notice_list_and_trims_the_pairs():
+    exp = _exp()
+    exp["pairs"].append({**exp["pairs"][0], "notice": "B"})
+    got = wr.only_notice(exp, "A")
+    assert [p["notice"] for p in got["pairs"]] == ["A"] and got["notices"] == exp["notices"]
+    assert len(exp["pairs"]) == 2  # 원본은 그대로
+
+
+def test_only_notice_unknown_notice_raises():
+    import pytest
+
+    with pytest.raises(SystemExit):
+        wr.only_notice(_exp(), "없음")
+
+
+def test_parse_args_defaults_are_the_84_paths():
+    a = wr.parse_args(["after"])
+    assert a.cmd == "after" and not a.deploy
+    assert a.run_dir == wr.REPO / "runs" / "84" and a.report == wr.REPO / "docs" / "84-web.md"
+
+
+def test_parse_args_relative_paths_resolve_against_the_repo():
+    a = wr.parse_args(
+        [
+            "after",
+            "--run-dir",
+            "runs/85/x",
+            "--report",
+            "runs/85/x/r.md",
+            "--deploy",
+            "--api-url",
+            "u",
+        ]
+    )
+    assert a.run_dir == wr.REPO / "runs/85/x" and a.report == wr.REPO / "runs/85/x/r.md"
+    assert a.deploy and a.api_url == "u"
+
+
+def test_parse_args_deploy_without_api_url_on_after_is_an_error():
+    import pytest
+
+    with pytest.raises(SystemExit):
+        wr.parse_args(["after", "--deploy"])

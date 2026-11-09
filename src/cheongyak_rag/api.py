@@ -7,6 +7,7 @@ import dataclasses
 import logging
 import threading
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Annotated, Any
 
@@ -29,10 +30,12 @@ log = logging.getLogger(__name__)
 
 # 임베더·클라이언트·캐시는 CLI처럼 한 스레드를 전제로 만들어졌다
 # (지연 시간 기록, 캐시 파일 이어 쓰기).
-# ponytail: 판정을 한 번에 하나씩 돌린다. 동시 판정이 필요하면 구성 요소마다 잠금을 건다 (#85)
+# ponytail: 판정을 한 번에 하나씩 돌린다. 동시 판정이 필요하면 구성 요소마다 잠금을 건다.
+# 서버리스 인스턴스 사이에는 이 잠금이 안 걸린다(캐시 파일이 인스턴스마다 따로라 문제는 없다)
 _LOCK = threading.Lock()
 NO_DETAIL = "판정 서비스를 지금 쓸 수 없다"
 ITEM_FAILED = "이 질의의 판정에 실패했다"
+BUSY = "다른 판정이 진행 중이다. 잠시 뒤 다시 시도해 달라"
 
 
 @lru_cache
@@ -42,6 +45,36 @@ def get_engine() -> Engine:
 
 
 EngineDep = Annotated[Engine, Depends(get_engine)]
+
+# Asia/Seoul = UTC+9, 서머타임 없음. 고정 오프셋이라 서버리스 이미지에 tz 데이터가 없어도 된다
+KST = timezone(timedelta(hours=9))
+_BUMP = (
+    "INSERT INTO verdict_daily_count (day, count) VALUES (:d, 1)"
+    " ON CONFLICT (day) DO UPDATE SET count = verdict_daily_count.count + 1 RETURNING count"
+)
+
+
+def today_kst(now: datetime | None = None) -> date:
+    return (now or datetime.now(KST)).astimezone(KST).date()
+
+
+_GIVE_BACK = "UPDATE verdict_daily_count SET count = greatest(count - 1, 0) WHERE day = :d"
+
+
+def _give_back_one(engine: Engine) -> None:
+    """판정을 못 받고 끝난 질의(잠금 대기 초과)는 한도에서 되돌린다."""
+    with engine.begin() as conn:
+        conn.execute(sa.text(_GIVE_BACK), {"d": today_kst()})
+
+
+def _take_one_of_todays_limit(engine: Engine) -> None:
+    """오늘 판정 수를 1 올리고 한도를 넘었으면 429. 행 쓰기 한 번이라 인스턴스가 여럿이어도 맞다."""
+    limit = settings.verdict_daily_limit
+    with engine.begin() as conn:
+        used = conn.execute(sa.text(_BUMP), {"d": today_kst()}).scalar_one()
+    if used > limit:
+        raise HTTPException(429, f"오늘 판정 한도({limit}건)를 다 썼다. 내일 다시 시도해 달라")
+
 
 _LIST = (
     "SELECT house_manage_no, pblanc_no, house_nm, subscrpt_area_nm, rcrit_pblanc_de,"
@@ -138,7 +171,12 @@ def verdict(
         # 없는 공고와 모순된 프로필은 trace 행을 만들기 전에 404·422로 멈춘다
         pblanc_no, _, _ = axes.load_facts(engine, house_manage_no)
         prof.score(profile, _notice_date(engine, house_manage_no, pblanc_no))
-        with _LOCK:
+        _take_one_of_todays_limit(engine)  # 404·422 뒤, 흐름 전
+        # 앞 판정이 길면 뒤 질의가 함수 시간 제한까지 묶이지 않도록 기다리는 시간을 자른다
+        if not _LOCK.acquire(timeout=settings.verdict_lock_timeout_s):
+            _give_back_one(engine)
+            raise HTTPException(503, BUSY)
+        try:
             traced = trace.run_traced(
                 engine,
                 deps.embedder,
@@ -149,6 +187,8 @@ def verdict(
                 cache=deps.cache,
                 key=deps.key,
             )
+        finally:
+            _LOCK.release()
     except prof.ProfileError as e:
         raise HTTPException(422, str(e)) from e
     except axes.NoticeNotFound as e:

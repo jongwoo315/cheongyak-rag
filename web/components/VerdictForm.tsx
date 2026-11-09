@@ -15,6 +15,8 @@ function errorMessage(status: number, detail: string): string {
   if (status === 422) return `입력 값을 확인해 주세요. ${detail}`;
   if (status === 404) return "이 공고를 찾을 수 없습니다.";
   if (status === 503) return `판정 서비스를 지금 쓸 수 없습니다. 잠시 뒤에 다시 시도해 주세요. (${detail})`;
+  if (status === 429) return detail || "오늘 판정 한도를 다 썼습니다. 내일 다시 시도해 주세요.";
+  if (status === 504) return "판정이 너무 오래 걸려 끊었습니다. 잠시 뒤에 다시 시도해 주세요.";
   if (status === 502) return "판정 서버에 연결하지 못했습니다. 잠시 뒤에 다시 시도해 주세요.";
   return `판정 중 오류가 났습니다. (${status}) ${detail}`;
 }
@@ -44,10 +46,17 @@ export default function VerdictForm({ houseManageNo }: { houseManageNo: string }
         headers: { "content-type": "application/json" },
         body: JSON.stringify(toPayload(values)),
       });
-      const body = await res.json().catch(() => ({}));
+      const body: unknown = await res.json().catch(() => null);
+      const obj = body !== null && typeof body === "object" && !Array.isArray(body);
       if (!res.ok) {
-        const detail = typeof body.detail === "string" ? body.detail : "";
-        setStatus({ kind: "error", message: errorMessage(res.status, detail) });
+        const d = obj ? (body as { detail?: unknown }).detail : undefined;
+        setStatus({ kind: "error", message: errorMessage(res.status, typeof d === "string" ? d : "") });
+        return;
+      }
+      const a = body as { general?: unknown; checklist?: unknown };
+      if (!obj || typeof a.general !== "object" || !Array.isArray(a.checklist)) {
+        // 200인데 JSON이 아니거나 답 모양이 아니다 — 플랫폼 오류 페이지가 끼면 나온다. 결과 대신 오류를 보인다
+        setStatus({ kind: "error", message: errorMessage(502, "") });
         return;
       }
       setStatus({ kind: "done", answer: body as Answer });
