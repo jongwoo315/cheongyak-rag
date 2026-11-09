@@ -230,3 +230,31 @@ def test_today_kst_is_the_seoul_date_not_the_utc_date():
     utc_evening = datetime(2026, 11, 9, 16, 0, tzinfo=UTC)  # 서울은 11-10 01:00
     assert api.today_kst(utc_evening) == date(2026, 11, 10)
     assert api.today_kst(datetime(2026, 11, 9, 14, 59, tzinfo=UTC)) == date(2026, 11, 9)
+
+
+# ── 판정 잠금 대기 제한 (#85) ────────────────────────────────────────────
+
+
+def test_busy_lock_is_503_after_the_timeout_and_never_reaches_the_flow(make, hmn, monkeypatch, spy):
+    monkeypatch.setattr(settings, "verdict_lock_timeout_s", 0.05)
+    client, chat = make()
+    assert api._LOCK.acquire(timeout=1)  # 앞 판정이 진행 중인 것처럼 잠근다
+    try:
+        r = _post(client, hmn, {})
+    finally:
+        api._LOCK.release()
+    assert r.status_code == 503
+    assert r.json()["detail"] == "다른 판정이 진행 중이다. 잠시 뒤 다시 시도해 달라"
+    assert spy == [] and chat.calls == []
+    assert _post(client, hmn, {}).status_code == 200  # 풀리면 다시 받는다
+
+
+def test_lock_is_released_when_the_flow_raises(make, hmn, monkeypatch):
+    def boom(*a, **kw):
+        raise HardApiError("insufficient_quota")
+
+    monkeypatch.setattr(trace, "run_traced", boom)
+    client, _ = make()
+    assert _post(client, hmn, {}).status_code == 503
+    assert api._LOCK.acquire(timeout=1)  # 예외 뒤에도 잠금이 풀려 있다
+    api._LOCK.release()

@@ -62,3 +62,16 @@ def test_database_url_is_rewritten_for_psycopg(given, want):
 def test_database_url_env_var_is_rewritten_too(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgres://u:p@h/db?sslmode=require")
     assert Settings(_env_file=None).database_url == "postgresql+psycopg://u:p@h/db?sslmode=require"
+
+
+def test_verdict_limits_defaults():
+    s = Settings(_env_file=None)
+    assert s.verdict_daily_limit == 50
+    assert s.verdict_lock_timeout_s == 60.0 <= 240  # 계획: 240초를 넘지 않는다
+
+
+def test_verdict_limits_read_env_vars(monkeypatch):
+    monkeypatch.setenv("VERDICT_DAILY_LIMIT", "7")
+    monkeypatch.setenv("VERDICT_LOCK_TIMEOUT_S", "2.5")
+    s = Settings(_env_file=None)
+    assert (s.verdict_daily_limit, s.verdict_lock_timeout_s) == (7, 2.5)
