@@ -45,7 +45,7 @@ Neon Postgres 17 + pgvector  (싱가포르)
 | `OPENAI_API_KEY` | api | 예 | (OpenAI 대시보드의 키) |
 | `DATABASE_URL` | api | 예 | `postgresql://<user>:<password>@<host>/<db>?sslmode=require` (Neon **직접 연결** 주소, pooler 아님) |
 | `TRACE_HASH_KEY` | api | 예 | 임의의 긴 문자열. 비면 판정이 503이다 |
-| `CACHE_DIR` | api | 아니오 | `/tmp/cheongyak-cache` |
+| `CACHE_DIR` | api | 아니오 | `/tmp/cheongyak-cache` (**api에 꼭 넣는다.** 안 넣으면 기본 위치 `data/cache`가 Vercel에서 쓸 수 없는 경로라 첫 판정이 500으로 끝난다) |
 | `VERDICT_DAILY_LIMIT` | api | 아니오 | `50` (기본 50) |
 | `VERDICT_LOCK_TIMEOUT_S` | api | 아니오 | `60` (기본 60) |
 | `OPENAI_EMBED_MODEL`·`OPENAI_GEN_MODEL`·`OPENAI_JUDGE_MODEL` | api | 아니오 | 기본값 그대로 두면 안 넣어도 된다 |
