@@ -172,7 +172,7 @@ def verdict(
         pblanc_no, _, _ = axes.load_facts(engine, house_manage_no)
         prof.score(profile, _notice_date(engine, house_manage_no, pblanc_no))
         _take_one_of_todays_limit(engine)  # 404·422 뒤, 흐름 전
-        # 앞 판정이 길면 뒤 요청이 함수 시간 제한까지 묶이지 않도록 기다리는 시간을 자른다
+        # 앞 판정이 길면 뒤 질의가 함수 시간 제한까지 묶이지 않도록 기다리는 시간을 자른다
         if not _LOCK.acquire(timeout=settings.verdict_lock_timeout_s):
             _give_back_one(engine)
             raise HTTPException(503, BUSY)
