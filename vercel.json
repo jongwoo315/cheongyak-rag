@@ -1,0 +1,9 @@
+{
+  "regions": ["sin1"],
+  "functions": {
+    "app.py": {
+      "maxDuration": 300,
+      "excludeFiles": "{web/**,tests/**,docs/**,runs/**,data/**,alembic/**}"
+    }
+  }
+}
