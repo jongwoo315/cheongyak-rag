@@ -162,3 +162,15 @@ def test_interrupt_still_writes_manifest_for_finished_notices(engine, tmp_path):
         (N1, "pdf"),
         (N2, "no_link"),
     ]
+
+
+def test_corrupt_manifest_line_stops_without_overwriting(engine, tmp_path):
+    assert run(Site(), engine, tmp_path) == 0
+    path = tmp_path / "notices" / "manifest.jsonl"
+    with path.open("a", encoding="utf-8") as f:
+        f.write('{"house_manage_no": "잘린 줄')
+    before = path.read_text(encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        run(Site(), engine, tmp_path, "--limit", "1")
+    assert path.read_text(encoding="utf-8") == before  # 지난 줄을 지우지 않았다

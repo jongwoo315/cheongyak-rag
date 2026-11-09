@@ -340,11 +340,15 @@ def collect_notice(
 
 
 def _read_manifest(path: Path) -> list[dict]:
+    """지난 목록. 파일이 없을 때만 빈 목록이다. 깨진 줄이 있으면 예외로 멈춘다.
+
+    빈 목록으로 넘어가면 이어지는 쓰기가 지난 줄을 전부 지운다.
+    """
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
-        return [json.loads(line) for line in lines if line.strip()]
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return []
+    return [json.loads(line) for line in lines if line.strip()]
 
 
 def _write_atomic(path: Path, text: str) -> None:
