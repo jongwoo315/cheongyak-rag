@@ -5,8 +5,11 @@
 `data/raw/notices/quarantine/`에 두고 목록(`manifest.jsonl`)에 한 줄씩 남긴다.
 """
 
+import argparse
 import hashlib
+import json
 import re
+import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,6 +19,10 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 import httpx
 import pymupdf
+import sqlalchemy as sa
+from sqlalchemy.engine import Engine
+
+from cheongyak_rag.config import settings
 
 PACE = 0.5  # 요청 사이 간격(초)
 BACKOFF = (1, 2, 4, 8)  # 429·5xx·연결 오류 재시도 대기(초). 최대 4회
@@ -25,6 +32,11 @@ PAGE_TIMEOUT = 30.0
 FILE_TIMEOUT = 120.0
 NETFUNNEL_WAIT = 30
 NOTICE_DIR = Path("data/raw/notices")
+DEFAULT_OUT = Path("runs/72/last_run.json")
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
 RESULTS = ("pdf", "hwp", "other", "no_link", "error")
 _SEVERITY = {"pdf": 0, "hwp": 1, "other": 2, "error": 3}  # 공고 결과는 가장 나쁜 줄을 따른다
 
@@ -319,3 +331,138 @@ def collect_notice(
             received += got
     worst = max((r["result"] for r in rows), key=_SEVERITY.__getitem__)
     return NoticeResult(rows, worst, new, received)
+
+
+# ── 실행 ─────────────────────────────────────────────────────────────────
+
+
+def _read_manifest(path: Path) -> list[dict]:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        return [json.loads(line) for line in lines if line.strip()]
+    except (OSError, ValueError):
+        return []
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".part")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def _load_notices(engine: Engine, limit: int | None) -> list[tuple[str, str, str | None]]:
+    """실제 DB `notices`를 읽기만 한다."""
+    stmt = "SELECT house_manage_no, pblanc_no, pblanc_url FROM notices ORDER BY 1, 2"
+    params = {}
+    if limit is not None:
+        stmt += " LIMIT :n"
+        params["n"] = limit
+    with engine.connect() as conn:
+        return [tuple(r) for r in conn.execute(sa.text(stmt), params)]
+
+
+def main(argv=None, client=None, engine=None, sleep=time.sleep) -> int:
+    ap = argparse.ArgumentParser(description="청약홈 공고문 첨부를 받아 data/raw/notices/에 둔다")
+    ap.add_argument("--limit", type=int, default=None, help="앞에서부터 N개 공고만")
+    ap.add_argument("--out", type=Path, default=DEFAULT_OUT, help="실행 요약 JSON 경로")
+    ap.add_argument("--dir", type=Path, default=NOTICE_DIR, help="공고문을 두는 폴더")
+    args = ap.parse_args(argv)
+
+    own_client, own_engine = client is None, engine is None
+    client = client or httpx.Client(headers={"User-Agent": USER_AGENT}, follow_redirects=True)
+    engine = engine or sa.create_engine(settings.database_url)
+    try:
+        notices = _load_notices(engine, args.limit)
+    finally:
+        if own_engine:
+            engine.dispose()
+    if not notices:
+        print("DB `notices`에 공고가 없다. #71 수집을 먼저 돌릴 것", file=sys.stderr)
+        if own_client:
+            client.close()
+        return 1
+
+    manifest_path = args.dir / "manifest.jsonl"
+    old_rows = _read_manifest(manifest_path)
+    previous = {r["url"]: r for r in old_rows if r.get("url")}
+    started = datetime.now().astimezone()
+    t0 = time.monotonic()
+    new_rows: list[dict] = []
+    results: dict[str, int] = dict.fromkeys(RESULTS, 0)
+    by_result: dict[str, list[str]] = {r: [] for r in RESULTS}
+    new_downloads = received = 0
+    try:
+        for hm, pb, url in notices:
+            try:
+                if not url:
+                    out = NoticeResult(
+                        [
+                            _row(
+                                hm, pb, None, result="error", error="notices.pblanc_url이 비어 있다"
+                            )
+                        ],
+                        "error",
+                    )
+                else:
+                    out = collect_notice(client, hm, pb, url, args.dir, previous, sleep)
+            except Exception as e:  # noqa: BLE001 — 공고 하나가 예상 밖으로 죽어도 나머지를 계속한다
+                out = NoticeResult(
+                    [
+                        _row(
+                            hm,
+                            pb,
+                            None,
+                            result="error",
+                            error=f"{type(e).__name__}: {str(e)[:200]}",
+                        )
+                    ],
+                    "error",
+                )
+            new_rows += out.rows
+            results[out.result] += 1
+            by_result[out.result].append(f"{hm}/{pb}")
+            new_downloads += out.new_downloads
+            received += out.downloaded_bytes
+    finally:
+        if own_client:
+            client.close()
+
+    done = {(r["house_manage_no"], r["pblanc_no"]) for r in new_rows}
+    kept = [r for r in old_rows if (r["house_manage_no"], r["pblanc_no"]) not in done]
+    merged = sorted(
+        kept + new_rows,
+        key=lambda r: (r["house_manage_no"], r["pblanc_no"], r["url"] or ""),
+    )
+    _write_atomic(manifest_path, "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in merged))
+
+    ended = datetime.now().astimezone()
+    summary = {
+        "started_at": started.isoformat(timespec="seconds"),
+        "ended_at": ended.isoformat(timespec="seconds"),
+        "elapsed_sec": round(time.monotonic() - t0, 1),
+        "limit": args.limit,
+        "notices": len(notices),
+        "results": results,
+        "errors": results["error"],
+        "with_link": len(notices) - results["no_link"],
+        "link_rows": len(new_rows),
+        "new_downloads": new_downloads,
+        "downloaded_bytes": received,
+        "error_notices": by_result["error"],
+        "no_link_notices": by_result["no_link"],
+    }
+    _write_atomic(args.out, json.dumps(summary, ensure_ascii=False, indent=2))
+    print(
+        f"공고 {summary['notices']}건 · 결과 "
+        + " · ".join(f"{k} {v}" for k, v in results.items())
+        + f" · 새 다운로드 {new_downloads} · {received}바이트 · {summary['elapsed_sec']}초"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
