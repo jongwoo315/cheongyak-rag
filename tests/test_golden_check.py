@@ -169,3 +169,9 @@ def test_agreement_counts_verdict_and_citation_disagreements():
     assert ag["verdict_diff_ratio"] == 0.5
     assert ag["by_axis"]["homeless"]["verdict_diff"] == 1
     assert [d["axis"] for d in ag["diffs"]] == ["homeless", "account"]
+
+
+def test_check_notices_flags_notice_without_facts():
+    n = {"house_manage_no": "N1", "pdf": "x.pdf"}
+    bad = check.check_notices([n, {**n, "facts": {}}], pages_of=lambda h: PAGES["N1"])
+    assert len(bad) == 2 and all("facts" in x for x in bad)

@@ -215,7 +215,10 @@ def check_notices(notices: list[dict], *, pages_of) -> list[str]:
     """notices.json의 공고문 사실 구절이 그 쪽 글자에 있는지 본다. 어긋난 것을 줄마다 돌려준다."""
     bad: list[str] = []
     for n in notices:
-        facts = n.get("facts") or {}
+        facts = n.get("facts")
+        if not isinstance(facts, dict) or not facts:
+            bad.append(f"{n['house_manage_no']}: 공고문 사실(facts)이 없다")
+            continue
         pages = pages_of(n["house_manage_no"])
         items = [("regulation." + k, v) for k, v in (facts.get("regulation") or {}).items()]
         items += [
