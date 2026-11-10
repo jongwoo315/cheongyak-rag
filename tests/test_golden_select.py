@@ -55,3 +55,16 @@ def test_select_unknown_fixed_raises():
 def test_candidate_is_json_ready():
     c = cand("1")
     assert json.dumps(c.to_dict(), ensure_ascii=False)
+
+
+def test_merge_existing_keeps_hand_added_keys_and_refreshes_built_ones():
+    from cheongyak_rag.golden.select import merge_existing
+
+    old = {"notices": [{"house_manage_no": "A", "name": "옛 이름", "facts": {"k": 1},
+        "db_mismatch": [1], "db_silent": [2], "label_facts": {"account_months": 12}}]}  # fmt: skip
+    new = {"notices": [{"house_manage_no": "A", "name": "새 이름"}, {"house_manage_no": "B"}]}
+    out = merge_existing(new, old)["notices"]
+    assert out[0]["name"] == "새 이름"
+    assert out[0]["facts"] == {"k": 1} and out[0]["db_silent"] == [2]
+    assert out[0]["label_facts"] == {"account_months": 12} and out[0]["db_mismatch"] == [1]
+    assert out[1] == {"house_manage_no": "B"}

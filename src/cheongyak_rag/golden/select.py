@@ -152,13 +152,15 @@ def build(engine: Engine, manifest: Path = MANIFEST) -> dict:
 
 
 def merge_existing(new: dict, old: dict) -> dict:
-    """다시 돌려도 Task 3이 더한 `facts`·`db_mismatch`가 지워지지 않게 같은 공고에 옮긴다."""
+    """다시 돌려도 손으로 더한 칸(`facts`·`db_mismatch`·`db_silent`·`label_facts` 등)이 지워지지 않게 옮긴다.
+
+    `build()`가 만드는 칸은 새 값을 쓰고, 그 밖의 칸은 같은 공고의 이전 값을 그대로 둔다.
+    """
     keep = {n["house_manage_no"]: n for n in old.get("notices", [])}
     for n in new["notices"]:
         prev = keep.get(n["house_manage_no"], {})
-        for key in ("facts", "db_mismatch"):
-            if key in prev:
-                n[key] = prev[key]
+        for key, value in prev.items():
+            n.setdefault(key, value)
     return new
 
 
