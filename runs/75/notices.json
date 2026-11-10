@@ -182,7 +182,10 @@
         "account_months": 24,
         "account_article": "제28조",
         "regulated": true,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": false,
+        "referral_no_account": true
       }
     },
     {
@@ -306,7 +309,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -421,7 +427,10 @@
         "account_months": 12,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -495,7 +504,10 @@
         "account_months": 6,
         "account_article": "제27조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": false,
+        "referral_no_account": false
       }
     },
     {
@@ -566,7 +578,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": false,
+        "referral_no_account": false
       }
     },
     {
@@ -689,7 +704,13 @@
         "account_months": 24,
         "account_article": "제27조",
         "regulated": true,
-        "residence_34": true
+        "residence_34": true,
+        "newlywed_branches": [
+          "예비신혼부부",
+          "한부모가족"
+        ],
+        "referral_urban_renewal": false,
+        "referral_no_account": false
       }
     },
     {
@@ -832,7 +853,10 @@
         "account_months": 12,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": false,
+        "referral_no_account": true
       }
     },
     {
@@ -956,7 +980,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1091,7 +1118,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": true
+        "residence_34": true,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1226,7 +1256,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1350,7 +1383,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1474,7 +1510,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1598,7 +1637,10 @@
         "account_months": 12,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1722,7 +1764,10 @@
         "account_months": 12,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1850,7 +1895,10 @@
         "account_months": 24,
         "account_article": "제28조",
         "regulated": true,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -1978,7 +2026,10 @@
         "account_months": 24,
         "account_article": "제28조",
         "regulated": true,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -2102,7 +2153,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -2226,7 +2280,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     },
     {
@@ -2350,7 +2407,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": false,
+        "referral_no_account": true
       }
     },
     {
@@ -2474,7 +2534,10 @@
         "account_months": 6,
         "account_article": "제28조",
         "regulated": false,
-        "residence_34": false
+        "residence_34": false,
+        "newlywed_branches": [],
+        "referral_urban_renewal": true,
+        "referral_no_account": true
       }
     }
   ]

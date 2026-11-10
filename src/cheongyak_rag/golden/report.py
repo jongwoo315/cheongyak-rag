@@ -234,6 +234,8 @@ def render_report(rows, notices, measure, *, disagreements, second_rows) -> str:
         )  # fmt: skip
     else:
         out += ["어긋난 라벨이 없다.", ""]
+    out += [f"- {note}" for note in measure.get("notes", [])]
+    out += [""] if measure.get("notes") else []
     out += [
         "한계: 두 쪽 다 Claude라 같은 잘못을 같이 할 수 있다. "
         "일치율이 높아도 맞았다는 증거는 아니다. "

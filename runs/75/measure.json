@@ -1,0 +1,56 @@
+{
+  "quote_mismatch": {
+    "first": 0,
+    "after_fix": 0
+  },
+  "agreement_first": {
+    "labels": 524,
+    "verdict_diff": 4,
+    "citation_diff": 0,
+    "verdict_diff_ratio": 0.007633587786259542,
+    "citation_diff_ratio": 0.0,
+    "by_axis": {
+      "homeless": {
+        "labels": 50,
+        "verdict_diff": 0,
+        "citation_diff": 0
+      },
+      "account": {
+        "labels": 50,
+        "verdict_diff": 0,
+        "citation_diff": 0
+      },
+      "residence": {
+        "labels": 50,
+        "verdict_diff": 0,
+        "citation_diff": 0
+      },
+      "income_asset": {
+        "labels": 45,
+        "verdict_diff": 0,
+        "citation_diff": 0
+      },
+      "rewin": {
+        "labels": 23,
+        "verdict_diff": 0,
+        "citation_diff": 0
+      },
+      "householder": {
+        "labels": 42,
+        "verdict_diff": 0,
+        "citation_diff": 0
+      },
+      "special_type": {
+        "labels": 264,
+        "verdict_diff": 4,
+        "citation_diff": 0
+      }
+    }
+  },
+  "agreement_second": null,
+  "notes": [
+    "처음 값은 라벨 규칙 문서와 첫 라벨을 고치기 전에 잰 값이다(첫 라벨 524개 · 따로 붙인 라벨 524개).",
+    "어긋난 4개를 풀다가 규칙 문서에 빈틈 둘이 드러났다: 특별공급 유형이 요구하는 청약통장 요건(1순위 가입 기간, 제48조 6개월)을 정한 규칙이 없었다. 규칙을 더하고 첫 라벨을 같은 규칙으로 다시 붙이니 g07·g40·g43의 라벨 11개가 INELIGIBLE로 바뀌었다. 이 11개는 따로 붙인 쪽도 옛 규칙을 그대로 따라 NEED_INFO였으므로 처음 측정에서는 일치로 셌다.",
+    "고친 규칙을 확인하려고 바뀐 6문항(g07·g15·g21·g34·g40·g43)을 새 하위 에이전트로 한 번 더 따로 붙였다(`runs/75/second-recheck.jsonl`). 이 값은 구간 판정에 쓰지 않는 보충 확인이다."
+  ]
+}

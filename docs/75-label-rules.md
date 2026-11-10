@@ -111,32 +111,38 @@
 | --- | --- | --- |
 | `multichild-1` | `homeless_now` = false | INELIGIBLE (미성년 자녀 둔 무주택세대구성원 요건, 제40조) |
 | `multichild-2` | `children_unmarried` = 0 | INELIGIBLE (자녀가 없으면 태아를 넣어도 둘이 안 된다) |
-| `multichild-3` | 그 밖 | NEED_INFO(`minor_children_count`) — 미혼 자녀 중 미성년 수와 태아·입양을 프로필로 못 가린다. `children_unmarried` = 1은 태아 갈래 때문에 여기다 |
+| `multichild-3` | `savings_join_date`가 있고 `as_of`까지 6개월이 안 지났다 | INELIGIBLE (특별공급 입주자저축 요건, 제40조·제48조) |
+| `multichild-4` | 그 밖 | NEED_INFO(`minor_children_count`) — 미혼 자녀 중 미성년 수와 태아·입양을 프로필로 못 가린다. `children_unmarried` = 1은 태아 갈래 때문에 여기다 |
 | `newlywed-1` | `homeless_now` = false | INELIGIBLE (무주택세대구성원, 제41조) |
 | `newlywed-2` | `married` = true이고 `marriage_date`가 있고 혼인기간 7년 초과 | INELIGIBLE (제41조제1항제1호가목) |
-| `newlywed-3` | 그 밖 | NEED_INFO(`household_income`, `real_estate_value`; `married`가 false면 갈래 확인용 `marriage_status`도) — 혼인 중이 아니면 예비신혼부부·한부모가족 갈래를 프로필로 못 가린다 |
+| `newlywed-3` | `married` = false이고 공고문 신혼부부 자격 문장에 예비신혼부부·한부모가족 갈래가 없다(`label_facts.newlywed_branches`가 빈 목록) | INELIGIBLE (혼인 중이 아니면 혼인기간 7년 이내 요건을 채울 수 없다, 제41조) |
+| `newlywed-4` | `savings_join_date`가 있고 `as_of`까지 6개월이 안 지났다 | INELIGIBLE (제41조·제48조) |
+| `newlywed-5` | 그 밖 | NEED_INFO(`household_income`, `real_estate_value`; `married`가 false면 갈래 확인용 `marriage_status`도) — 혼인 중이 아니어도 공고문에 갈래가 있으면 프로필로 못 가린다 |
 | `firsttime-1` | `ever_owned` = true | INELIGIBLE (제43조 생애 최초: 세대에 속한 모든 자가 과거 주택을 소유한 사실이 없을 것) |
 | `firsttime-2` | `homeless_now` = false | INELIGIBLE (무주택세대구성원) |
-| `firsttime-3` | 그 밖 | NEED_INFO(`household_income`, `real_estate_value`, `income_tax_years`, `deposit_amount`) |
+| `firsttime-3` | `savings_join_date`가 있고 1순위 가입 기간 N개월이 안 지났다 | INELIGIBLE (제43조는 제28조(국민주택 제27조) 1순위를 요건으로 한다) |
+| `firsttime-4` | 그 밖 | NEED_INFO(`household_income`, `real_estate_value`, `income_tax_years`, `deposit_amount`) |
 | `elderly-1` | `ascendants_3y` = 0 | INELIGIBLE (3년 이상 부양한 직계존속이 없다) |
 | `elderly-2` | `is_household_head` = false | INELIGIBLE (세대주에 한정, 제46조제1항제2호) |
 | `elderly-3` | `homeless_now` = false | INELIGIBLE |
 | `elderly-4` | `ascendants_any_owner` = true | INELIGIBLE (제53조 단서: 제46조 특별공급은 60세 이상 직계존속 소유 예외를 적용하지 않으므로 부양 직계존속이 주택을 가지면 무주택이 아니다) |
-| `elderly-5` | 그 밖 | NEED_INFO(`ascendant_age`, `deposit_amount`) |
+| `elderly-5` | `savings_join_date`가 있고 1순위 가입 기간 N개월이 안 지났다 | INELIGIBLE (제46조는 제27조·제28조 1순위를 요건으로 한다) |
+| `elderly-6` | 그 밖 | NEED_INFO(`ascendant_age`, `deposit_amount`) |
 | `newborn-1` | `homeless_now` = false | INELIGIBLE (제28조제1항 1순위 무주택세대구성원, 제35조의3) |
-| `newborn-2` | 그 밖 | NEED_INFO(`child_age`, `household_income`, `deposit_amount`) |
-| `referral-1` | `homeless_now` = false | INELIGIBLE (무주택세대구성원, 제36조·제35조) |
-| `referral-2` | 그 밖 | NEED_INFO(`referral_status`) — 기관 추천 대상인지는 프로필로 못 가린다 |
+| `newborn-2` | `savings_join_date`가 있고 1순위 가입 기간 N개월이 안 지났다 | INELIGIBLE (제35조의3은 1순위를 요건으로 한다) |
+| `newborn-3` | 그 밖 | NEED_INFO(`child_age`, `household_income`, `deposit_amount`) |
+| `referral-1` | `homeless_now` = false이고 공고문 기관추천에 도시재생 부지제공자가 없다(`label_facts.referral_urban_renewal`이 false) | INELIGIBLE (무주택세대구성원, 제36조·제35조) |
+| `referral-2` | 그 밖 | NEED_INFO(`referral_status`) — 기관 추천 대상인지는 프로필로 못 가린다. 기관추천에는 청약통장이 필요 없는 갈래가 있어서 통장 기간으로 INELIGIBLE을 주지 않는다 |
 | `youth-1` | `ever_owned` = true | INELIGIBLE (과거 주택을 소유한 사실이 없는 사람, 제35조의2) |
 | `youth-2` | `married` = true | INELIGIBLE (혼인 중이 아닐 것) |
 | `youth-3` | `birth_date`가 있고 `as_of`의 만 나이가 19세 미만 또는 39세 초과 | INELIGIBLE (19세 이상 39세 이하) |
-| `youth-4` | 그 밖 | NEED_INFO(`household_income`, `deposit_amount`) |
+| `youth-4` | `savings_join_date`가 있고 `as_of`까지 6개월이 안 지났다 | INELIGIBLE (제35조의2·제48조) |
+| `youth-5` | 그 밖 | NEED_INFO(`household_income`, `deposit_amount`) |
 | `relocated-1` | 항상 | NEED_INFO(`employer_status`) — 이전기관 종사자 여부는 프로필로 못 가린다 |
 
 - 한 유형에서 INELIGIBLE 규칙이 여럿 맞으면 표에서 앞선 규칙의 번호를 `rule`에 적는다.
-- `newlywed`의 갈래(예비신혼부부·한부모가족)는 공고문에 있는 것만 갈래다. 공고문 신혼부부 자격 문장에 둘 다 없으면 `married` = false도 혼인 중이 아니라는 확정 실패라
-  INELIGIBLE이고 이때 `rule`은 null, `rule_note`에 이유를 적는다.
-- `referral-1`의 예외: 공고문의 기관추천 대상에 도시재생 토지 소유자(제35조제1항제27호의2)가 있으면 `homeless_now` = false도 갈래가 되므로 `referral-2`다.
+- 「6개월이 안 지났다」는 특별공급 입주자저축 요건(제48조)이다. 정답 근거 조문에 제48조를 더한다.
+- 1순위 가입 기간 N개월은 `label_facts.account_months`(청약통장 축과 같은 값)다.
 
 ## 5. 라벨 칸
 
