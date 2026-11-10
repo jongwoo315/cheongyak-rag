@@ -56,7 +56,7 @@
 | 번호 | 조건 | 판정값 | 정답 근거 조문 |
 | --- | --- | --- | --- |
 | `account-1` | `savings_join_date`가 있고 `as_of`까지 N개월이 안 지났다 | INELIGIBLE | 제28조(또는 제27조) |
-| `account-2` | `savings_join_date`가 있고 N개월이 지났다 | NEED_INFO(민영 `deposit_amount`, 국민주택 `payment_count`) | 제28조(또는 제27조), 제10조 |
+| `account-2` | `savings_join_date`가 있고 N개월이 지났다 | NEED_INFO(민영 `deposit_amount`, 국민주택 `payment_count`) | 제28조(또는 제27조) |
 | `account-3` | `savings_join_date` 비었음 | NEED_INFO(`savings_join_date`와 위와 같은 칸) | 제28조(또는 제27조) |
 
 - 국민주택(공고문이 납입 횟수를 1순위 요건으로 적고 예치금은 적지 않은 공고)은 제27조와 `payment_count`를 쓴다. 예치금·납입 횟수 칸이 프로필에 없어서 이 축은 ELIGIBLE이 나오지 않는다.
@@ -93,7 +93,7 @@
 
 | 번호 | 조건 | 판정값 | 정답 근거 조문 |
 | --- | --- | --- | --- |
-| `householder-1` | `is_household_head` = false | INELIGIBLE | 투기과열지구·청약과열지역이면 제28조, 노부모 부양 특별공급을 공급하면 제46조, 세대주 정의 제2조 |
+| `householder-1` | `is_household_head` = false | INELIGIBLE | 투기과열지구·청약과열지역이면 제28조(국민주택은 제27조), 노부모 부양 특별공급을 공급하면 제46조, 세대주 정의 제2조 |
 | `householder-2` | `is_household_head` = true | ELIGIBLE | 위와 같다 |
 | `householder-3` | `is_household_head` 비었음 | NEED_INFO(`is_household_head`) | 위와 같다 |
 
