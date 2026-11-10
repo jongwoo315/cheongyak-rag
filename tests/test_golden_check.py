@@ -182,3 +182,21 @@ def test_rule_must_look_like_a_rule_number():
         r = row(labels=[label(rule=bad), label("account", Q_A, "NEED_INFO", fields=[],
             need=["d"], citations=["제28조"], article_quotes={"제28조": "가입하여 1년이 지나고"})])  # fmt: skip
         assert any("rule이" in x for x in problems([r], expect_counts=None)), bad
+
+
+def test_agreement_citation_diff_means_no_shared_article():
+    a = [row(labels=[label(citations=["제53조", "제54조"])])]
+    b = copy.deepcopy(a)
+    b[0]["labels"][0]["citations"] = ["제53조"]
+    assert check.agreement(a, b)["citation_diff"] == 0
+    b[0]["labels"][0]["citations"] = ["제10조"]
+    ag = check.agreement(a, b)
+    assert ag["citation_diff"] == 1 and ag["diffs"][0]["kind"] == "citation"
+
+
+def test_agreement_counts_missing_second_label_as_both_and_handles_empty():
+    a = [row(labels=[label()])]
+    ag = check.agreement(a, [row(labels=[])])
+    assert ag["verdict_diff"] == 1 and ag["citation_diff"] == 1
+    assert ag["diffs"][0]["kind"] == "both"
+    assert check.agreement([], [])["verdict_diff_ratio"] == 0.0
