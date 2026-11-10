@@ -239,7 +239,12 @@ def check_notices(notices: list[dict], *, pages_of) -> list[str]:
 
 
 def agreement(first: list[dict], second: list[dict]) -> dict:
-    """첫 라벨과 따로 붙인 라벨을 (문항, 축, 하위 질의)로 맞춰 판정값·조 라벨이 다른 수를 센다."""
+    """첫 라벨과 따로 붙인 라벨을 (문항, 축, 하위 질의)로 맞춰 불일치를 센다.
+
+    판정값 불일치는 판정값이 다른 것, 조 불일치는 두 쪽의 조 라벨이 하나도 겹치지 않는 것이다
+    (plan 실패 징후 1). 하나라도 겹치면 일치로 센다. 따로 붙인 쪽에 짝이 없는 라벨은 둘 다 불일치다.
+    분모는 첫 라벨 수라서 따로 붙인 쪽에만 있는 라벨은 세지 않는다.
+    """
     sec = {(r["id"], lb["axis"], lb["query"]): lb for r in second for lb in r["labels"]}
     diffs, by_axis = [], {}
     v_diff = c_diff = total = 0
