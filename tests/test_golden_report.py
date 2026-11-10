@@ -83,3 +83,15 @@ def test_report_first_line_is_one_sentence_conclusion_and_has_sections():
     for head in heads:
         assert f"## {head}" in md
     json.dumps(measure)
+
+
+def test_review_sample_keeps_five_ineligible_when_all_five_verdicts_exist():
+    out = []
+    for i in range(50):
+        v = ["ELIGIBLE", "INELIGIBLE", "CONDITIONAL", "NEED_INFO", "UNVERIFIABLE"][i % 5]
+        out.append({
+            "id": f"g{i + 1:02d}", "notice_name": "공고", "profile_kind": "empty", "profile": {},
+            "labels": [lb("homeless", v)],
+        })  # fmt: skip
+    kinds = [x[1]["verdict"] for x in report.pick_sample(out, seed=75)]
+    assert len(kinds) == 20 and kinds.count("INELIGIBLE") >= 5

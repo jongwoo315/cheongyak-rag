@@ -62,6 +62,14 @@ def pick_sample(rows: list[dict], *, seed: int = SAMPLE_SEED, size: int = SAMPLE
     order = sorted(present, key=lambda v: v != "INELIGIBLE")
     for v in order[: size - sum(quota.values())]:
         quota[v] += 1
+    # 판정값이 많아 몫이 4개로 줄어도 INELIGIBLE은 최소 개수를 지킨다(모자란 만큼 다른 몫에서 뺀다)
+    short = min(SAMPLE_MIN_INELIGIBLE, len(pools["INELIGIBLE"])) - quota.get("INELIGIBLE", 0)
+    for v in sorted((x for x in present if x != "INELIGIBLE"), key=lambda x: -quota[x]):
+        if short <= 0:
+            break
+        quota[v] -= 1
+        quota["INELIGIBLE"] += 1
+        short -= 1
     rng = random.Random(seed)
     out = []
     for v in present:
