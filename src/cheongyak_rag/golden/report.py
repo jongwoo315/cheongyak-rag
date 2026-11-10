@@ -4,8 +4,8 @@
 
 입력은 `runs/75/`의 `golden.jsonl`·`notices.json`·`disagreements.jsonl`·`measure.json`이다.
 `measure.json`은 손으로 적은 측정값이다: 고치기 전에 처음 잰 값(글자 대조, 따로 붙인 라벨 일치율),
-고친 뒤 값(`after_fix`), 두 번째로 잰 일치율(`agreement_second`), 설명(`notes`). 리포트는 이 값을 그대로
-옮긴다 — 다시 계산하지 않는다. `second.jsonl`은 첫 라벨이 고쳐지기 전의 따로 붙인 라벨이라
+고친 뒤 값(`after_fix`), 두 번째로 잰 일치율(`agreement_second`), 설명(`notes`).
+리포트는 이 값을 그대로 옮긴다 — 다시 계산하지 않는다. `second.jsonl`은 첫 라벨이 고쳐지기 전의 따로 붙인 라벨이라
 지금 `golden.jsonl`과 맞추면 처음 값과 다른 수가 나온다(`notes` 참고).
 """
 
