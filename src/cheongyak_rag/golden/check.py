@@ -39,6 +39,7 @@ LABEL_KEYS = {
 }  # fmt: skip
 _ARTICLE = re.compile(r"^제\d+조(의\d+)?$")
 _ROW_ID = re.compile(r"^g\d{2}$")
+_RULE_ID = re.compile(r"^[a-z_]+-\d+$")
 DEFAULT_GOLDEN = Path("runs/75/golden.jsonl")
 DEFAULT_NOTICES = Path("runs/75/notices.json")
 
@@ -123,7 +124,9 @@ def _check_label(r: dict, lb: dict, add, article_of, pages, counter: list) -> No
     if lb["rule"] is None:
         if not (isinstance(lb["rule_note"], str) and lb["rule_note"].strip()):
             add(f"{tag}: rule이 null이면 rule_note에 이유가 있어야 한다")
-    elif not isinstance(lb["rule"], str) or lb["rule_note"] is not None:
+    elif not (isinstance(lb["rule"], str) and _RULE_ID.match(lb["rule"])):
+        add(f"{tag}: rule이 `homeless-1` 꼴 번호가 아니다 ({lb['rule']!r})")
+    elif lb["rule_note"] is not None:
         add(f"{tag}: rule이 있으면 rule_note는 null이어야 한다")
 
 

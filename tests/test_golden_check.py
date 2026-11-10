@@ -175,3 +175,10 @@ def test_check_notices_flags_notice_without_facts():
     n = {"house_manage_no": "N1", "pdf": "x.pdf"}
     bad = check.check_notices([n, {**n, "facts": {}}], pages_of=lambda h: PAGES["N1"])
     assert len(bad) == 2 and all("facts" in x for x in bad)
+
+
+def test_rule_must_look_like_a_rule_number():
+    for bad in ("", "아무말", "homeless"):
+        r = row(labels=[label(rule=bad), label("account", Q_A, "NEED_INFO", fields=[],
+            need=["d"], citations=["제28조"], article_quotes={"제28조": "가입하여 1년이 지나고"})])  # fmt: skip
+        assert any("rule이" in x for x in problems([r], expect_counts=None)), bad
