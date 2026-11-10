@@ -1,0 +1,628 @@
+{
+  "criteria": {
+    "target": 20,
+    "fixed": [
+      "2026000103",
+      "2026000202",
+      "2026000314",
+      "2026000401",
+      "2026000444"
+    ],
+    "fixed_source": "#80 표본 공고 6건 중 공고문 PDF가 있는 5건(runs/80/last_run.json)",
+    "pool": "공고문 PDF가 있는 공고 74건",
+    "rule": "고정 5건 뒤에, 켜지는 축 조합(100점)·특별공급 유형(건당 10점)·규제 표시 종류(건당 5점)·수도권/비수도권 각 8건까지(3점)·새 지역(1점)을 가장 많이 채우는 공고를 하나씩 더한다. 점수가 같으면 관리번호가 작은 쪽이다.",
+    "covered": {
+      "axis_combos": [
+        "homeless+account+residence",
+        "homeless+account+residence+income_asset+householder+special_type",
+        "homeless+account+residence+income_asset+rewin+householder+special_type",
+        "homeless+account+residence+income_asset+special_type",
+        "homeless+account+residence+rewin"
+      ],
+      "special_types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부",
+        "이전기관 종사자",
+        "청년"
+      ],
+      "regulation_flags": [
+        "mdat_trget_area_secd",
+        "parcprc_uls_at",
+        "public_house_earth_at",
+        "speclt_rdn_earth_at"
+      ],
+      "metro": 8,
+      "non_metro": 12,
+      "areas": [
+        "경기",
+        "경남",
+        "광주",
+        "대구",
+        "대전",
+        "부산",
+        "서울",
+        "세종",
+        "울산",
+        "인천",
+        "전남",
+        "전북",
+        "제주",
+        "충남",
+        "충북"
+      ]
+    }
+  },
+  "notices": [
+    {
+      "house_manage_no": "2026000103",
+      "pblanc_no": "2026000103",
+      "name": "더샵 분당하이스트",
+      "area": "경기",
+      "as_of": "2026-09-11",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [
+        "speclt_rdn_earth_at",
+        "mdat_trget_area_secd"
+      ],
+      "metro": true,
+      "fixed": true,
+      "pdf": "data/raw/notices/2026000103_2026000103_1797255_9.pdf",
+      "pages": 48
+    },
+    {
+      "house_manage_no": "2026000202",
+      "pblanc_no": "2026000202",
+      "name": "대전 경남아너스빌 센텀스카이",
+      "area": "대전",
+      "as_of": "2026-09-03",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": true,
+      "pdf": "data/raw/notices/2026000202_2026000202_1832252_10.pdf",
+      "pages": 71
+    },
+    {
+      "house_manage_no": "2026000314",
+      "pblanc_no": "2026000314",
+      "name": "중동역 다채로움 더원",
+      "area": "경기",
+      "as_of": "2026-09-10",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": true,
+      "fixed": true,
+      "pdf": "data/raw/notices/2026000314_2026000314_1870113_10.pdf",
+      "pages": 60
+    },
+    {
+      "house_manage_no": "2026000401",
+      "pblanc_no": "2026000401",
+      "name": "문수데시앙2단지 공가세대 일반공급",
+      "area": "울산",
+      "as_of": "2026-08-28",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "rewin"
+      ],
+      "types": [],
+      "flags": [
+        "public_house_earth_at"
+      ],
+      "metro": false,
+      "fixed": true,
+      "pdf": "data/raw/notices/2026000401_2026000401_1961206_1.pdf",
+      "pages": 23
+    },
+    {
+      "house_manage_no": "2026000444",
+      "pblanc_no": "2026000444",
+      "name": "제주시 이도이동 아이린8차 아파트",
+      "area": "제주",
+      "as_of": "2026-10-02",
+      "axes": [
+        "homeless",
+        "account",
+        "residence"
+      ],
+      "types": [],
+      "flags": [],
+      "metro": false,
+      "fixed": true,
+      "pdf": "data/raw/notices/2026000444_2026000444_1988268_1.pdf",
+      "pages": 29
+    },
+    {
+      "house_manage_no": "2026000373",
+      "pblanc_no": "2026000373",
+      "name": "고덕강일지구 3단지 토지임대부(본청약)",
+      "area": "서울",
+      "as_of": "2026-10-16",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "생애최초",
+        "신생아",
+        "신혼부부",
+        "청년"
+      ],
+      "flags": [
+        "speclt_rdn_earth_at",
+        "mdat_trget_area_secd",
+        "parcprc_uls_at",
+        "public_house_earth_at"
+      ],
+      "metro": true,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000373_2026000373_2001204_3.pdf",
+      "pages": 136
+    },
+    {
+      "house_manage_no": "2026000371",
+      "pblanc_no": "2026000371",
+      "name": "용인반도체클러스터 동일하이빌 파크밸리(D1-1블록)",
+      "area": "경기",
+      "as_of": "2026-08-07",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부",
+        "이전기관 종사자"
+      ],
+      "flags": [
+        "parcprc_uls_at"
+      ],
+      "metro": true,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000371_2026000371_1948090_3.pdf",
+      "pages": 78
+    },
+    {
+      "house_manage_no": "2026000267",
+      "pblanc_no": "2026000267",
+      "name": "아산 그랑시티필하우스",
+      "area": "충남",
+      "as_of": "2026-10-08",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000267_2026000267_1992075_3.pdf",
+      "pages": 63
+    },
+    {
+      "house_manage_no": "2026000323",
+      "pblanc_no": "2026000323",
+      "name": "세종 우미 린 센터파크(행정중심복합도시 5-2생활권 S1블록, 글미마을 9단지)",
+      "area": "세종",
+      "as_of": "2026-07-31",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [
+        "parcprc_uls_at"
+      ],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000323_2026000323_1929369_3.pdf",
+      "pages": 77
+    },
+    {
+      "house_manage_no": "2026000342",
+      "pblanc_no": "2026000342",
+      "name": "제일풍경채 첨단3지구(A6BL)",
+      "area": "광주",
+      "as_of": "2026-08-14",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [
+        "parcprc_uls_at"
+      ],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000342_2026000342_1951273_7.pdf",
+      "pages": 73
+    },
+    {
+      "house_manage_no": "2026000356",
+      "pblanc_no": "2026000356",
+      "name": "두산위브더제니스 대연",
+      "area": "부산",
+      "as_of": "2026-07-30",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000356_2026000356_1929440_3.pdf",
+      "pages": 71
+    },
+    {
+      "house_manage_no": "2026000368",
+      "pblanc_no": "2026000368",
+      "name": "아르티엠 라 테라스",
+      "area": "전북",
+      "as_of": "2026-08-14",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000368_2026000368_1951360_3.pdf",
+      "pages": 49
+    },
+    {
+      "house_manage_no": "2026000388",
+      "pblanc_no": "2026000388",
+      "name": "시티오씨엘 9단지 오션파크뷰",
+      "area": "인천",
+      "as_of": "2026-08-21",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": true,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000388_2026000388_1954055_3.pdf",
+      "pages": 86
+    },
+    {
+      "house_manage_no": "2026000354",
+      "pblanc_no": "2026000354",
+      "name": "상동역 롯데캐슬 시그니처",
+      "area": "경기",
+      "as_of": "2026-08-14",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": true,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000354_2026000354_1948010_4.pdf",
+      "pages": 79
+    },
+    {
+      "house_manage_no": "2026000358",
+      "pblanc_no": "2026000358",
+      "name": "충정로역자이르네",
+      "area": "서울",
+      "as_of": "2026-08-07",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [
+        "speclt_rdn_earth_at",
+        "mdat_trget_area_secd"
+      ],
+      "metro": true,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000358_2026000358_1947009_5.pdf",
+      "pages": 57
+    },
+    {
+      "house_manage_no": "2026000364",
+      "pblanc_no": "2026000364",
+      "name": "써밋 클라비온",
+      "area": "서울",
+      "as_of": "2026-08-07",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "rewin",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [
+        "speclt_rdn_earth_at",
+        "mdat_trget_area_secd"
+      ],
+      "metro": true,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000364_2026000364_1941019_7.pdf",
+      "pages": 74
+    },
+    {
+      "house_manage_no": "2026000376",
+      "pblanc_no": "2026000376",
+      "name": "달서자이 제니크",
+      "area": "대구",
+      "as_of": "2026-08-06",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000376_2026000376_1930070_11.pdf",
+      "pages": 48
+    },
+    {
+      "house_manage_no": "2026000383",
+      "pblanc_no": "2026000383",
+      "name": "포레나힐스테이트 진주",
+      "area": "경남",
+      "as_of": "2026-08-14",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000383_2026000383_1953086_2.pdf",
+      "pages": 79
+    },
+    {
+      "house_manage_no": "2026000455",
+      "pblanc_no": "2026000455",
+      "name": "신분평 에피트 더웨이시티",
+      "area": "충북",
+      "as_of": "2026-10-15",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000455_2026000455_1969991_5.pdf",
+      "pages": 61
+    },
+    {
+      "house_manage_no": "2026000466",
+      "pblanc_no": "2026000466",
+      "name": "진도 승원팰리체 더 테라스",
+      "area": "전남",
+      "as_of": "2026-10-08",
+      "axes": [
+        "homeless",
+        "account",
+        "residence",
+        "income_asset",
+        "householder",
+        "special_type"
+      ],
+      "types": [
+        "기관추천",
+        "노부모 부양",
+        "다자녀가구",
+        "생애최초",
+        "신생아",
+        "신혼부부"
+      ],
+      "flags": [],
+      "metro": false,
+      "fixed": false,
+      "pdf": "data/raw/notices/2026000466_2026000466_1995122_6.pdf",
+      "pages": 54
+    }
+  ]
+}
