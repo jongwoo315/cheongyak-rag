@@ -277,7 +277,9 @@ def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
 
 
-def run_check(golden: Path, notices_path: Path, engine) -> tuple[Report, list[str]]:
+def run_check(
+    golden: Path, notices_path: Path, engine, *, counts: bool = True
+) -> tuple[Report, list[str]]:
     rows = load_jsonl(golden)
     notices = json.loads(notices_path.read_text(encoding="utf-8"))["notices"]
     by_no = {n["house_manage_no"]: n for n in notices}
@@ -300,7 +302,14 @@ def run_check(golden: Path, notices_path: Path, engine) -> tuple[Report, list[st
             bodies[label] = article_text(engine, LAW_MST, label)
         return bodies[label]
 
-    rep = check_rows(rows, by_no, plan_of=plan_of, article_of=article_of, pages_of=pages_of)
+    rep = check_rows(
+        rows,
+        by_no,
+        plan_of=plan_of,
+        article_of=article_of,
+        pages_of=pages_of,
+        expect_counts=EXPECT if counts else None,
+    )
     notice_bad = check_notices(notices, pages_of=pages_of)
     rep.quote_mismatches += len(notice_bad)
     return rep, notice_bad
@@ -310,11 +319,14 @@ def main(argv: list[str] | None = None, *, engine=None) -> int:
     ap = argparse.ArgumentParser(prog="cheongyak_rag.golden.check")
     ap.add_argument("--golden", type=Path, default=DEFAULT_GOLDEN)
     ap.add_argument("--notices", type=Path, default=DEFAULT_NOTICES)
+    ap.add_argument(
+        "--no-counts", action="store_true", help="문항 수·프로필 종류 수 검사를 건너뛴다"
+    )
     args = ap.parse_args(argv)
     own = engine is None
     engine = engine or sa.create_engine(settings.database_url)
     try:
-        rep, notice_bad = run_check(args.golden, args.notices, engine)
+        rep, notice_bad = run_check(args.golden, args.notices, engine, counts=not args.no_counts)
     finally:
         if own:
             engine.dispose()

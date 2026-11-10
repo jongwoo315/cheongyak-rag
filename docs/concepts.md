@@ -117,6 +117,19 @@
 - `pdf`는 HTTP 200이고 앞 바이트가 `%PDF-`이며 `pymupdf`로 열려 쪽수가 1 이상일 때만이다. 앞 바이트가 `%PDF-`가 아니면 `hwp`나 `other`로 격리하고, 앞 바이트가 `%PDF-`인데 안 열리거나 HTTP 200이 아니면 `error`다
 - 목록은 `data/raw/notices/manifest.jsonl`(링크 하나가 한 줄)이고, 격리한 파일은 `data/raw/notices/quarantine/`에 있다
 
+## 프로필 종류 3개 — 골든셋 문항이 프로필 15칸을 채운 정도
+
+정의: `runs/75/golden.jsonl`의 `profile_kind`와 `runs/80/profiles/`(`full.json`·`partial.json`·`empty.json`). 만든 티켓 #80·#75.
+
+| 값 | 뜻 | 골든셋 문항 수 |
+| --- | --- | --- |
+| `full` | 15칸 전부 값이 있다 | 20 |
+| `partial` | 몇 칸만 값이 있고 나머지는 비었다 | 22 |
+| `empty` | 15칸 전부 비었다 | 8 |
+
+- 빈 칸은 「모른다」는 뜻이다. `partial`은 부분 프로필 케이스다.
+- `full` 프로필은 `homeless_since`·`spouse_savings_join_date`가 있어서 항상 혼인 중이고 무주택자가 된 날이 있다(`Profile`이 소유 이력과 배우자 통장을 그 칸에서 정한다). 유주택·미혼 사례는 `partial`에 있다.
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.
