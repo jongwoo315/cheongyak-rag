@@ -2,20 +2,24 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "청약 RAG 판정 흐름 — #85 PR #18",
+    "title": "청약 RAG 판정 흐름 — #72 PR #19",
     "locale": "ko",
     "quality_profile": "standard",
-    "output": ".archify/workflow-85-flow/85-flow.html",
+    "output": ".archify/workflow-72-flow/72-flow.html",
     "repository": {
       "url": "https://github.com/jongwoo315/cheongyak-rag",
       "provider": "github",
-      "revision": "92b00dc267c55ae346423c7ca967da355ba56c05"
+      "revision": "df5e79dfc9d37a7764f4be8636e880d4a8a76e69"
     }
   },
   "lanes": [
     {
       "id": "ingest",
       "label": "데이터 적재"
+    },
+    {
+      "id": "doc",
+      "label": "#72 공고문 수집 (L3 근거의 첫 단계)"
     },
     {
       "id": "deploy",
@@ -56,7 +60,7 @@
     },
     {
       "id": "measure",
-      "label": "측정 (jw 기준, #85 — 배포 사이트)"
+      "label": "측정 (jw 기준, #72 — 실제 청약홈)"
     }
   ],
   "mainPath": [
@@ -433,8 +437,8 @@
       "col": 1,
       "type": "database",
       "label": "Neon Postgres",
-      "sublabel": "[새로] 로컬 DB에서 4개 테이블 적재 · traces 제외",
-      "tag": "새로 생김",
+      "sublabel": "로컬 DB에서 4개 테이블 적재 · traces 제외",
+      "tag": "그대로",
       "sources": [
         {
           "path": "src/cheongyak_rag/deploy_load.py",
@@ -450,8 +454,8 @@
       "col": 3,
       "type": "backend",
       "label": "cheongyak-api (Vercel)",
-      "sublabel": "[새로] FastAPI 함수 · 캐시는 /tmp",
-      "tag": "새로 생김",
+      "sublabel": "FastAPI 함수 · 캐시는 /tmp",
+      "tag": "그대로",
       "sources": [
         {
           "path": "app.py",
@@ -467,8 +471,8 @@
       "col": 0,
       "type": "frontend",
       "label": "cheongyak-web (Vercel)",
-      "sublabel": "[새로] Next.js · API_BASE_URL로 api 호출",
-      "tag": "새로 생김",
+      "sublabel": "Next.js · API_BASE_URL로 api 호출",
+      "tag": "그대로",
       "sources": [
         {
           "path": "web/vercel.json",
@@ -484,8 +488,8 @@
       "col": 3,
       "type": "security",
       "label": "하루 판정 한도",
-      "sublabel": "[새로] 50건 넘으면 429 · 잠금 대기 60초",
-      "tag": "새로 생김",
+      "sublabel": "50건 넘으면 429 · 잠금 대기 60초",
+      "tag": "그대로",
       "sources": [
         {
           "path": "src/cheongyak_rag/api.py",
@@ -496,21 +500,122 @@
       ]
     },
     {
-      "id": "m1",
-      "lane": "measure",
-      "col": 2,
-      "type": "security",
-      "label": "배포 공고 페이지 검사",
-      "sublabel": "[새로] 실패 0 / 84 · 링크 84 · health ok",
+      "id": "dpage",
+      "lane": "doc",
+      "col": 0,
+      "type": "external",
+      "label": "청약홈 상세 페이지",
+      "sublabel": "[새로] notices.pblanc_url로 84건",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc.py",
+          "line": 166,
+          "end_line": 186,
+          "label": "_fetch_page"
+        }
+      ],
       "tag": "새로 생김"
     },
     {
-      "id": "m2",
+      "id": "dlink",
+      "lane": "doc",
+      "col": 1,
+      "type": "backend",
+      "label": "공고문 링크 찾기",
+      "sublabel": "[새로] 모집공고문 보기 링크 · 없으면 no_link",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc.py",
+          "line": 106,
+          "end_line": 111,
+          "label": "find_doc_links"
+        }
+      ],
+      "tag": "새로 생김"
+    },
+    {
+      "id": "dget",
+      "lane": "doc",
+      "col": 2,
+      "type": "external",
+      "label": "첨부 받기",
+      "sublabel": "[새로] 재시도 4번 · 50MB · 120초 제한",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc.py",
+          "line": 142,
+          "end_line": 160,
+          "label": "_download"
+        }
+      ],
+      "tag": "새로 생김"
+    },
+    {
+      "id": "dcheck",
+      "lane": "doc",
+      "col": 3,
+      "type": "security",
+      "label": "확장자·PDF 확인",
+      "sublabel": "[새로] 앞 바이트 %PDF- · pymupdf로 열림",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc.py",
+          "line": 244,
+          "end_line": 303,
+          "label": "_collect_link"
+        }
+      ],
+      "tag": "새로 생김"
+    },
+    {
+      "id": "dsave",
+      "lane": "doc",
+      "col": 4,
+      "type": "database",
+      "label": "공고문 PDF",
+      "sublabel": "[새로] data/raw/notices + manifest.jsonl",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc.py",
+          "line": 234,
+          "end_line": 242,
+          "label": "_save"
+        }
+      ],
+      "tag": "새로 생김"
+    },
+    {
+      "id": "dquar",
+      "lane": "doc",
+      "col": 5,
+      "type": "database",
+      "label": "격리",
+      "sublabel": "[새로] quarantine/ HWP·그 밖 (이번 0건)",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc.py",
+          "line": 244,
+          "end_line": 303,
+          "label": "_collect_link"
+        }
+      ],
+      "tag": "새로 생김"
+    },
+    {
+      "id": "m72",
       "lane": "measure",
       "col": 4,
       "type": "security",
-      "label": "배포 18쌍 화면 대조",
-      "sublabel": "[새로] 안 뜬 쌍 0 · 경로 키·항목 수 다른 쌍 0",
+      "label": "수집 결과 리포트",
+      "sublabel": "[새로] 오류 0 / 74 · 링크 없음 10",
+      "sources": [
+        {
+          "path": "src/cheongyak_rag/ingest/notice_doc_report.py",
+          "line": 121,
+          "end_line": 249,
+          "label": "render"
+        }
+      ],
       "tag": "새로 생김"
     }
   ],
@@ -674,16 +779,46 @@
       "label": "한도 안이면"
     },
     {
-      "id": "d5",
-      "from": "vweb",
-      "to": "m1",
+      "id": "p1",
+      "from": "ingest",
+      "to": "dpage",
+      "label": "공고 주소"
+    },
+    {
+      "id": "p2",
+      "from": "dpage",
+      "to": "dlink",
       "label": "HTML"
     },
     {
-      "id": "d6",
-      "from": "vapi",
-      "to": "m2",
-      "label": "배포 응답"
+      "id": "p3",
+      "from": "dlink",
+      "to": "dget",
+      "label": "링크"
+    },
+    {
+      "id": "p4",
+      "from": "dget",
+      "to": "dcheck",
+      "label": "파일"
+    },
+    {
+      "id": "p5",
+      "from": "dcheck",
+      "to": "dsave",
+      "label": "pdf"
+    },
+    {
+      "id": "p6",
+      "from": "dcheck",
+      "to": "dquar",
+      "label": "hwp · other"
+    },
+    {
+      "id": "p7",
+      "from": "dsave",
+      "to": "m72",
+      "label": "목록"
     }
   ],
   "cards": [
@@ -691,9 +826,9 @@
       "dot": "amber",
       "title": "읽는 법",
       "items": [
-        "[새로]는 PR #17(#84) 대비 이번 PR이 더한 단계다",
-        "배포 사이트는 판정 흐름 코드가 로컬과 같다. 캐시만 /tmp라 비어서 LLM을 새로 부른다",
-        "traces는 Neon에 새로 쌓인다. 로컬 traces는 옮기지 않았다"
+        "[새로]는 PR #18(#85) 대비 이번 PR이 더한 단계다",
+        "공고문 PDF는 아직 판정에 안 쓴다. 본문을 잘라 chunks에 넣는 것은 다음 티켓 몫이다",
+        "DB는 읽기만 한다. 결과는 파일(manifest.jsonl)로만 남는다"
       ]
     }
   ]
