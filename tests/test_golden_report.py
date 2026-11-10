@@ -95,3 +95,18 @@ def test_review_sample_keeps_five_ineligible_when_all_five_verdicts_exist():
         })  # fmt: skip
     kinds = [x[1]["verdict"] for x in report.pick_sample(out, seed=75)]
     assert len(kinds) == 20 and kinds.count("INELIGIBLE") >= 5
+
+
+def test_review_sample_fills_shortfall_when_a_verdict_has_few_labels():
+    r = rows()
+    for row in r:
+        row["labels"] = row["labels"][:1]
+    pool = [x for row in r for x in row["labels"]]
+    for lab in pool[:1]:
+        lab["verdict"] = "CONDITIONAL"
+    for lab in pool[1:3]:
+        lab["verdict"] = "UNVERIFIABLE"
+    a = report.pick_sample(r, seed=75)
+    assert len(a) == 20
+    assert len({(x[0]["id"], x[1]["axis"]) for x in a}) == 20
+    assert [x[1]["verdict"] for x in a].count("INELIGIBLE") >= 5
