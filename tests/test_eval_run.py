@@ -4,6 +4,7 @@ import json
 
 from cheongyak_rag.eval import metrics, report, run
 from cheongyak_rag.generate import verdict as vd
+from cheongyak_rag.retrieval import axes
 
 
 def gold_label(axis, query, verdict, citations):
@@ -70,3 +71,47 @@ def test_accuracy_counts_wrong_and_axes():
     assert (acc["total"]["num"], acc["total"]["den"]) == (1, 3)
     assert (acc["axes"]["a"]["num"], acc["axes"]["a"]["den"]) == (1, 2)
     assert (acc["axes"]["b"]["num"], acc["axes"]["b"]["den"]) == (0, 1)
+
+
+# ── 하위 질의 맞추기 (Task 2) ────────────────────────────────────────────
+
+
+def plan(axis_id, on=True):
+    return axes.AxisPlan(axis_id, axis_id, on, "테스트")
+
+
+def test_unmatched_label_keeps_a_line_with_cause():
+    row = item()
+    verdicts = [sys_verdict("homeless", "무주택 질의", "NEED_INFO", ["제53조"], ["제53조"])]
+    # account 축은 켜졌지만 질의 문장이 다르다
+    verdicts.append(sys_verdict("account", "다른 문장", "NEED_INFO"))
+    lines, extra = run.match_item(row, verdicts, [plan("homeless"), plan("account")])
+    assert [x["matched"] for x in lines] == [True, False]
+    assert lines[1]["cause"] == "질의 문장이 다르다"
+    assert lines[1]["sys_verdict"] is None and lines[1]["gold_verdict"] == "INELIGIBLE"
+    assert extra == 1  # 정답 라벨이 없는 시스템 하위 질의는 수만 센다
+
+
+def test_cause_when_axis_off_or_nothing_generated():
+    row = item()
+    lines, _ = run.match_item(row, [], [plan("homeless", on=False), plan("account")])
+    assert [x["cause"] for x in lines] == ["축이 꺼졌다", "축이 켜졌는데 하위 질의가 없다"]
+
+
+def test_judge_failure_leaves_all_labels_unmatched():
+    def boom(row):
+        raise LookupError("공고 없음")
+
+    m = run.measure([item()], boom, budget_usd=10)
+    assert len(m["lines"]) == 2
+    assert all(not x["matched"] for x in m["lines"])
+    assert m["lines"][0]["cause"] == "공고 판정 실패: LookupError: 공고 없음"
+
+
+def test_unmatched_stays_in_the_denominator():
+    row = item()
+    lines, _ = run.match_item(
+        row, [sys_verdict("homeless", "무주택 질의", "NEED_INFO")], [plan("homeless")]
+    )
+    acc = metrics.judgment_accuracy(lines)
+    assert (acc["total"]["num"], acc["total"]["den"]) == (1, 2)  # 못 맞춘 1개는 분모에 남는다

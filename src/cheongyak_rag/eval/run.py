@@ -35,8 +35,11 @@ def is_law(label: str) -> bool:
     return label.startswith("제")
 
 
-def make_line(item_id: str, gold: dict, v: vd.Verdict | None) -> dict:
-    """정답 라벨 하나와 그에 맞는 시스템 판정 하나(없으면 None)의 run 줄."""
+def make_line(item_id: str, gold: dict, v: vd.Verdict | None, cause: str | None = None) -> dict:
+    """정답 라벨 하나와 그에 맞는 시스템 판정 하나(없으면 None)의 run 줄.
+
+    못 맞춘 줄(`matched=false`)은 시스템 칸이 비고 `cause`에 이유가 들어간다.
+    """
     line = {
         "id": item_id,
         "axis": gold["axis"],
@@ -44,6 +47,7 @@ def make_line(item_id: str, gold: dict, v: vd.Verdict | None) -> dict:
         "gold_verdict": gold["verdict"],
         "gold_citations": gold["citations"],
         "matched": v is not None,
+        "cause": cause,
         "sys_verdict": None,
         "sys_pre_verdict": None,
         "sys_citations": [],
@@ -68,26 +72,51 @@ def make_line(item_id: str, gold: dict, v: vd.Verdict | None) -> dict:
     return line
 
 
-def match_item(row: dict, verdicts: list[vd.Verdict]) -> list[dict]:
-    """`(axis, query)`로 정답 라벨과 시스템 판정을 맞춘다."""
+def _cause(axis: str, plans: list[axes.AxisPlan], verdicts: list[vd.Verdict]) -> str:
+    """정답 라벨에 맞는 시스템 하위 질의가 없는 이유."""
+    on = {p.id for p in plans if p.on}
+    if axis not in on:
+        return "축이 꺼졌다"
+    if any(v.axis == axis for v in verdicts):
+        return "질의 문장이 다르다"
+    return "축이 켜졌는데 하위 질의가 없다"
+
+
+def match_item(
+    row: dict, verdicts: list[vd.Verdict], plans: list[axes.AxisPlan]
+) -> tuple[list[dict], int]:
+    """`(axis, query)`로 정답 라벨과 시스템 판정을 맞춘다.
+
+    반환: (정답 라벨마다 한 줄, 정답 라벨이 없는 시스템 하위 질의 수).
+    """
     by_key = {(v.axis, v.query): v for v in verdicts}
-    return [make_line(row["id"], g, by_key.get((g["axis"], g["query"]))) for g in row["labels"]]
+    lines = []
+    for g in row["labels"]:
+        v = by_key.get((g["axis"], g["query"]))
+        lines.append(make_line(row["id"], g, v, None if v else _cause(g["axis"], plans, verdicts)))
+    wanted = {(g["axis"], g["query"]) for g in row["labels"]}
+    return lines, sum(1 for k in by_key if k not in wanted)
 
 
 def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
-    lines, spent, stop = [], 0.0, None
+    lines, spent, extra, stop = [], 0.0, 0, None
     for row in rows:
         try:
-            _, verdicts = judge_fn(row)
+            plans, verdicts = judge_fn(row)
         except HardApiError as e:
             stop = ("hard", f"{row['id']}: {e}")
             break
+        except Exception as e:  # noqa: BLE001 — 문항 하나의 실패로 실행 전체를 잃지 않는다
+            why = f"공고 판정 실패: {type(e).__name__}: {e}"
+            lines += [make_line(row["id"], g, None, why) for g in row["labels"]]
+            continue
         spent += sum(v.usd for v in verdicts if not v.cached)
-        lines += match_item(row, verdicts)
+        got, n = match_item(row, verdicts, plans)
+        lines, extra = lines + got, extra + n
         if spent > budget_usd:
             stop = ("budget", f"{row['id']}: 비용 상한 ${budget_usd} 초과 (${spent:.4f})")
             break
-    return {"lines": lines, "stop": stop, "usd": spent}
+    return {"lines": lines, "extra_system": extra, "stop": stop, "usd": spent}
 
 
 def make_judge_fn(engine, embedder, client, cache, model):
