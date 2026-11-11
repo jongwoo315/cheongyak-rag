@@ -36,7 +36,8 @@ def make_line(row: dict, gold: dict, v: vd.Verdict | None, cause: str | None = N
     """정답 라벨 하나와 그에 맞는 시스템 판정 하나(없으면 None)의 run 줄.
 
     `matched=false`인 줄은 시스템 칸이 비고 `cause`에 이유가 들어간다. 이유는 셋이다: 시스템에 같은
-    하위 질의가 없다, 문항 판정이 통째로 실패했다(`ITEM_FAILED`), 실행이 멈춰 문항이 안 돌았다(`NOT_RUN`).
+    하위 질의가 없다, 문항 판정이 통째로 실패했다(`ITEM_FAILED`),
+    실행이 멈춰 문항이 안 돌았다(`NOT_RUN`).
     """
     line = {
         "id": row["id"],
