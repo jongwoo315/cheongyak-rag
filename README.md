@@ -9,7 +9,7 @@
 구현은 AI 에이전트가 했다. 각 티켓의 통과 기준은 착수 전에 사람이 한 줄로 먼저 썼고,
 PR마다 그 기준과 결과를 나란히 놓고 사람이 판정했다. 2026-10-01부터 기록한다.
 
-티켓 18개 · 자동 기준 통과 15 · 착수 전 기준으로 반려 4 · 유보 3
+티켓 19개 · 자동 기준 통과 16 · 착수 전 기준으로 반려 4 · 유보 3
 
 기준과 결과가 갈린 티켓:
 
@@ -94,6 +94,17 @@ uv run python -m cheongyak_rag.ingest.notice_doc_report  # 결과 리포트 → 
 ```
 
 DB `notices`의 공고 상세 페이지에서 공고문 링크를 찾아 받는다(DB는 읽기만 한다). 같은 명령을 다시 돌리면 이미 받은 파일은 받지 않는다. 결과는 [`docs/72-notice-doc.md`](docs/72-notice-doc.md)에 있다.
+
+## 골든셋
+
+공고 20건 50문항에 하위 질의별 정답 라벨과 정답 근거 조문을 붙인 정답 파일이다(#75). 정답 파일은 `runs/75/golden.jsonl`, 라벨을 붙인 규칙은 [`docs/75-label-rules.md`](docs/75-label-rules.md), 결과는 [`docs/75-golden.md`](docs/75-golden.md)에 있다.
+
+```bash
+uv run python -m cheongyak_rag.golden.check   # 줄 수·칸·켜진 하위 질의마다 라벨·프로필·글자 대조. 어긋나면 줄마다 출력하고 exit 1
+uv run python -m cheongyak_rag.golden.report  # 리포트 docs/75-golden.md와 표본 검토 파일 runs/75/review-sample.md를 쓴다
+```
+
+DB는 읽기만 한다. 판정 흐름을 돌리거나 OpenAI를 부르지 않는다.
 
 ## 메모
 
