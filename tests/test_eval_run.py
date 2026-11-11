@@ -115,3 +115,11 @@ def test_unmatched_stays_in_the_denominator():
     )
     acc = metrics.judgment_accuracy(lines)
     assert (acc["total"]["num"], acc["total"]["den"]) == (1, 2)  # 못 맞춘 1개는 분모에 남는다
+
+
+def test_calls_count_only_fresh_llm_verdicts():
+    fresh = sys_verdict("homeless", "무주택 질의", "NEED_INFO")
+    cached = sys_verdict("account", "통장 질의", "NEED_INFO")
+    cached.cached = True
+    m = run.measure([item()], fake_judge([fresh, cached]), budget_usd=10)
+    assert (m["calls"], m["cache_hits"]) == (1, 1)

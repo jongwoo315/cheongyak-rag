@@ -16,6 +16,7 @@ import sqlalchemy as sa
 
 from cheongyak_rag.config import settings
 from cheongyak_rag.eval import metrics
+from cheongyak_rag.eval.metrics import is_law
 from cheongyak_rag.generate import verdict as vd
 from cheongyak_rag.generate.answer import GenCache, HardApiError, check_model, make_client
 from cheongyak_rag.generate.evaluate import RetryingClient
@@ -28,11 +29,6 @@ ROOT = Path(__file__).resolve().parents[3]
 GOLDEN = ROOT / "runs/75/golden.jsonl"
 OUT_DIR = ROOT / "runs/76"
 BUDGET_USD = 10.0
-
-
-def is_law(label: str) -> bool:
-    """조문 라벨은 `제53조` 꼴, FAQ 라벨은 `Q47` 꼴이다."""
-    return label.startswith("제")
 
 
 def make_line(item_id: str, gold: dict, v: vd.Verdict | None, cause: str | None = None) -> dict:
@@ -99,7 +95,7 @@ def match_item(
 
 
 def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
-    lines, spent, extra, stop = [], 0.0, 0, None
+    lines, spent, calls, cache_hits, extra, stop = [], 0.0, 0, 0, 0, None
     for row in rows:
         try:
             plans, verdicts = judge_fn(row)
@@ -111,12 +107,21 @@ def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
             lines += [make_line(row["id"], g, None, why) for g in row["labels"]]
             continue
         spent += sum(v.usd for v in verdicts if not v.cached)
+        calls += sum(1 for v in verdicts if not v.cached and not v.no_context)  # 실제 LLM 호출
+        cache_hits += sum(1 for v in verdicts if v.cached)
         got, n = match_item(row, verdicts, plans)
         lines, extra = lines + got, extra + n
         if spent > budget_usd:
             stop = ("budget", f"{row['id']}: 비용 상한 ${budget_usd} 초과 (${spent:.4f})")
             break
-    return {"lines": lines, "extra_system": extra, "stop": stop, "usd": spent}
+    return {
+        "lines": lines,
+        "extra_system": extra,
+        "stop": stop,
+        "usd": spent,
+        "calls": calls,
+        "cache_hits": cache_hits,
+    }
 
 
 def make_judge_fn(engine, embedder, client, cache, model):
@@ -168,7 +173,11 @@ def main(
         "seconds": round(time.perf_counter() - t0, 1),
         "stop": m["stop"],
         "usd": m["usd"],
+        "calls": m["calls"],
+        "cache_hits": m["cache_hits"],
+        "retries": client.retries if client else 0,
         "metrics": metrics.compute(m["lines"]),
+        "counts": {**metrics.counts(m["lines"]), "unmatched_system_queries": m["extra_system"]},
     }
     write(out / "metrics.json", json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     acc = result["metrics"]["judgment_accuracy"]["total"]

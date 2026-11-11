@@ -1,11 +1,43 @@
-"""run 줄에서 지표를 센다 (#76). 설계 §3.3.
+"""run 줄에서 지표 7개를 센다 (#76). 정의는 설계 §3.3.
 
 지표 함수 하나가 지표 하나다. 값은 `{"value", "num", "den"}`이고 분모가 0이면 value는 None이다.
+못 맞춘 라벨(`matched=false`)은 시스템 칸이 비어 있어서 분모에는 남고 분자에는 못 든다.
 """
+
+ABSTAIN = ("NEED_INFO", "UNVERIFIABLE")  # 판정을 내리지 않은 최종 판정
+DECISIVE_GOLD = ("ELIGIBLE", "INELIGIBLE")
+
+
+def is_law(label: str) -> bool:
+    """조문 라벨은 `제53조` 꼴, FAQ 라벨은 `Q47` 꼴이다."""
+    return label.startswith("제")
 
 
 def ratio(num: int, den: int) -> dict:
     return {"value": num / den if den else None, "num": num, "den": den}
+
+
+def _count(rows: list[dict], pick, hit) -> dict:
+    """`pick`에 든 줄 중 `hit`인 줄의 비율."""
+    chosen = [r for r in rows if pick(r)]
+    return ratio(sum(1 for r in chosen if hit(r)), len(chosen))
+
+
+def recall_at_5(rows: list[dict]) -> dict:
+    """정답 근거 조문 (라벨, 조) 쌍 중 시스템 조문 검색 top-5에 든 쌍의 비율."""
+    pairs = [(r, c) for r in rows for c in r["gold_citations"]]
+    return ratio(sum(1 for r, c in pairs if c in r["law_top5"]), len(pairs))
+
+
+def hit_at_5(rows: list[dict]) -> dict:
+    """정답 근거 조문이 하나라도 top-5에 든 정답 라벨의 비율."""
+    return ratio(sum(1 for r in rows if set(r["gold_citations"]) & set(r["law_top5"])), len(rows))
+
+
+def citation_precision(rows: list[dict]) -> dict:
+    """시스템이 인용한 조문 라벨 중 정답 근거 조문에 있는 것의 비율. FAQ 인용은 뺀다."""
+    cites = [(r, c) for r in rows for c in r["sys_citations"] if is_law(c)]
+    return ratio(sum(1 for r, c in cites if c in r["gold_citations"]), len(cites))
 
 
 def judgment_accuracy(rows: list[dict]) -> dict:
@@ -24,5 +56,48 @@ def judgment_accuracy(rows: list[dict]) -> dict:
     }
 
 
+def fatal_error_rate(rows: list[dict]) -> dict:
+    """정답이 INELIGIBLE인 라벨 중 시스템이 ELIGIBLE을 낸 비율."""
+    return _count(
+        rows, lambda r: r["gold_verdict"] == "INELIGIBLE", lambda r: r["sys_verdict"] == "ELIGIBLE"
+    )
+
+
+def justified_abstain(rows: list[dict]) -> dict:
+    """정답이 NEED_INFO인 라벨 중 시스템도 abstain한 비율."""
+    return _count(
+        rows, lambda r: r["gold_verdict"] == "NEED_INFO", lambda r: r["sys_verdict"] in ABSTAIN
+    )
+
+
+def unjustified_abstain(rows: list[dict]) -> dict:
+    """정답이 ELIGIBLE·INELIGIBLE인 라벨 중 시스템이 abstain한 비율."""
+    return _count(
+        rows, lambda r: r["gold_verdict"] in DECISIVE_GOLD, lambda r: r["sys_verdict"] in ABSTAIN
+    )
+
+
 def compute(rows: list[dict]) -> dict:
-    return {"judgment_accuracy": judgment_accuracy(rows)}
+    return {
+        "recall_at_5": recall_at_5(rows),
+        "hit_at_5": hit_at_5(rows),
+        "citation_precision": citation_precision(rows),
+        "judgment_accuracy": judgment_accuracy(rows),
+        "fatal_error_rate": fatal_error_rate(rows),
+        "justified_abstain": justified_abstain(rows),
+        "unjustified_abstain": unjustified_abstain(rows),
+    }
+
+
+def counts(rows: list[dict]) -> dict:
+    """지표 옆에 같이 내는 수. `search_incomplete`는 실패 징후 1의 값이다."""
+    unmatched = sum(1 for r in rows if not r["matched"])
+    no_law = sum(1 for r in rows if r["matched"] and not r["law_top5"])
+    return {
+        "labels": len(rows),
+        "unmatched_labels": unmatched,
+        "no_law_results": no_law,
+        "search_incomplete": unmatched + no_law,
+        "verdict_errors": sum(1 for r in rows if r["error"]),
+        "faq_citations": sum(1 for r in rows for c in r["sys_citations"] if not is_law(c)),
+    }
