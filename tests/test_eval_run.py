@@ -241,3 +241,27 @@ def test_partial_run_does_not_overwrite_a_full_record(tmp_path):
     )
     assert code == 3
     assert (out / "metrics.json").read_text("utf-8") == before
+
+
+def test_make_line_splits_law_and_faq_and_keeps_pre_verdict():
+    row = item()
+    g = row["labels"][0]
+    v = sys_verdict(
+        "homeless",
+        "무주택 질의",
+        "NEED_INFO",
+        ["제53조", "Q1"],
+        ["제53조", "Q1", "제53조", "제9조"],
+    )
+    v.guarded, v.original_verdict, v.usd, v.cached = True, "ELIGIBLE", 0.5, True
+    line = run.make_line(row, g, v)
+    assert line["law_top5"] == ["제53조", "제9조"]  # 조문 라벨만, 겹친 것은 한 번, 순서 유지
+    assert line["faq_top3"] == ["Q1"]
+    assert (line["sys_verdict"], line["sys_pre_verdict"]) == ("NEED_INFO", "ELIGIBLE")
+    assert (line["usd"], line["cached"]) == (0.5, True)
+    plain = sys_verdict("homeless", "무주택 질의", "ELIGIBLE")
+    assert run.make_line(row, g, plain)["sys_pre_verdict"] == "ELIGIBLE"
+    forced = sys_verdict("homeless", "무주택 질의", "UNVERIFIABLE")
+    forced.forced, forced.original_verdict = True, "INELIGIBLE"
+    assert run.make_line(row, g, forced)["sys_pre_verdict"] == "INELIGIBLE"
+
