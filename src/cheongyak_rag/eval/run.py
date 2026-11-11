@@ -156,7 +156,7 @@ def attach_runs(res: dict, prev: dict | None) -> dict:
     snap = {"run_at": res["run_at"], "metrics": res["metrics"], "counts": res["counts"]}
     old = prev.get("first_run")
     if incomplete:
-        first, second = old, None
+        first, second = old, prev.get("second_run")  # 멈춘 실행이 앞서 완주한 기록을 지우지 않는다
     elif old:
         first, second = old, {**snap, **usage}
     else:

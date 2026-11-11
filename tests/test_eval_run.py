@@ -223,6 +223,15 @@ def test_incomplete_second_run_keeps_first_run():
     assert r["first_run"]["calls"] == 500 and r["second_run"] is None
 
 
+def test_incomplete_third_run_keeps_the_second_run():
+    first = run.attach_runs(result(calls=500, usd=3.0), None)
+    prev = {**result(calls=500), **first}
+    second = run.attach_runs(result(calls=0), prev)
+    third = run.attach_runs(result(calls=1, stop=("hard", "429")), {**result(), **second})
+    assert third["incomplete"]
+    assert third["first_run"]["calls"] == 500 and third["second_run"]["calls"] == 0
+
+
 def test_partial_run_does_not_overwrite_a_full_record(tmp_path):
     golden = tmp_path / "golden.jsonl"
     golden.write_text(
