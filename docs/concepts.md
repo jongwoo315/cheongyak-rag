@@ -130,6 +130,24 @@
 - 빈 칸은 「모른다」는 뜻이다. `partial`은 부분 프로필 문항이다.
 - `full` 프로필은 `homeless_since`·`spouse_savings_join_date`가 있어서 항상 혼인 중이고 무주택자가 된 날이 있다(`Profile`이 소유 이력과 배우자 통장을 그 칸에서 정한다). 유주택·미혼 사례는 `partial`에 있다.
 
+## eval 지표 7개 — 골든셋과 시스템 판정을 맞춰 센 값
+
+정의: `src/cheongyak_rag/eval/metrics.py`의 지표 함수 하나가 지표 하나다. 만든 티켓 #76.
+못 맞춘 라벨(시스템에 같은 하위 질의가 없는 정답 라벨)은 분모에 남고 분자에는 못 든다.
+
+| 이름(코드 식별자) | 뜻 | 정의한 곳 | 만든 티켓 |
+| --- | --- | --- | --- |
+| recall@5 (`recall_at_5`) | 정답 근거 조문 (라벨, 조) 쌍 중 시스템 조문 검색 top-5에 든 쌍의 비율 | `eval/metrics.py:26` | #76 |
+| hit@5 (`hit_at_5`) | 정답 근거 조문이 하나라도 top-5에 든 정답 라벨의 비율 | `eval/metrics.py:32` | #76 |
+| citation precision (`citation_precision`) | 시스템이 인용한 조문 중 정답 근거 조문인 것의 비율. FAQ 인용은 뺀다 | `eval/metrics.py:37` | #76 |
+| 판정 정확도 (`judgment_accuracy`) | 시스템 최종 판정값이 정답 라벨과 같은 비율. 축 7개마다 + 전체 | `eval/metrics.py:43` | #76 |
+| 치명오답률 (`fatal_error_rate`) | 정답이 `INELIGIBLE`인 라벨 중 시스템이 `ELIGIBLE`을 낸 비율 | `eval/metrics.py:59` | #76 |
+| 정당 abstain 비율 (`justified_abstain`) | 정답이 `NEED_INFO`인 라벨 중 시스템도 abstain한 비율 | `eval/metrics.py:66` | #76 |
+| 부당 abstain 비율 (`unjustified_abstain`) | 정답이 `ELIGIBLE`·`INELIGIBLE`인 라벨 중 시스템이 abstain한 비율 | `eval/metrics.py:73` | #76 |
+
+- 시스템 판정이 실패한 하위 질의(`Verdict.error`)는 판정 정확도에서 틀린 것이고 abstain이 아닌 것이다
+- 리포트(`eval/report.py`)는 같은 지표를 `run.jsonl`에서 이 함수들을 부르지 않고 따로 다시 센다
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.

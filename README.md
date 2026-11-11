@@ -106,6 +106,15 @@ uv run python -m cheongyak_rag.golden.report  # 리포트 docs/75-golden.md와 �
 
 DB는 읽기만 한다. 판정 흐름을 돌리거나 OpenAI를 부르지 않는다.
 
+## 평가 (eval harness)
+
+골든셋 50문항을 지금 배포된 판정 흐름에 돌려 지표 7개를 낸다(#76). OpenAI를 부르고 DB는 읽기만 한다. 결과는 `runs/76/`와 [`docs/76-eval.md`](docs/76-eval.md)에 있다.
+
+```bash
+uv run python -m cheongyak_rag.eval.run --budget-usd 10   # run.jsonl·metrics.json을 쓴다. 같은 명령을 다시 돌리면 호출 0회(캐시)
+uv run python -m cheongyak_rag.eval.report                # run.jsonl로 지표를 따로 다시 세고 docs/76-eval.md를 쓴다
+```
+
 ## 메모
 
 - **DB 포트는 5433.** 호스트에 이미 Postgres 가 5432 를 점유 중이라 컨테이너를 5433 으로 매핑했다.
