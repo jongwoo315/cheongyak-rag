@@ -1,7 +1,9 @@
 """run 줄에서 지표 7개를 센다 (#76). 정의는 설계 §3.3.
 
-지표 함수 하나가 지표 하나다. 값은 `{"value", "num", "den"}`이고 분모가 0이면 value는 None이다.
+지표 함수 하나가 지표 하나다. 값은 `{"value", "num", "den"}`이고 분모가 0이면 value는 None이다
+(판정 정확도만 `{"total": 값, "axes": {축: 값}}`이다).
 못 맞춘 라벨(`matched=false`)은 시스템 칸이 비어 있어서 분모에는 남고 분자에는 못 든다.
+citation precision만 예외다 — 분모가 시스템이 인용한 조문이라 못 맞춘 라벨은 분모에도 없다.
 """
 
 ABSTAIN = ("NEED_INFO", "UNVERIFIABLE")  # 판정을 내리지 않은 최종 판정
