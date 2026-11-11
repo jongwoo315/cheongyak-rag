@@ -272,12 +272,15 @@ def render(rows: list[dict], harness: dict, notes: dict | None = None) -> str:
 
     out += ["## 실패 징후", ""]
     rows5 = []
-    z4 = "미측정" if first is None else zone_cost(first["usd"], stopped)
-    c4 = (
-        "첫 실행이 아직 끝나지 않았다"
-        if first is None
-        else f"첫 실행 ${first['usd']:.4f}, 호출 {first['calls']}회"
-    )
+    if first is not None:  # 첫 실행이 끝났으면 뒤 실행이 멈춘 것은 이 구간과 상관없다
+        z4 = zone_cost(first["usd"], False)
+        c4 = f"첫 실행 ${first['usd']:.4f}, 호출 {first['calls']}회"
+    elif stopped:
+        z4 = zone_cost(0.0, True)
+        spent = harness.get("usage_total", {}).get("usd", harness["usd"])
+        c4 = f"실행이 멈췄다({harness['stop'][0]}). 지금까지 ${spent:.4f}"
+    else:
+        z4, c4 = "미측정", "첫 실행이 아직 끝나지 않았다"
     if second is None:
         z5, c5 = "미측정", "두 번째 실행이 없다"
     else:

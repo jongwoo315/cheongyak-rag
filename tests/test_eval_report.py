@@ -154,3 +154,38 @@ def test_main_reads_run_dir(tmp_path):
     out = tmp_path / "eval.md"
     assert report.main(["--run-dir", str(tmp_path), "--out", str(out)]) == 0
     assert out.exists()
+
+
+def _harness(**kw):
+    base = {
+        "model": "m",
+        "stop": None,
+        "usd": 1.5,
+        "metrics": metrics.compute(ROWS),
+        "counts": {**metrics.counts(ROWS), "unmatched_system_queries": 0},
+        "first_run": None,
+        "second_run": None,
+    }
+    return {**base, **kw}
+
+
+def _cost_row(md):
+    row = next(x for x in md.splitlines() if x.startswith("| 4 첫 실행 비용"))
+    return row.rsplit(" | ", 1)[0]  # 구간 조건 칸은 「미완」이 늘 들어 있어 뺀다
+
+
+def test_cost_zone_when_first_run_stopped_on_budget():
+    h = _harness(stop=["budget", "g07: 상한"], usage_total={"usd": 10.4})
+    row = _cost_row(report.render(ROWS, h))
+    assert "미완" in row and "10.4000" in row and "미측정" not in row
+
+
+def test_cost_zone_ignores_a_later_stop_after_a_clean_first_run():
+    first = {"run_at": "t1", "calls": 5, "usd": 1.5, "metrics": {}, "counts": {}}
+    h = _harness(stop=["hard", "429"], first_run=first)
+    row = _cost_row(report.render(ROWS, h))
+    assert "통과" in row and "미완" not in row
+
+
+def test_cost_zone_is_unmeasured_before_any_complete_first_run():
+    assert "미측정" in _cost_row(report.render(ROWS, _harness()))
