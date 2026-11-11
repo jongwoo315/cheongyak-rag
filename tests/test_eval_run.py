@@ -131,6 +131,15 @@ def test_calls_count_only_fresh_llm_verdicts():
     assert (m["calls"], m["cache_hits"]) == (1, 1)
 
 
+def test_no_context_and_cached_verdicts_cost_nothing():
+    no_ctx = sys_verdict("homeless", "무주택 질의", "UNVERIFIABLE")
+    no_ctx.no_context = True
+    cached = sys_verdict("account", "통장 질의", "NEED_INFO")
+    cached.cached, cached.usd = True, 20.0  # 캐시에서 읽은 줄에도 처음 부른 금액이 들어 있다
+    m = run.measure([item()], fake_judge([no_ctx, cached]), budget_usd=10)
+    assert (m["calls"], m["usd"], m["stop"]) == (0, 0.0, None)
+
+
 # ── 첫 실행 · 두 번째 실행 ───────────────────────────────────────────────
 
 
