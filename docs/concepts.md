@@ -138,13 +138,13 @@ citation precision만 예외다. 분모가 시스템이 인용한 조문이라 �
 
 | 이름(코드 식별자) | 뜻 | 정의한 곳 | 만든 티켓 |
 | --- | --- | --- | --- |
-| recall@5 (`recall_at_5`) | 정답 근거 조문 (라벨, 조) 쌍 중 시스템 조문 검색 top-5에 든 쌍의 비율 | `eval/metrics.py:26` | #76 |
-| hit@5 (`hit_at_5`) | 정답 근거 조문이 하나라도 top-5에 든 정답 라벨의 비율 | `eval/metrics.py:32` | #76 |
-| citation precision (`citation_precision`) | 시스템이 인용한 조문 중 정답 근거 조문인 것의 비율. FAQ 인용은 뺀다 | `eval/metrics.py:37` | #76 |
-| 판정 정확도 (`judgment_accuracy`) | 시스템 최종 판정값이 정답 라벨과 같은 비율. 축 7개마다 + 전체 | `eval/metrics.py:43` | #76 |
-| 치명오답률 (`fatal_error_rate`) | 정답이 `INELIGIBLE`인 라벨 중 시스템이 `ELIGIBLE`을 낸 비율 | `eval/metrics.py:59` | #76 |
-| 정당 abstain 비율 (`justified_abstain`) | 정답이 `NEED_INFO`인 라벨 중 시스템도 abstain한 비율 | `eval/metrics.py:66` | #76 |
-| 부당 abstain 비율 (`unjustified_abstain`) | 정답이 `ELIGIBLE`·`INELIGIBLE`인 라벨 중 시스템이 abstain한 비율 | `eval/metrics.py:73` | #76 |
+| recall@5 (`recall_at_5`) | 정답 근거 조문 (라벨, 조) 쌍 중 시스템 조문 검색 top-5에 든 쌍의 비율 | `eval/metrics.py:31` | #76 |
+| hit@5 (`hit_at_5`) | 정답 근거 조문이 하나라도 top-5에 든 정답 라벨의 비율 | `eval/metrics.py:37` | #76 |
+| citation precision (`citation_precision`) | 시스템이 인용한 조문 중 정답 근거 조문인 것의 비율. FAQ 인용은 뺀다 | `eval/metrics.py:42` | #76 |
+| 판정 정확도 (`judgment_accuracy`) | 시스템 최종 판정값이 정답 라벨과 같은 비율. 축 7개마다 + 전체 | `eval/metrics.py:48` | #76 |
+| 치명오답률 (`fatal_error_rate`) | 정답이 `INELIGIBLE`인 라벨 중 시스템이 `ELIGIBLE`을 낸 비율 | `eval/metrics.py:64` | #76 |
+| 정당 abstain 비율 (`justified_abstain`) | 정답이 `NEED_INFO`인 라벨 중 시스템도 abstain한 비율 | `eval/metrics.py:71` | #76 |
+| 부당 abstain 비율 (`unjustified_abstain`) | 정답이 `ELIGIBLE`·`INELIGIBLE`인 라벨 중 시스템이 abstain한 비율 | `eval/metrics.py:78` | #76 |
 
 - 시스템 판정이 실패한 하위 질의(`Verdict.error`)는 판정 정확도에서 틀린 것이고 abstain이 아닌 것이다
 - 리포트(`eval/report.py`)는 같은 지표를 `run.jsonl`에서 이 함수들을 부르지 않고 따로 다시 센다
