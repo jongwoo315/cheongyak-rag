@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 from cheongyak_rag.config import settings
 from cheongyak_rag.eval import metrics
-from cheongyak_rag.eval.metrics import is_law
+from cheongyak_rag.eval.metrics import ITEM_FAILED, is_law
 from cheongyak_rag.generate import verdict as vd
 from cheongyak_rag.generate.answer import GenCache, HardApiError, check_model, make_client
 from cheongyak_rag.generate.evaluate import RetryingClient
@@ -30,7 +30,6 @@ GOLDEN = ROOT / "runs/75/golden.jsonl"
 OUT_DIR = ROOT / "runs/76"
 BUDGET_USD = 10.0
 NOT_RUN = "실행이 멈춰 돌지 않았다"
-ITEM_FAILED = "공고 판정 실패"
 
 
 def make_line(row: dict, gold: dict, v: vd.Verdict | None, cause: str | None = None) -> dict:

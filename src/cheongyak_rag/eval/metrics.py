@@ -6,6 +6,9 @@
 
 ABSTAIN = ("NEED_INFO", "UNVERIFIABLE")  # 판정을 내리지 않은 최종 판정
 DECISIVE_GOLD = ("ELIGIBLE", "INELIGIBLE")
+ITEM_FAILED = (
+    "공고 판정 실패"  # 문항 하나가 통째로 실패한 줄의 `cause` 앞머리. run이 쓰고 counts가 센다
+)
 
 
 def is_law(label: str) -> bool:
@@ -98,7 +101,7 @@ def counts(rows: list[dict]) -> dict:
         "unmatched_labels": unmatched,
         "no_law_results": no_law,
         "search_incomplete": unmatched + no_law,
-        "item_failures": sum(1 for r in rows if (r["cause"] or "").startswith("공고 판정 실패")),
+        "item_failures": sum(1 for r in rows if (r["cause"] or "").startswith(ITEM_FAILED)),
         "verdict_errors": sum(1 for r in rows if r["error"]),
         "faq_citations": sum(1 for r in rows for c in r["sys_citations"] if not is_law(c)),
     }
