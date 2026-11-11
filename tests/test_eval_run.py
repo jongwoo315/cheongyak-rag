@@ -265,3 +265,18 @@ def test_make_line_splits_law_and_faq_and_keeps_pre_verdict():
     forced.forced, forced.original_verdict = True, "INELIGIBLE"
     assert run.make_line(row, g, forced)["sys_pre_verdict"] == "INELIGIBLE"
 
+
+def test_item_exception_does_not_stop_later_items():
+    rows = [item("g01"), item("g02"), item("g03")]
+
+    def judge(row):
+        if row["id"] == "g02":
+            raise LookupError("공고 없음")
+        return [], [
+            sys_verdict("homeless", "무주택 질의", "NEED_INFO", ["제53조"], ["제53조"]),
+            sys_verdict("account", "통장 질의", "INELIGIBLE", ["제28조"], ["제28조"]),
+        ]
+
+    m = run.measure(rows, judge, 10.0)
+    assert [x["id"] for x in m["lines"] if x["matched"]] == ["g01", "g01", "g03", "g03"]
+    assert m["stop"] is None
