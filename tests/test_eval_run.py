@@ -145,7 +145,7 @@ def result(calls=0, usd=0.0, errors=0, stop=None, model="m", items=50, values=No
         "retries": 0,
         "usd": usd,
         "metrics": values or {"x": 1},
-        "counts": {"verdict_errors": errors, "unmatched_labels": 0},
+        "counts": {"verdict_errors": errors, "unmatched_labels": 0, "item_failures": 0},
     }
 
 
@@ -164,3 +164,80 @@ def test_incomplete_run_cost_carries_into_first_run():
     assert not b["incomplete"]
     assert (b["first_run"]["calls"], round(b["first_run"]["usd"], 2)) == (303, 2.02)
     assert b["second_run"] is None
+
+
+# ── 멈춘 실행 · 문항 실패 · 덮어쓰기 (리뷰 지적) ─────────────────────────
+
+
+def test_stopped_run_still_leaves_a_line_for_every_label():
+    from cheongyak_rag.generate.answer import HardApiError
+
+    def judge(row):
+        if row["id"] == "g02":
+            raise HardApiError("insufficient_quota")
+        return [], [sys_verdict("homeless", "무주택 질의", "NEED_INFO")]
+
+    rows = [item("g01"), item("g02"), item("g03")]
+    m = run.measure(rows, judge, budget_usd=10)
+    assert m["stop"][0] == "hard"
+    assert len(m["lines"]) == 6  # 라벨 2개 × 문항 3개
+    assert [x["cause"] for x in m["lines"][2:]] == ["실행이 멈춰 돌지 않았다"] * 4
+
+
+def test_budget_stop_marks_the_rest_not_run():
+    v = sys_verdict("homeless", "무주택 질의", "NEED_INFO")
+    v.usd = 20.0
+    m = run.measure([item("g01"), item("g02")], fake_judge([v]), budget_usd=10)
+    assert m["stop"][0] == "budget" and len(m["lines"]) == 4
+    assert m["lines"][2]["cause"] == "실행이 멈춰 돌지 않았다"
+
+
+def test_item_failure_makes_run_incomplete_and_exit_nonzero(tmp_path):
+    golden = tmp_path / "golden.jsonl"
+    golden.write_text(json.dumps(item(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    def boom(row):
+        raise LookupError("공고 없음")
+
+    out = tmp_path / "out"
+    assert run.main(["--out-dir", str(out)], judge_fn=boom, golden=golden) == 1
+    m = json.loads((out / "metrics.json").read_text("utf-8"))
+    assert m["counts"]["item_failures"] == 2 and m["incomplete"] is True
+    assert m["first_run"] is None
+
+
+def test_stop_makes_run_incomplete():
+    r = run.attach_runs({**result(calls=5, usd=1.0), "stop": ["budget", "x"]}, None)
+    assert r["incomplete"] and r["first_run"] is None
+
+
+def test_different_items_reset_the_record():
+    prev = {**result(calls=500, items=50), **run.attach_runs(result(calls=500, items=50), None)}
+    r = run.attach_runs(result(calls=1, items=1), prev)
+    assert r["first_run"]["calls"] == 1 and r["second_run"] is None
+
+
+def test_incomplete_second_run_keeps_first_run():
+    prev = {**result(calls=500), **run.attach_runs(result(calls=500), None)}
+    r = run.attach_runs(result(calls=2, errors=1), prev)
+    assert r["first_run"]["calls"] == 500 and r["second_run"] is None
+
+
+def test_partial_run_does_not_overwrite_a_full_record(tmp_path):
+    golden = tmp_path / "golden.jsonl"
+    golden.write_text(
+        "".join(json.dumps(item(i), ensure_ascii=False) + "\n" for i in ("g01", "g02")),
+        encoding="utf-8",
+    )
+    verdicts = [
+        sys_verdict("homeless", "무주택 질의", "NEED_INFO"),
+        sys_verdict("account", "통장 질의", "NEED_INFO"),
+    ]
+    out = tmp_path / "out"
+    assert run.main(["--out-dir", str(out)], judge_fn=fake_judge(verdicts), golden=golden) == 0
+    before = (out / "metrics.json").read_text("utf-8")
+    code = run.main(
+        ["--limit", "1", "--out-dir", str(out)], judge_fn=fake_judge(verdicts), golden=golden
+    )
+    assert code == 3
+    assert (out / "metrics.json").read_text("utf-8") == before

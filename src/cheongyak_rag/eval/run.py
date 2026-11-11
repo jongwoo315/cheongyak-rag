@@ -29,6 +29,8 @@ ROOT = Path(__file__).resolve().parents[3]
 GOLDEN = ROOT / "runs/75/golden.jsonl"
 OUT_DIR = ROOT / "runs/76"
 BUDGET_USD = 10.0
+NOT_RUN = "실행이 멈춰 돌지 않았다"
+ITEM_FAILED = "공고 판정 실패"
 
 
 def make_line(row: dict, gold: dict, v: vd.Verdict | None, cause: str | None = None) -> dict:
@@ -100,6 +102,7 @@ def match_item(
 
 def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
     lines, spent, calls, cache_hits, extra, stop = [], 0.0, 0, 0, 0, None
+    done = 0  # 끝까지 돈 문항 수
     for row in rows:
         try:
             plans, verdicts = judge_fn(row)
@@ -107,17 +110,21 @@ def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
             stop = ("hard", f"{row['id']}: {e}")
             break
         except Exception as e:  # noqa: BLE001 — 문항 하나의 실패로 실행 전체를 잃지 않는다
-            why = f"공고 판정 실패: {type(e).__name__}: {e}"
+            why = f"{ITEM_FAILED}: {type(e).__name__}: {e}"
             lines += [make_line(row, g, None, why) for g in row["labels"]]
+            done += 1
             continue
         spent += sum(v.usd for v in verdicts if not v.cached)
         calls += sum(1 for v in verdicts if not v.cached and not v.no_context)  # 실제 LLM 호출
         cache_hits += sum(1 for v in verdicts if v.cached)
         got, n = match_item(row, verdicts, plans)
         lines, extra = lines + got, extra + n
+        done += 1
         if spent > budget_usd:
             stop = ("budget", f"{row['id']}: 비용 상한 ${budget_usd} 초과 (${spent:.4f})")
             break
+    for row in rows[done:]:  # 멈춰서 안 돈 문항도 정답 라벨마다 줄을 남긴다 — 분모를 줄이지 않는다
+        lines += [make_line(row, g, None, NOT_RUN) for g in row["labels"]]
     return {
         "lines": lines,
         "extra_system": extra,
@@ -143,7 +150,9 @@ def attach_runs(res: dict, prev: dict | None) -> dict:
     usage = {k: res[k] for k in USAGE_KEYS}
     carried = prev.get("usage_total") if prev.get("incomplete") else None
     total = {k: usage[k] + carried[k] for k in USAGE_KEYS} if carried else usage
-    incomplete = bool(res["stop"] or res["counts"]["verdict_errors"])
+    incomplete = bool(
+        res["stop"] or res["counts"]["verdict_errors"] or res["counts"]["item_failures"]
+    )
     snap = {"run_at": res["run_at"], "metrics": res["metrics"], "counts": res["counts"]}
     old = prev.get("first_run")
     if incomplete:
@@ -206,6 +215,12 @@ def main(
             GenCache(vd.cache_path_for(args.model)), args.model,
         )  # fmt: skip
     prev = _read_prev(args.out_dir / "metrics.json")  # 새 기록을 쓰기 전에 읽는다
+    if prev and prev.get("first_run") and prev.get("items") != len(rows):
+        print(
+            f"{args.out_dir}에 문항 {prev.get('items')}개 기록이 있다. 다른 --out-dir을 쓴다",
+            file=sys.stderr,
+        )
+        return 3
     t0 = time.perf_counter()
     m = measure(rows, judge_fn, args.budget_usd)
     out = args.out_dir
@@ -230,6 +245,9 @@ def main(
     print(f"→ {out / 'run.jsonl'} · {out / 'metrics.json'}")
     if m["stop"]:
         print(f"멈춤({m['stop'][0]}): {m['stop'][1]}", file=sys.stderr)
+        return 1
+    if result["counts"]["item_failures"]:
+        print(f"문항 {result['counts']['item_failures']}개 줄이 판정 실패", file=sys.stderr)
         return 1
     return 0
 

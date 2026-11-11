@@ -1,8 +1,8 @@
 {
-  "run_at": "2026-11-12T00:46:30+09:00",
+  "run_at": "2026-11-12T00:52:25+09:00",
   "model": "gpt-5.4-mini",
   "items": 50,
-  "seconds": 9.7,
+  "seconds": 9.2,
   "stop": null,
   "usd": 0.0,
   "calls": 0,
@@ -89,6 +89,7 @@
     "unmatched_labels": 0,
     "no_law_results": 0,
     "search_incomplete": 0,
+    "item_failures": 0,
     "verdict_errors": 0,
     "faq_citations": 715,
     "unmatched_system_queries": 0
@@ -193,7 +194,7 @@
     "usd": 3.3605242499999997
   },
   "second_run": {
-    "run_at": "2026-11-12T00:46:30+09:00",
+    "run_at": "2026-11-12T00:52:25+09:00",
     "metrics": {
       "recall_at_5": {
         "value": 0.8005540166204986,
@@ -275,6 +276,7 @@
       "unmatched_labels": 0,
       "no_law_results": 0,
       "search_incomplete": 0,
+      "item_failures": 0,
       "verdict_errors": 0,
       "faq_citations": 715,
       "unmatched_system_queries": 0

@@ -98,6 +98,7 @@ def counts(rows: list[dict]) -> dict:
         "unmatched_labels": unmatched,
         "no_law_results": no_law,
         "search_incomplete": unmatched + no_law,
+        "item_failures": sum(1 for r in rows if (r["cause"] or "").startswith("공고 판정 실패")),
         "verdict_errors": sum(1 for r in rows if r["error"]),
         "faq_citations": sum(1 for r in rows for c in r["sys_citations"] if not is_law(c)),
     }
