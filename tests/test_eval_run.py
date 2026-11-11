@@ -298,3 +298,14 @@ def test_item_exception_does_not_stop_later_items():
     m = run.measure(rows, judge, 10.0)
     assert [x["id"] for x in m["lines"] if x["matched"]] == ["g01", "g01", "g03", "g03"]
     assert m["stop"] is None
+
+
+def test_main_returns_1_and_records_stop_on_budget(tmp_path):
+    golden = tmp_path / "golden.jsonl"
+    golden.write_text(json.dumps(item(), ensure_ascii=False) + "\n", encoding="utf-8")
+    v = sys_verdict("homeless", "무주택 질의", "NEED_INFO")
+    v.usd = 20.0
+    out = tmp_path / "out"
+    code = run.main(["--out-dir", str(out)], judge_fn=fake_judge([v]), golden=golden)
+    saved = json.loads((out / "metrics.json").read_text("utf-8"))
+    assert code == 1 and saved["stop"][0] == "budget" and saved["incomplete"]
