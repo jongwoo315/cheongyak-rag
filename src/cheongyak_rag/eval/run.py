@@ -31,21 +31,24 @@ OUT_DIR = ROOT / "runs/76"
 BUDGET_USD = 10.0
 
 
-def make_line(item_id: str, gold: dict, v: vd.Verdict | None, cause: str | None = None) -> dict:
+def make_line(row: dict, gold: dict, v: vd.Verdict | None, cause: str | None = None) -> dict:
     """정답 라벨 하나와 그에 맞는 시스템 판정 하나(없으면 None)의 run 줄.
 
     못 맞춘 줄(`matched=false`)은 시스템 칸이 비고 `cause`에 이유가 들어간다.
     """
     line = {
-        "id": item_id,
+        "id": row["id"],
+        "notice_name": row["notice_name"],
         "axis": gold["axis"],
         "query": gold["query"],
         "gold_verdict": gold["verdict"],
         "gold_citations": gold["citations"],
+        "gold_reason": gold["reason"],
         "matched": v is not None,
         "cause": cause,
         "sys_verdict": None,
         "sys_pre_verdict": None,
+        "sys_reason": None,
         "sys_citations": [],
         "law_top5": [],
         "faq_top3": [],
@@ -58,6 +61,7 @@ def make_line(item_id: str, gold: dict, v: vd.Verdict | None, cause: str | None 
         line.update(
             sys_verdict=v.verdict,
             sys_pre_verdict=v.original_verdict if (v.guarded or v.forced) else v.verdict,
+            sys_reason=v.reason,
             sys_citations=v.citations,
             law_top5=list(dict.fromkeys(c for c in ctx if is_law(c))),
             faq_top3=list(dict.fromkeys(c for c in ctx if not is_law(c))),
@@ -89,7 +93,7 @@ def match_item(
     lines = []
     for g in row["labels"]:
         v = by_key.get((g["axis"], g["query"]))
-        lines.append(make_line(row["id"], g, v, None if v else _cause(g["axis"], plans, verdicts)))
+        lines.append(make_line(row, g, v, None if v else _cause(g["axis"], plans, verdicts)))
     wanted = {(g["axis"], g["query"]) for g in row["labels"]}
     return lines, sum(1 for k in by_key if k not in wanted)
 
@@ -104,7 +108,7 @@ def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
             break
         except Exception as e:  # noqa: BLE001 — 문항 하나의 실패로 실행 전체를 잃지 않는다
             why = f"공고 판정 실패: {type(e).__name__}: {e}"
-            lines += [make_line(row["id"], g, None, why) for g in row["labels"]]
+            lines += [make_line(row, g, None, why) for g in row["labels"]]
             continue
         spent += sum(v.usd for v in verdicts if not v.cached)
         calls += sum(1 for v in verdicts if not v.cached and not v.no_context)  # 실제 LLM 호출
@@ -124,6 +128,38 @@ def measure(rows: list[dict], judge_fn, budget_usd: float) -> dict:
     }
 
 
+USAGE_KEYS = ("calls", "cache_hits", "retries", "usd")
+
+
+def attach_runs(res: dict, prev: dict | None) -> dict:
+    """첫 실행(`first_run`)과 같은 명령을 한 번 더 돌린 실행(`second_run`)을 가른다.
+
+    직전 기록이 같은 모델·문항 수의 완주 실행이면 이번 완주 실행은 두 번째 실행이다.
+    멈췄거나 판정이 실패한 줄이 있는 실행은 완주가 아니다. 그런 실행이 이어지면 호출 수와
+    비용을 더해 다음 완주 실행의 첫 실행 값으로 쓴다 — 캐시가 찬 뒤의 비용만 적지 않으려는 것이다.
+    """
+    same = bool(prev) and (prev["model"], prev["items"]) == (res["model"], res["items"])
+    prev = prev if same else {}
+    usage = {k: res[k] for k in USAGE_KEYS}
+    carried = prev.get("usage_total") if prev.get("incomplete") else None
+    total = {k: usage[k] + carried[k] for k in USAGE_KEYS} if carried else usage
+    incomplete = bool(res["stop"] or res["counts"]["verdict_errors"])
+    snap = {"run_at": res["run_at"], "metrics": res["metrics"], "counts": res["counts"]}
+    old = prev.get("first_run")
+    if incomplete:
+        first, second = old, None
+    elif old:
+        first, second = old, {**snap, **usage}
+    else:
+        first, second = {**snap, **total}, None
+    return {
+        "incomplete": incomplete,
+        "usage_total": total,
+        "first_run": first,
+        "second_run": second,
+    }
+
+
 def make_judge_fn(engine, embedder, client, cache, model):
     search_cache: axes.Cache = {}
 
@@ -136,6 +172,13 @@ def make_judge_fn(engine, embedder, client, cache, model):
         return plans, verdicts
 
     return judge_fn
+
+
+def _read_prev(path: Path) -> dict | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 def main(
@@ -162,6 +205,7 @@ def main(
             engine, Embedder(settings.openai_embed_model), client,
             GenCache(vd.cache_path_for(args.model)), args.model,
         )  # fmt: skip
+    prev = _read_prev(args.out_dir / "metrics.json")  # 새 기록을 쓰기 전에 읽는다
     t0 = time.perf_counter()
     m = measure(rows, judge_fn, args.budget_usd)
     out = args.out_dir
@@ -179,6 +223,7 @@ def main(
         "metrics": metrics.compute(m["lines"]),
         "counts": {**metrics.counts(m["lines"]), "unmatched_system_queries": m["extra_system"]},
     }
+    result.update(attach_runs(result, prev))
     write(out / "metrics.json", json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     acc = result["metrics"]["judgment_accuracy"]["total"]
     print(f"문항 {len(rows)}개 · 줄 {len(m['lines'])} · 판정 정확도 {acc['num']}/{acc['den']}")

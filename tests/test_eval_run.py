@@ -8,7 +8,13 @@ from cheongyak_rag.retrieval import axes
 
 
 def gold_label(axis, query, verdict, citations):
-    return {"axis": axis, "query": query, "verdict": verdict, "citations": citations}
+    return {
+        "axis": axis,
+        "query": query,
+        "verdict": verdict,
+        "citations": citations,
+        "reason": "정답 이유",
+    }
 
 
 def item(id_="g01", labels=None):
@@ -123,3 +129,38 @@ def test_calls_count_only_fresh_llm_verdicts():
     cached.cached = True
     m = run.measure([item()], fake_judge([fresh, cached]), budget_usd=10)
     assert (m["calls"], m["cache_hits"]) == (1, 1)
+
+
+# ── 첫 실행 · 두 번째 실행 ───────────────────────────────────────────────
+
+
+def result(calls=0, usd=0.0, errors=0, stop=None, model="m", items=50, values=None):
+    return {
+        "model": model,
+        "items": items,
+        "run_at": "t",
+        "stop": stop,
+        "calls": calls,
+        "cache_hits": 0,
+        "retries": 0,
+        "usd": usd,
+        "metrics": values or {"x": 1},
+        "counts": {"verdict_errors": errors, "unmatched_labels": 0},
+    }
+
+
+def test_attach_first_then_second_run():
+    first = run.attach_runs(result(calls=500, usd=3.0), None)
+    assert first["first_run"]["calls"] == 500 and first["second_run"] is None
+    second = run.attach_runs(result(calls=0), {**result(calls=500, usd=3.0), **first})
+    assert second["first_run"]["calls"] == 500
+    assert second["second_run"]["calls"] == 0
+
+
+def test_incomplete_run_cost_carries_into_first_run():
+    a = run.attach_runs(result(calls=300, usd=2.0, errors=3), None)
+    assert a["incomplete"] and a["first_run"] is None
+    b = run.attach_runs(result(calls=3, usd=0.02), {**result(), **a})
+    assert not b["incomplete"]
+    assert (b["first_run"]["calls"], round(b["first_run"]["usd"], 2)) == (303, 2.02)
+    assert b["second_run"] is None
