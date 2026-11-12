@@ -216,4 +216,4 @@ def test_render_has_every_section(tmp_path):
     for head in ("## jw 기준", "## 실패 징후 2", "## 실패 징후 3", "## 실패 징후 4", "## 지표 7개"):
         assert head in md
     assert "정답 근거 조문과 그 본문을 보고 썼다" in md
-    assert "통과" in md and "1/1" in md
+    assert "구간: **통과**" in md and "1/1" in md
