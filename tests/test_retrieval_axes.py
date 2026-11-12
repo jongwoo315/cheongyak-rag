@@ -438,3 +438,20 @@ def test_search_without_house_type_embeds_the_query(pg_engine):
     emb.embed = lambda texts: (seen.extend(texts), orig(texts))[1]
     axes.search(pg_engine, emb, hmn)
     assert axes.Q_ACCOUNT in seen
+
+
+def test_search_gives_the_search_text_to_bm25_for_law_and_faq(pg_engine, monkeypatch):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})], house_dtl_secd="01")
+    emb = _load_chunks(pg_engine)
+    law_q, faq_q = [], []
+    law_top, faq_top = axes._law_top, axes._faq_top
+    monkeypatch.setattr(
+        axes, "_law_top", lambda c, d, q, k: (law_q.append(q), law_top(c, d, q, k))[1]
+    )
+    monkeypatch.setattr(
+        axes, "_faq_top", lambda c, d, q, k: (faq_q.append(q), faq_top(c, d, q, k))[1]
+    )
+    axes.search(pg_engine, emb, hmn)
+    assert SEARCH_TEXTS[0][2] in law_q and SEARCH_TEXTS[0][2] in faq_q
+    assert axes.Q_ACCOUNT not in law_q and axes.Q_ACCOUNT not in faq_q
