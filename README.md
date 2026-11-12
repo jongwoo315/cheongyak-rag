@@ -9,7 +9,7 @@
 구현은 AI 에이전트가 했다. 각 티켓의 통과 기준은 착수 전에 사람이 한 줄로 먼저 썼고,
 PR마다 그 기준과 결과를 나란히 놓고 사람이 판정했다. 2026-10-01부터 기록한다.
 
-티켓 19개 · 자동 기준 통과 16 · 착수 전 기준으로 반려 4 · 유보 3
+티켓 20개 · 자동 기준 통과 17 · 착수 전 기준으로 반려 4 · 유보 3
 
 기준과 결과가 갈린 티켓:
 
@@ -105,6 +105,15 @@ uv run python -m cheongyak_rag.golden.report  # 리포트 docs/75-golden.md와 �
 ```
 
 DB는 읽기만 한다. 판정 흐름을 돌리거나 OpenAI를 부르지 않는다.
+
+## 평가 (eval harness)
+
+골든셋 50문항을 지금 배포된 판정 흐름에 돌려 지표 7개를 낸다(#76). OpenAI를 부르고 DB는 읽기만 한다. 결과는 `runs/76/`와 [`docs/76-eval.md`](docs/76-eval.md)에 있다.
+
+```bash
+uv run python -m cheongyak_rag.eval.run --budget-usd 10   # run.jsonl·metrics.json을 쓴다. 같은 명령을 다시 돌리면 호출 0회(캐시)
+uv run python -m cheongyak_rag.eval.report                # run.jsonl로 지표를 따로 다시 세고 docs/76-eval.md를 쓴다
+```
 
 ## 메모
 

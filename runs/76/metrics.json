@@ -1,0 +1,289 @@
+{
+  "run_at": "2026-11-12T00:52:25+09:00",
+  "model": "gpt-5.4-mini",
+  "items": 50,
+  "seconds": 9.2,
+  "stop": null,
+  "usd": 0.0,
+  "calls": 0,
+  "cache_hits": 524,
+  "retries": 0,
+  "metrics": {
+    "recall_at_5": {
+      "value": 0.8005540166204986,
+      "num": 578,
+      "den": 722
+    },
+    "hit_at_5": {
+      "value": 0.8244274809160306,
+      "num": 432,
+      "den": 524
+    },
+    "citation_precision": {
+      "value": 0.6646489104116223,
+      "num": 549,
+      "den": 826
+    },
+    "judgment_accuracy": {
+      "total": {
+        "value": 0.6412213740458015,
+        "num": 336,
+        "den": 524
+      },
+      "axes": {
+        "account": {
+          "value": 0.62,
+          "num": 31,
+          "den": 50
+        },
+        "homeless": {
+          "value": 0.72,
+          "num": 36,
+          "den": 50
+        },
+        "householder": {
+          "value": 0.9523809523809523,
+          "num": 40,
+          "den": 42
+        },
+        "income_asset": {
+          "value": 0.28888888888888886,
+          "num": 13,
+          "den": 45
+        },
+        "residence": {
+          "value": 0.68,
+          "num": 34,
+          "den": 50
+        },
+        "rewin": {
+          "value": 0.8695652173913043,
+          "num": 20,
+          "den": 23
+        },
+        "special_type": {
+          "value": 0.6136363636363636,
+          "num": 162,
+          "den": 264
+        }
+      }
+    },
+    "fatal_error_rate": {
+      "value": 0.02197802197802198,
+      "num": 2,
+      "den": 91
+    },
+    "justified_abstain": {
+      "value": 0.9497354497354498,
+      "num": 359,
+      "den": 378
+    },
+    "unjustified_abstain": {
+      "value": 0.6095890410958904,
+      "num": 89,
+      "den": 146
+    }
+  },
+  "counts": {
+    "labels": 524,
+    "unmatched_labels": 0,
+    "no_law_results": 0,
+    "search_incomplete": 0,
+    "item_failures": 0,
+    "verdict_errors": 0,
+    "faq_citations": 715,
+    "unmatched_system_queries": 0
+  },
+  "incomplete": false,
+  "usage_total": {
+    "calls": 0,
+    "cache_hits": 524,
+    "retries": 0,
+    "usd": 0.0
+  },
+  "first_run": {
+    "run_at": "2026-11-12T00:46:01+09:00",
+    "metrics": {
+      "recall_at_5": {
+        "value": 0.8005540166204986,
+        "num": 578,
+        "den": 722
+      },
+      "hit_at_5": {
+        "value": 0.8244274809160306,
+        "num": 432,
+        "den": 524
+      },
+      "citation_precision": {
+        "value": 0.6646489104116223,
+        "num": 549,
+        "den": 826
+      },
+      "judgment_accuracy": {
+        "total": {
+          "value": 0.6412213740458015,
+          "num": 336,
+          "den": 524
+        },
+        "axes": {
+          "account": {
+            "value": 0.62,
+            "num": 31,
+            "den": 50
+          },
+          "homeless": {
+            "value": 0.72,
+            "num": 36,
+            "den": 50
+          },
+          "householder": {
+            "value": 0.9523809523809523,
+            "num": 40,
+            "den": 42
+          },
+          "income_asset": {
+            "value": 0.28888888888888886,
+            "num": 13,
+            "den": 45
+          },
+          "residence": {
+            "value": 0.68,
+            "num": 34,
+            "den": 50
+          },
+          "rewin": {
+            "value": 0.8695652173913043,
+            "num": 20,
+            "den": 23
+          },
+          "special_type": {
+            "value": 0.6136363636363636,
+            "num": 162,
+            "den": 264
+          }
+        }
+      },
+      "fatal_error_rate": {
+        "value": 0.02197802197802198,
+        "num": 2,
+        "den": 91
+      },
+      "justified_abstain": {
+        "value": 0.9497354497354498,
+        "num": 359,
+        "den": 378
+      },
+      "unjustified_abstain": {
+        "value": 0.6095890410958904,
+        "num": 89,
+        "den": 146
+      }
+    },
+    "counts": {
+      "labels": 524,
+      "unmatched_labels": 0,
+      "no_law_results": 0,
+      "search_incomplete": 0,
+      "verdict_errors": 0,
+      "faq_citations": 715,
+      "unmatched_system_queries": 0
+    },
+    "calls": 473,
+    "cache_hits": 51,
+    "retries": 0,
+    "usd": 3.3605242499999997
+  },
+  "second_run": {
+    "run_at": "2026-11-12T00:52:25+09:00",
+    "metrics": {
+      "recall_at_5": {
+        "value": 0.8005540166204986,
+        "num": 578,
+        "den": 722
+      },
+      "hit_at_5": {
+        "value": 0.8244274809160306,
+        "num": 432,
+        "den": 524
+      },
+      "citation_precision": {
+        "value": 0.6646489104116223,
+        "num": 549,
+        "den": 826
+      },
+      "judgment_accuracy": {
+        "total": {
+          "value": 0.6412213740458015,
+          "num": 336,
+          "den": 524
+        },
+        "axes": {
+          "account": {
+            "value": 0.62,
+            "num": 31,
+            "den": 50
+          },
+          "homeless": {
+            "value": 0.72,
+            "num": 36,
+            "den": 50
+          },
+          "householder": {
+            "value": 0.9523809523809523,
+            "num": 40,
+            "den": 42
+          },
+          "income_asset": {
+            "value": 0.28888888888888886,
+            "num": 13,
+            "den": 45
+          },
+          "residence": {
+            "value": 0.68,
+            "num": 34,
+            "den": 50
+          },
+          "rewin": {
+            "value": 0.8695652173913043,
+            "num": 20,
+            "den": 23
+          },
+          "special_type": {
+            "value": 0.6136363636363636,
+            "num": 162,
+            "den": 264
+          }
+        }
+      },
+      "fatal_error_rate": {
+        "value": 0.02197802197802198,
+        "num": 2,
+        "den": 91
+      },
+      "justified_abstain": {
+        "value": 0.9497354497354498,
+        "num": 359,
+        "den": 378
+      },
+      "unjustified_abstain": {
+        "value": 0.6095890410958904,
+        "num": 89,
+        "den": 146
+      }
+    },
+    "counts": {
+      "labels": 524,
+      "unmatched_labels": 0,
+      "no_law_results": 0,
+      "search_incomplete": 0,
+      "item_failures": 0,
+      "verdict_errors": 0,
+      "faq_citations": 715,
+      "unmatched_system_queries": 0
+    },
+    "calls": 0,
+    "cache_hits": 524,
+    "retries": 0,
+    "usd": 0.0
+  }
+}

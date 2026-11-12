@@ -1,950 +1,1047 @@
 {
-  "schema_version": 2,
-  "diagram_type": "workflow",
-  "meta": {
-    "title": "청약 RAG 판정 흐름 — #75 PR #20",
-    "locale": "ko",
-    "quality_profile": "standard",
-    "output": ".archify/workflow-75-flow/75-flow.html",
-    "repository": {
-      "url": "https://github.com/jongwoo315/cheongyak-rag",
-      "provider": "github",
-      "revision": "7b8f844341f307adabb339e32b5a2d320a5ff716"
-    }
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "청약 RAG 판정 흐름 — #76 PR #21",
+  "locale": "ko",
+  "quality_profile": "standard",
+  "output": "76-flow.html",
+  "repository": {
+   "url": "https://github.com/jongwoo315/cheongyak-rag",
+   "provider": "github",
+   "revision": "32ba3e6b0d58d55a95b1308d8d9a6510f83281e9"
+  }
+ },
+ "lanes": [
+  {
+   "id": "ingest",
+   "label": "데이터 적재"
   },
-  "lanes": [
+  {
+   "id": "doc",
+   "label": "#72 공고문 수집 (L3 근거의 첫 단계)"
+  },
+  {
+   "id": "golden",
+   "label": "#75 골든셋 (흐름 밖 정답 파일)"
+  },
+  {
+   "id": "eval",
+   "label": "#76 eval harness (측정 흐름)"
+  },
+  {
+   "id": "deploy",
+   "label": "#85 배포 (Vercel + Neon, 싱가포르)"
+  },
+  {
+   "id": "web",
+   "label": "#84 화면 (Next.js + FastAPI)"
+  },
+  {
+   "id": "input",
+   "label": "입력"
+  },
+  {
+   "id": "retrieval",
+   "label": "#79 축과 검색"
+  },
+  {
+   "id": "judge",
+   "label": "LLM 판정"
+  },
+  {
+   "id": "guard",
+   "label": "인용 대조와 guard"
+  },
+  {
+   "id": "answer",
+   "label": "B8 집계와 B9 응답"
+  },
+  {
+   "id": "trace",
+   "label": "#83 trace 저장"
+  },
+  {
+   "id": "stop",
+   "label": "UNVERIFIABLE로 가는 길",
+   "variant": "exception"
+  }
+ ],
+ "mainPath": [
+  "notice",
+  "plan",
+  "search",
+  "llm",
+  "incontext",
+  "guard",
+  "out"
+ ],
+ "nodes": [
+  {
+   "id": "ingest",
+   "lane": "ingest",
+   "col": 0,
+   "type": "external",
+   "label": "공고 수집",
+   "sublabel": "청약홈 API → notices",
+   "tag": "그대로",
+   "sources": [
     {
-      "id": "ingest",
-      "label": "데이터 적재"
-    },
-    {
-      "id": "doc",
-      "label": "#72 공고문 수집 (L3 근거의 첫 단계)"
-    },
-    {
-      "id": "golden",
-      "label": "#75 골든셋 (흐름 밖 정답 파일) · 측정"
-    },
-    {
-      "id": "deploy",
-      "label": "#85 배포 (Vercel + Neon, 싱가포르)"
-    },
-    {
-      "id": "web",
-      "label": "#84 화면 (Next.js + FastAPI)"
-    },
-    {
-      "id": "input",
-      "label": "입력"
-    },
-    {
-      "id": "retrieval",
-      "label": "#79 축과 검색"
-    },
-    {
-      "id": "judge",
-      "label": "LLM 판정"
-    },
-    {
-      "id": "guard",
-      "label": "인용 대조와 guard"
-    },
-    {
-      "id": "answer",
-      "label": "B8 집계와 B9 응답"
-    },
-    {
-      "id": "trace",
-      "label": "#83 trace 저장"
-    },
-    {
-      "id": "stop",
-      "label": "UNVERIFIABLE로 가는 길",
-      "variant": "exception"
+     "path": "src/cheongyak_rag/ingest/notice.py",
+     "line": 462,
+     "end_line": 470,
+     "label": "main"
     }
-  ],
-  "mainPath": [
-    "notice",
-    "plan",
-    "search",
-    "llm",
-    "incontext",
-    "guard",
-    "out"
-  ],
-  "nodes": [
+   ]
+  },
+  {
+   "id": "chunks",
+   "lane": "ingest",
+   "col": 2,
+   "type": "database",
+   "label": "법령·FAQ chunks",
+   "sublabel": "조문·FAQ를 잘라 임베딩",
+   "tag": "그대로",
+   "sources": [
     {
-      "id": "ingest",
-      "lane": "ingest",
-      "col": 0,
-      "type": "external",
-      "label": "공고 수집",
-      "sublabel": "청약홈 API → notices",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice.py",
-          "line": 462,
-          "end_line": 470,
-          "label": "main"
-        }
-      ]
-    },
-    {
-      "id": "chunks",
-      "lane": "ingest",
-      "col": 2,
-      "type": "database",
-      "label": "법령·FAQ chunks",
-      "sublabel": "조문·FAQ를 잘라 임베딩",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/retrieval/index_db.py",
-          "line": 100,
-          "end_line": 111,
-          "label": "load"
-        }
-      ]
-    },
-    {
-      "id": "notice",
-      "lane": "input",
-      "col": 0,
-      "type": "external",
-      "label": "공고 값",
-      "sublabel": "규제 표시·특별공급·공고일",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 435,
-          "end_line": 436,
-          "label": "load_facts"
-        }
-      ]
-    },
-    {
-      "id": "profile",
-      "lane": "input",
-      "col": 1,
-      "type": "frontend",
-      "label": "프로필",
-      "sublabel": "#77 칸 15개 + 공고일 기준 점수",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 439,
-          "end_line": 439,
-          "label": "profile_payload"
-        }
-      ]
-    },
-    {
-      "id": "plan",
-      "lane": "retrieval",
-      "col": 1,
-      "type": "backend",
-      "label": "축 7개 켜고 끄기",
-      "sublabel": "꺼진 축은 여기서 끝",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 440,
-          "end_line": 440,
-          "label": "plan_from_facts"
-        }
-      ]
-    },
-    {
-      "id": "search",
-      "lane": "retrieval",
-      "col": 2,
-      "type": "database",
-      "label": "켜진 축만 검색",
-      "sublabel": "조문 5 · FAQ 3",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 441,
-          "end_line": 451,
-          "label": "axes.search"
-        }
-      ]
-    },
-    {
-      "id": "llm",
-      "lane": "judge",
-      "col": 2,
-      "type": "cloud",
-      "label": "LLM 판정 (guard 전)",
-      "sublabel": "판정값·이유·인용 · 캐시 135개",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 361,
-          "end_line": 377,
-          "label": "judge_one 호출"
-        }
-      ]
-    },
-    {
-      "id": "incontext",
-      "lane": "guard",
-      "col": 3,
-      "type": "security",
-      "label": "인용 대조",
-      "sublabel": "문맥 안에 있고 chunks에 실제로 있나",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 388,
-          "end_line": 388,
-          "label": "in_context"
-        },
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 389,
-          "end_line": 390,
-          "label": "present_in_chunks"
-        }
-      ]
-    },
-    {
-      "id": "guard",
-      "lane": "guard",
-      "col": 4,
-      "type": "security",
-      "label": "ELIGIBLE guard",
-      "sublabel": "칸 없는 축은 ELIGIBLE → NEED_INFO",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 395,
-          "end_line": 396,
-          "label": "guarded"
-        },
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 130,
-          "end_line": 146,
-          "label": "REQUIRED_FIELDS"
-        }
-      ]
-    },
-    {
-      "id": "out",
-      "lane": "guard",
-      "col": 5,
-      "type": "backend",
-      "label": "최종 판정",
-      "sublabel": "하위 질의마다 판정값·이유",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 452,
-          "end_line": 457,
-          "label": "verdicts"
-        }
-      ]
-    },
-    {
-      "id": "nocontext",
-      "lane": "stop",
-      "col": 2,
-      "type": "security",
-      "label": "근거 0개",
-      "sublabel": "LLM 안 부르고 UNVERIFIABLE",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 347,
-          "end_line": 350,
-          "label": "no_context"
-        }
-      ]
-    },
-    {
-      "id": "forced",
-      "lane": "stop",
-      "col": 3,
-      "type": "security",
-      "label": "남은 인용 0개",
-      "sublabel": "UNVERIFIABLE로 바꿈",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/verdict.py",
-          "line": 393,
-          "end_line": 394,
-          "label": "forced"
-        }
-      ]
-    },
-    {
-      "id": "b8",
-      "lane": "answer",
-      "col": 4,
-      "type": "backend",
-      "label": "B8 집계",
-      "sublabel": "일반공급 + 특별공급 유형별 경로 판정",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/aggregate.py",
-          "line": 59,
-          "end_line": 95,
-          "label": "merge·aggregate"
-        }
-      ]
-    },
-    {
-      "id": "b9",
-      "lane": "answer",
-      "col": 5,
-      "type": "backend",
-      "label": "B9 응답",
-      "sublabel": "체크리스트·근거 원문·출처·검색 밖 언급",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/generate/aggregate.py",
-          "line": 217,
-          "end_line": 260,
-          "label": "build_answer"
-        }
-      ]
-    },
-    {
-      "id": "mask",
-      "lane": "trace",
-      "col": 4,
-      "type": "security",
-      "label": "가리기",
-      "sublabel": "프로필 날짜 → [프로필 값]",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/trace.py",
-          "line": 52,
-          "end_line": 72,
-          "label": "mask"
-        }
-      ]
-    },
-    {
-      "id": "traces",
-      "lane": "trace",
-      "col": 5,
-      "type": "database",
-      "label": "traces 테이블",
-      "sublabel": "질의 한 건 = 행 하나 · 프로필은 해시만",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "alembic/versions/0005_traces.py",
-          "line": 20,
-          "end_line": 45,
-          "label": "upgrade"
-        },
-        {
-          "path": "src/cheongyak_rag/trace.py",
-          "line": 44,
-          "end_line": 49,
-          "label": "profile_hash"
-        }
-      ]
-    },
-    {
-      "id": "wpage",
-      "lane": "web",
-      "col": 0,
-      "type": "frontend",
-      "label": "공고 목록 · 공고 페이지",
-      "sublabel": "서버에서 그린 HTML 84건",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "web/app/notices/[houseManageNo]/page.tsx",
-          "line": 1,
-          "end_line": 89,
-          "label": "공고 페이지"
-        }
-      ]
-    },
-    {
-      "id": "wform",
-      "lane": "web",
-      "col": 1,
-      "type": "frontend",
-      "label": "프로필 입력 칸 15개",
-      "sublabel": "탭 안에서 값 유지",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "web/components/VerdictForm.tsx",
-          "line": 1,
-          "end_line": 114,
-          "label": "VerdictForm"
-        }
-      ]
-    },
-    {
-      "id": "wapi",
-      "lane": "web",
-      "col": 2,
-      "type": "backend",
-      "label": "판정 API",
-      "sublabel": "run_traced를 부른다 · 422·404·503",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/api.py",
-          "line": 123,
-          "end_line": 175,
-          "label": "verdict"
-        }
-      ]
-    },
-    {
-      "id": "wres",
-      "lane": "web",
-      "col": 5,
-      "type": "frontend",
-      "label": "결과 화면",
-      "sublabel": "전역·경로별 판정 · 체크리스트 · 근거",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "web/components/Result.tsx",
-          "line": 1,
-          "end_line": 156,
-          "label": "Result"
-        }
-      ]
-    },
-    {
-      "id": "neon",
-      "lane": "deploy",
-      "col": 1,
-      "type": "database",
-      "label": "Neon Postgres",
-      "sublabel": "로컬 DB에서 4개 테이블 적재 · traces 제외",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/deploy_load.py",
-          "line": 1,
-          "end_line": 207,
-          "label": "deploy_load"
-        }
-      ]
-    },
-    {
-      "id": "vapi",
-      "lane": "deploy",
-      "col": 3,
-      "type": "backend",
-      "label": "cheongyak-api (Vercel)",
-      "sublabel": "FastAPI 함수 · 캐시는 /tmp",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "app.py",
-          "line": 1,
-          "end_line": 13,
-          "label": "진입점"
-        }
-      ]
-    },
-    {
-      "id": "vweb",
-      "lane": "deploy",
-      "col": 0,
-      "type": "frontend",
-      "label": "cheongyak-web (Vercel)",
-      "sublabel": "Next.js · API_BASE_URL로 api 호출",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "web/vercel.json",
-          "line": 1,
-          "end_line": 3,
-          "label": "web 설정"
-        }
-      ]
-    },
-    {
-      "id": "limit",
-      "lane": "web",
-      "col": 3,
-      "type": "security",
-      "label": "하루 판정 한도",
-      "sublabel": "50건 넘으면 429 · 잠금 대기 60초",
-      "tag": "그대로",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/api.py",
-          "line": 70,
-          "end_line": 77,
-          "label": "한도"
-        }
-      ]
-    },
-    {
-      "id": "dpage",
-      "lane": "doc",
-      "col": 0,
-      "type": "external",
-      "label": "청약홈 상세 페이지",
-      "sublabel": "notices.pblanc_url로 84건",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice_doc.py",
-          "line": 166,
-          "end_line": 186,
-          "label": "_fetch_page"
-        }
-      ],
-      "tag": "그대로"
-    },
-    {
-      "id": "dlink",
-      "lane": "doc",
-      "col": 1,
-      "type": "backend",
-      "label": "공고문 링크 찾기",
-      "sublabel": "모집공고문 보기 링크 · 없으면 no_link",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice_doc.py",
-          "line": 106,
-          "end_line": 111,
-          "label": "find_doc_links"
-        }
-      ],
-      "tag": "그대로"
-    },
-    {
-      "id": "dget",
-      "lane": "doc",
-      "col": 2,
-      "type": "external",
-      "label": "첨부 받기",
-      "sublabel": "재시도 4번 · 50MB · 120초 제한",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice_doc.py",
-          "line": 142,
-          "end_line": 160,
-          "label": "_download"
-        }
-      ],
-      "tag": "그대로"
-    },
-    {
-      "id": "dcheck",
-      "lane": "doc",
-      "col": 3,
-      "type": "security",
-      "label": "확장자·PDF 확인",
-      "sublabel": "앞 바이트 %PDF- · pymupdf로 열림",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice_doc.py",
-          "line": 244,
-          "end_line": 303,
-          "label": "_collect_link"
-        }
-      ],
-      "tag": "그대로"
-    },
-    {
-      "id": "dsave",
-      "lane": "doc",
-      "col": 4,
-      "type": "database",
-      "label": "공고문 PDF",
-      "sublabel": "data/raw/notices + manifest.jsonl",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice_doc.py",
-          "line": 234,
-          "end_line": 242,
-          "label": "_save"
-        }
-      ],
-      "tag": "그대로"
-    },
-    {
-      "id": "dquar",
-      "lane": "doc",
-      "col": 5,
-      "type": "database",
-      "label": "격리",
-      "sublabel": "quarantine/ HWP·그 밖 (이번 0건)",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/ingest/notice_doc.py",
-          "line": 244,
-          "end_line": 303,
-          "label": "_collect_link"
-        }
-      ],
-      "tag": "그대로"
-    },
-    {
-      "id": "gsel",
-      "lane": "golden",
-      "col": 0,
-      "type": "database",
-      "label": "공고 20건 고르기",
-      "sublabel": "[새로] PDF 있는 74건 중 · #80 표본 5건 포함",
-      "tag": "새로 생김",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/golden/select.py",
-          "line": 69
-        }
-      ]
-    },
-    {
-      "id": "gfact",
-      "lane": "golden",
-      "col": 1,
-      "type": "database",
-      "label": "공고문 사실",
-      "sublabel": "[새로] 쪽수·구절 · DB 규제 표시와 비교",
-      "tag": "새로 생김",
-      "sources": [
-        {
-          "path": "runs/75/notices.json",
-          "line": 1
-        }
-      ]
-    },
-    {
-      "id": "grule",
-      "lane": "golden",
-      "col": 2,
-      "type": "database",
-      "label": "라벨 규칙",
-      "sublabel": "[새로] 축 7개 + 특별공급 유형 8개",
-      "tag": "새로 생김",
-      "sources": [
-        {
-          "path": "docs/75-label-rules.md",
-          "line": 1
-        }
-      ]
-    },
-    {
-      "id": "ggold",
-      "lane": "golden",
-      "col": 3,
-      "type": "database",
-      "label": "golden.jsonl",
-      "sublabel": "[새로] 문항 50 · 하위 질의별 정답 라벨 524",
-      "tag": "새로 생김",
-      "sources": [
-        {
-          "path": "runs/75/golden.jsonl",
-          "line": 1
-        }
-      ]
-    },
-    {
-      "id": "gchk",
-      "lane": "golden",
-      "col": 4,
-      "type": "security",
-      "label": "golden.check",
-      "sublabel": "[새로] 칸·개수·켜진 축 대조 · 구절 대조 0",
-      "tag": "새로 생김",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/golden/check.py",
-          "line": 143
-        }
-      ]
-    },
-    {
-      "id": "gagr",
-      "lane": "golden",
-      "col": 5,
-      "type": "security",
-      "label": "따로 붙인 라벨 비교",
-      "sublabel": "[새로] 판정값 다름 4/524 · 조 0/524 · 표본 20",
-      "tag": "새로 생김",
-      "sources": [
-        {
-          "path": "src/cheongyak_rag/golden/check.py",
-          "line": 241
-        }
-      ]
+     "path": "src/cheongyak_rag/retrieval/index_db.py",
+     "line": 100,
+     "end_line": 111,
+     "label": "load"
     }
-  ],
-  "edges": [
+   ]
+  },
+  {
+   "id": "notice",
+   "lane": "input",
+   "col": 0,
+   "type": "external",
+   "label": "공고 값",
+   "sublabel": "규제 표시·특별공급·공고일",
+   "tag": "그대로",
+   "sources": [
     {
-      "id": "e1",
-      "from": "ingest",
-      "to": "notice",
-      "label": "공고 행"
-    },
-    {
-      "id": "e2",
-      "from": "chunks",
-      "to": "search",
-      "label": "조문·FAQ"
-    },
-    {
-      "id": "e3",
-      "from": "notice",
-      "to": "plan",
-      "label": "공고 값"
-    },
-    {
-      "id": "e4",
-      "from": "notice",
-      "to": "profile",
-      "label": "공고일"
-    },
-    {
-      "id": "e5",
-      "from": "plan",
-      "to": "search",
-      "label": "켜진 축"
-    },
-    {
-      "id": "e6",
-      "from": "profile",
-      "to": "llm",
-      "label": "프로필 값"
-    },
-    {
-      "id": "e7",
-      "from": "search",
-      "to": "llm",
-      "label": "근거 있음",
-      "variant": "emphasis"
-    },
-    {
-      "id": "e8",
-      "from": "search",
-      "to": "nocontext",
-      "label": "근거 0개",
-      "variant": "security",
-      "role": "error"
-    },
-    {
-      "id": "e9",
-      "from": "llm",
-      "to": "incontext",
-      "label": "인용 라벨"
-    },
-    {
-      "id": "e11",
-      "from": "incontext",
-      "to": "guard",
-      "label": "1개 이상",
-      "variant": "emphasis"
-    },
-    {
-      "id": "e12",
-      "from": "incontext",
-      "to": "forced",
-      "label": "0개",
-      "variant": "security",
-      "role": "error"
-    },
-    {
-      "id": "e13",
-      "from": "guard",
-      "to": "out",
-      "label": "판정"
-    },
-    {
-      "id": "a1",
-      "from": "out",
-      "to": "b8",
-      "label": "하위 질의 판정"
-    },
-    {
-      "id": "a2",
-      "from": "b8",
-      "to": "b9",
-      "label": "경로 판정"
-    },
-    {
-      "id": "t2",
-      "from": "b9",
-      "to": "mask",
-      "label": "응답 · 흐름 기록",
-      "variant": "emphasis"
-    },
-    {
-      "id": "t3",
-      "from": "mask",
-      "to": "traces",
-      "label": "ok 행"
-    },
-    {
-      "id": "w1",
-      "from": "notice",
-      "to": "wpage",
-      "label": "공고 조회 API"
-    },
-    {
-      "id": "w2",
-      "from": "wpage",
-      "to": "wform",
-      "label": "공고 고름"
-    },
-    {
-      "id": "w3",
-      "from": "wform",
-      "to": "wapi",
-      "label": "프로필 JSON",
-      "variant": "emphasis"
-    },
-    {
-      "id": "w4",
-      "from": "wapi",
-      "to": "profile",
-      "label": "프로필"
-    },
-    {
-      "id": "w5",
-      "from": "b9",
-      "to": "wres",
-      "label": "응답"
-    },
-    {
-      "id": "d1",
-      "from": "chunks",
-      "to": "neon",
-      "label": "적재"
-    },
-    {
-      "id": "d2",
-      "from": "neon",
-      "to": "vapi",
-      "label": "DATABASE_URL"
-    },
-    {
-      "id": "d3",
-      "from": "vweb",
-      "to": "vapi",
-      "label": "판정 요청"
-    },
-    {
-      "id": "d4",
-      "from": "limit",
-      "to": "wapi",
-      "label": "한도 안이면"
-    },
-    {
-      "id": "p1",
-      "from": "ingest",
-      "to": "dpage",
-      "label": "공고 주소"
-    },
-    {
-      "id": "p2",
-      "from": "dpage",
-      "to": "dlink",
-      "label": "HTML"
-    },
-    {
-      "id": "p3",
-      "from": "dlink",
-      "to": "dget",
-      "label": "링크"
-    },
-    {
-      "id": "p4",
-      "from": "dget",
-      "to": "dcheck",
-      "label": "파일"
-    },
-    {
-      "id": "p5",
-      "from": "dcheck",
-      "to": "dsave",
-      "label": "pdf"
-    },
-    {
-      "id": "p6",
-      "from": "dcheck",
-      "to": "dquar",
-      "label": "hwp · other"
-    },
-    {
-      "id": "q1",
-      "from": "dsave",
-      "to": "gsel",
-      "label": "PDF 목록"
-    },
-    {
-      "id": "q2",
-      "from": "gsel",
-      "to": "gfact",
-      "label": "20건"
-    },
-    {
-      "id": "q3",
-      "from": "gfact",
-      "to": "grule",
-      "label": "사실"
-    },
-    {
-      "id": "q4",
-      "from": "grule",
-      "to": "ggold",
-      "label": "규칙대로"
-    },
-    {
-      "id": "q5",
-      "from": "chunks",
-      "to": "grule",
-      "label": "조문 본문"
-    },
-    {
-      "id": "q6",
-      "from": "ggold",
-      "to": "gchk",
-      "label": "검사"
-    },
-    {
-      "id": "q7",
-      "from": "gchk",
-      "to": "gagr",
-      "label": "통과"
-    },
-    {
-      "id": "q9",
-      "from": "plan",
-      "to": "ggold",
-      "label": "켜진 하위 질의"
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 435,
+     "end_line": 436,
+     "label": "load_facts"
     }
-  ],
-  "cards": [
+   ]
+  },
+  {
+   "id": "profile",
+   "lane": "input",
+   "col": 1,
+   "type": "frontend",
+   "label": "프로필",
+   "sublabel": "#77 칸 15개 + 공고일 기준 점수",
+   "tag": "그대로",
+   "sources": [
     {
-      "dot": "amber",
-      "title": "읽는 법",
-      "items": [
-        "[새로]는 PR #19(#72) 대비 이번 PR이 더한 단계다",
-        "골든셋은 판정 흐름을 돌리지 않고 만들었다. 흐름의 답과 맞춰 보는 것은 #76이다",
-        "DB는 읽기만 한다. 결과는 runs/75 파일로만 남는다"
-      ]
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 439,
+     "end_line": 439,
+     "label": "profile_payload"
     }
-  ]
+   ]
+  },
+  {
+   "id": "plan",
+   "lane": "retrieval",
+   "col": 1,
+   "type": "backend",
+   "label": "축 7개 켜고 끄기",
+   "sublabel": "꺼진 축은 여기서 끝",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 440,
+     "end_line": 440,
+     "label": "plan_from_facts"
+    }
+   ]
+  },
+  {
+   "id": "search",
+   "lane": "retrieval",
+   "col": 2,
+   "type": "database",
+   "label": "켜진 축만 검색",
+   "sublabel": "조문 5 · FAQ 3",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 441,
+     "end_line": 451,
+     "label": "axes.search"
+    }
+   ]
+  },
+  {
+   "id": "llm",
+   "lane": "judge",
+   "col": 2,
+   "type": "cloud",
+   "label": "LLM 판정 (guard 전)",
+   "sublabel": "판정값·이유·인용 · 캐시 135개",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 361,
+     "end_line": 377,
+     "label": "judge_one 호출"
+    }
+   ]
+  },
+  {
+   "id": "incontext",
+   "lane": "guard",
+   "col": 3,
+   "type": "security",
+   "label": "인용 대조",
+   "sublabel": "문맥 안에 있고 chunks에 실제로 있나",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 388,
+     "end_line": 388,
+     "label": "in_context"
+    },
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 389,
+     "end_line": 390,
+     "label": "present_in_chunks"
+    }
+   ]
+  },
+  {
+   "id": "guard",
+   "lane": "guard",
+   "col": 4,
+   "type": "security",
+   "label": "ELIGIBLE guard",
+   "sublabel": "칸 없는 축은 ELIGIBLE → NEED_INFO",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 395,
+     "end_line": 396,
+     "label": "guarded"
+    },
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 130,
+     "end_line": 146,
+     "label": "REQUIRED_FIELDS"
+    }
+   ]
+  },
+  {
+   "id": "out",
+   "lane": "guard",
+   "col": 5,
+   "type": "backend",
+   "label": "최종 판정",
+   "sublabel": "하위 질의마다 판정값·이유",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 452,
+     "end_line": 457,
+     "label": "verdicts"
+    }
+   ]
+  },
+  {
+   "id": "nocontext",
+   "lane": "stop",
+   "col": 2,
+   "type": "security",
+   "label": "근거 0개",
+   "sublabel": "LLM 안 부르고 UNVERIFIABLE",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 347,
+     "end_line": 350,
+     "label": "no_context"
+    }
+   ]
+  },
+  {
+   "id": "forced",
+   "lane": "stop",
+   "col": 3,
+   "type": "security",
+   "label": "남은 인용 0개",
+   "sublabel": "UNVERIFIABLE로 바꿈",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/verdict.py",
+     "line": 393,
+     "end_line": 394,
+     "label": "forced"
+    }
+   ]
+  },
+  {
+   "id": "b8",
+   "lane": "answer",
+   "col": 4,
+   "type": "backend",
+   "label": "B8 집계",
+   "sublabel": "일반공급 + 특별공급 유형별 경로 판정",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/aggregate.py",
+     "line": 59,
+     "end_line": 95,
+     "label": "merge·aggregate"
+    }
+   ]
+  },
+  {
+   "id": "b9",
+   "lane": "answer",
+   "col": 5,
+   "type": "backend",
+   "label": "B9 응답",
+   "sublabel": "체크리스트·근거 원문·출처·검색 밖 언급",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/aggregate.py",
+     "line": 217,
+     "end_line": 260,
+     "label": "build_answer"
+    }
+   ]
+  },
+  {
+   "id": "mask",
+   "lane": "trace",
+   "col": 4,
+   "type": "security",
+   "label": "가리기",
+   "sublabel": "프로필 날짜 → [프로필 값]",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/trace.py",
+     "line": 52,
+     "end_line": 72,
+     "label": "mask"
+    }
+   ]
+  },
+  {
+   "id": "traces",
+   "lane": "trace",
+   "col": 5,
+   "type": "database",
+   "label": "traces 테이블",
+   "sublabel": "질의 한 건 = 행 하나 · 프로필은 해시만",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "alembic/versions/0005_traces.py",
+     "line": 20,
+     "end_line": 45,
+     "label": "upgrade"
+    },
+    {
+     "path": "src/cheongyak_rag/trace.py",
+     "line": 44,
+     "end_line": 49,
+     "label": "profile_hash"
+    }
+   ]
+  },
+  {
+   "id": "wpage",
+   "lane": "web",
+   "col": 0,
+   "type": "frontend",
+   "label": "공고 목록 · 공고 페이지",
+   "sublabel": "서버에서 그린 HTML 84건",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "web/app/notices/[houseManageNo]/page.tsx",
+     "line": 1,
+     "end_line": 89,
+     "label": "공고 페이지"
+    }
+   ]
+  },
+  {
+   "id": "wform",
+   "lane": "web",
+   "col": 1,
+   "type": "frontend",
+   "label": "프로필 입력 칸 15개",
+   "sublabel": "탭 안에서 값 유지",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "web/components/VerdictForm.tsx",
+     "line": 1,
+     "end_line": 114,
+     "label": "VerdictForm"
+    }
+   ]
+  },
+  {
+   "id": "wapi",
+   "lane": "web",
+   "col": 2,
+   "type": "backend",
+   "label": "판정 API",
+   "sublabel": "run_traced를 부른다 · 422·404·503",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/api.py",
+     "line": 123,
+     "end_line": 175,
+     "label": "verdict"
+    }
+   ]
+  },
+  {
+   "id": "wres",
+   "lane": "web",
+   "col": 5,
+   "type": "frontend",
+   "label": "결과 화면",
+   "sublabel": "전역·경로별 판정 · 체크리스트 · 근거",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "web/components/Result.tsx",
+     "line": 1,
+     "end_line": 156,
+     "label": "Result"
+    }
+   ]
+  },
+  {
+   "id": "neon",
+   "lane": "deploy",
+   "col": 1,
+   "type": "database",
+   "label": "Neon Postgres",
+   "sublabel": "로컬 DB에서 4개 테이블 적재 · traces 제외",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/deploy_load.py",
+     "line": 1,
+     "end_line": 207,
+     "label": "deploy_load"
+    }
+   ]
+  },
+  {
+   "id": "vapi",
+   "lane": "deploy",
+   "col": 3,
+   "type": "backend",
+   "label": "cheongyak-api (Vercel)",
+   "sublabel": "FastAPI 함수 · 캐시는 /tmp",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "app.py",
+     "line": 1,
+     "end_line": 13,
+     "label": "진입점"
+    }
+   ]
+  },
+  {
+   "id": "vweb",
+   "lane": "deploy",
+   "col": 0,
+   "type": "frontend",
+   "label": "cheongyak-web (Vercel)",
+   "sublabel": "Next.js · API_BASE_URL로 api 호출",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "web/vercel.json",
+     "line": 1,
+     "end_line": 3,
+     "label": "web 설정"
+    }
+   ]
+  },
+  {
+   "id": "limit",
+   "lane": "web",
+   "col": 3,
+   "type": "security",
+   "label": "하루 판정 한도",
+   "sublabel": "50건 넘으면 429 · 잠금 대기 60초",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/api.py",
+     "line": 70,
+     "end_line": 77,
+     "label": "한도"
+    }
+   ]
+  },
+  {
+   "id": "dpage",
+   "lane": "doc",
+   "col": 0,
+   "type": "external",
+   "label": "청약홈 상세 페이지",
+   "sublabel": "notices.pblanc_url로 84건",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice_doc.py",
+     "line": 166,
+     "end_line": 186,
+     "label": "_fetch_page"
+    }
+   ],
+   "tag": "그대로"
+  },
+  {
+   "id": "dlink",
+   "lane": "doc",
+   "col": 1,
+   "type": "backend",
+   "label": "공고문 링크 찾기",
+   "sublabel": "모집공고문 보기 링크 · 없으면 no_link",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice_doc.py",
+     "line": 106,
+     "end_line": 111,
+     "label": "find_doc_links"
+    }
+   ],
+   "tag": "그대로"
+  },
+  {
+   "id": "dget",
+   "lane": "doc",
+   "col": 2,
+   "type": "external",
+   "label": "첨부 받기",
+   "sublabel": "재시도 4번 · 50MB · 120초 제한",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice_doc.py",
+     "line": 142,
+     "end_line": 160,
+     "label": "_download"
+    }
+   ],
+   "tag": "그대로"
+  },
+  {
+   "id": "dcheck",
+   "lane": "doc",
+   "col": 3,
+   "type": "security",
+   "label": "확장자·PDF 확인",
+   "sublabel": "앞 바이트 %PDF- · pymupdf로 열림",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice_doc.py",
+     "line": 244,
+     "end_line": 303,
+     "label": "_collect_link"
+    }
+   ],
+   "tag": "그대로"
+  },
+  {
+   "id": "dsave",
+   "lane": "doc",
+   "col": 4,
+   "type": "database",
+   "label": "공고문 PDF",
+   "sublabel": "data/raw/notices + manifest.jsonl",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice_doc.py",
+     "line": 234,
+     "end_line": 242,
+     "label": "_save"
+    }
+   ],
+   "tag": "그대로"
+  },
+  {
+   "id": "dquar",
+   "lane": "doc",
+   "col": 5,
+   "type": "database",
+   "label": "격리",
+   "sublabel": "quarantine/ HWP·그 밖 (이번 0건)",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/notice_doc.py",
+     "line": 244,
+     "end_line": 303,
+     "label": "_collect_link"
+    }
+   ],
+   "tag": "그대로"
+  },
+  {
+   "id": "gsel",
+   "lane": "golden",
+   "col": 0,
+   "type": "database",
+   "label": "공고 20건 고르기",
+   "sublabel": "PDF 있는 74건 중 · #80 표본 5건 포함",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/golden/select.py",
+     "line": 69
+    }
+   ]
+  },
+  {
+   "id": "gfact",
+   "lane": "golden",
+   "col": 1,
+   "type": "database",
+   "label": "공고문 사실",
+   "sublabel": "쪽수·구절 · DB 규제 표시와 비교",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "runs/75/notices.json",
+     "line": 1
+    }
+   ]
+  },
+  {
+   "id": "grule",
+   "lane": "golden",
+   "col": 2,
+   "type": "database",
+   "label": "라벨 규칙",
+   "sublabel": "축 7개 + 특별공급 유형 8개",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "docs/75-label-rules.md",
+     "line": 1
+    }
+   ]
+  },
+  {
+   "id": "ggold",
+   "lane": "golden",
+   "col": 3,
+   "type": "database",
+   "label": "golden.jsonl",
+   "sublabel": "문항 50 · 하위 질의별 정답 라벨 524",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "runs/75/golden.jsonl",
+     "line": 1
+    }
+   ]
+  },
+  {
+   "id": "gchk",
+   "lane": "golden",
+   "col": 4,
+   "type": "security",
+   "label": "golden.check",
+   "sublabel": "칸·개수·켜진 축 대조 · 구절 대조 0",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/golden/check.py",
+     "line": 143
+    }
+   ]
+  },
+  {
+   "id": "gagr",
+   "lane": "golden",
+   "col": 5,
+   "type": "security",
+   "label": "따로 붙인 라벨 비교",
+   "sublabel": "판정값 다름 4/524 · 조 0/524 · 표본 20",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/golden/check.py",
+     "line": 241
+    }
+   ]
+  },
+  {
+   "id": "erun",
+   "lane": "eval",
+   "col": 1,
+   "type": "backend",
+   "label": "eval.run",
+   "sublabel": "[새로] 문항 50을 judge에 · 배포와 같은 모델",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/eval/run.py",
+     "line": 1,
+     "label": "run.py"
+    }
+   ]
+  },
+  {
+   "id": "ejsonl",
+   "lane": "eval",
+   "col": 3,
+   "type": "database",
+   "label": "run.jsonl",
+   "sublabel": "[새로] 정답 라벨마다 한 줄 · 524줄",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "runs/76/run.jsonl",
+     "line": 1,
+     "label": "run.jsonl"
+    }
+   ]
+  },
+  {
+   "id": "emet",
+   "lane": "eval",
+   "col": 4,
+   "type": "backend",
+   "label": "지표 7개",
+   "sublabel": "[새로] metrics.json · 값·분자·분모",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/eval/metrics.py",
+     "line": 1,
+     "label": "metrics.py"
+    }
+   ]
+  },
+  {
+   "id": "erep",
+   "lane": "eval",
+   "col": 5,
+   "type": "security",
+   "label": "리포트 · 따로 계산",
+   "sublabel": "[새로] docs/76-eval.md · 다른 지표 0/7",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/eval/report.py",
+     "line": 1,
+     "label": "report.py"
+    }
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "id": "e1",
+   "from": "ingest",
+   "to": "notice",
+   "label": "공고 행"
+  },
+  {
+   "id": "e2",
+   "from": "chunks",
+   "to": "search",
+   "label": "조문·FAQ"
+  },
+  {
+   "id": "e3",
+   "from": "notice",
+   "to": "plan",
+   "label": "공고 값"
+  },
+  {
+   "id": "e4",
+   "from": "notice",
+   "to": "profile",
+   "label": "공고일"
+  },
+  {
+   "id": "e5",
+   "from": "plan",
+   "to": "search",
+   "label": "켜진 축"
+  },
+  {
+   "id": "e6",
+   "from": "profile",
+   "to": "llm",
+   "label": "프로필 값"
+  },
+  {
+   "id": "e7",
+   "from": "search",
+   "to": "llm",
+   "label": "근거 있음",
+   "variant": "emphasis"
+  },
+  {
+   "id": "e8",
+   "from": "search",
+   "to": "nocontext",
+   "label": "근거 0개",
+   "variant": "security",
+   "role": "error"
+  },
+  {
+   "id": "e9",
+   "from": "llm",
+   "to": "incontext",
+   "label": "인용 라벨"
+  },
+  {
+   "id": "e11",
+   "from": "incontext",
+   "to": "guard",
+   "label": "1개 이상",
+   "variant": "emphasis"
+  },
+  {
+   "id": "e12",
+   "from": "incontext",
+   "to": "forced",
+   "label": "0개",
+   "variant": "security",
+   "role": "error"
+  },
+  {
+   "id": "e13",
+   "from": "guard",
+   "to": "out",
+   "label": "판정"
+  },
+  {
+   "id": "a1",
+   "from": "out",
+   "to": "b8",
+   "label": "하위 질의 판정"
+  },
+  {
+   "id": "a2",
+   "from": "b8",
+   "to": "b9",
+   "label": "경로 판정"
+  },
+  {
+   "id": "t2",
+   "from": "b9",
+   "to": "mask",
+   "label": "응답 · 흐름 기록",
+   "variant": "emphasis"
+  },
+  {
+   "id": "t3",
+   "from": "mask",
+   "to": "traces",
+   "label": "ok 행"
+  },
+  {
+   "id": "w1",
+   "from": "notice",
+   "to": "wpage",
+   "label": "공고 조회 API"
+  },
+  {
+   "id": "w2",
+   "from": "wpage",
+   "to": "wform",
+   "label": "공고 고름"
+  },
+  {
+   "id": "w3",
+   "from": "wform",
+   "to": "wapi",
+   "label": "프로필 JSON",
+   "variant": "emphasis"
+  },
+  {
+   "id": "w4",
+   "from": "wapi",
+   "to": "profile",
+   "label": "프로필"
+  },
+  {
+   "id": "w5",
+   "from": "b9",
+   "to": "wres",
+   "label": "응답"
+  },
+  {
+   "id": "d1",
+   "from": "chunks",
+   "to": "neon",
+   "label": "적재"
+  },
+  {
+   "id": "d2",
+   "from": "neon",
+   "to": "vapi",
+   "label": "DATABASE_URL"
+  },
+  {
+   "id": "d3",
+   "from": "vweb",
+   "to": "vapi",
+   "label": "판정 요청"
+  },
+  {
+   "id": "d4",
+   "from": "limit",
+   "to": "wapi",
+   "label": "한도 안이면"
+  },
+  {
+   "id": "p1",
+   "from": "ingest",
+   "to": "dpage",
+   "label": "공고 주소"
+  },
+  {
+   "id": "p2",
+   "from": "dpage",
+   "to": "dlink",
+   "label": "HTML"
+  },
+  {
+   "id": "p3",
+   "from": "dlink",
+   "to": "dget",
+   "label": "링크"
+  },
+  {
+   "id": "p4",
+   "from": "dget",
+   "to": "dcheck",
+   "label": "파일"
+  },
+  {
+   "id": "p5",
+   "from": "dcheck",
+   "to": "dsave",
+   "label": "pdf"
+  },
+  {
+   "id": "p6",
+   "from": "dcheck",
+   "to": "dquar",
+   "label": "hwp · other"
+  },
+  {
+   "id": "q1",
+   "from": "dsave",
+   "to": "gsel",
+   "label": "PDF 목록"
+  },
+  {
+   "id": "q2",
+   "from": "gsel",
+   "to": "gfact",
+   "label": "20건"
+  },
+  {
+   "id": "q3",
+   "from": "gfact",
+   "to": "grule",
+   "label": "사실"
+  },
+  {
+   "id": "q4",
+   "from": "grule",
+   "to": "ggold",
+   "label": "규칙대로"
+  },
+  {
+   "id": "q5",
+   "from": "chunks",
+   "to": "grule",
+   "label": "조문 본문"
+  },
+  {
+   "id": "q6",
+   "from": "ggold",
+   "to": "gchk",
+   "label": "검사"
+  },
+  {
+   "id": "q7",
+   "from": "gchk",
+   "to": "gagr",
+   "label": "통과"
+  },
+  {
+   "id": "q9",
+   "from": "plan",
+   "to": "ggold",
+   "label": "켜진 하위 질의"
+  },
+  {
+   "id": "v1",
+   "from": "ggold",
+   "to": "erun",
+   "label": "문항 50"
+  },
+  {
+   "id": "v2",
+   "from": "erun",
+   "to": "plan",
+   "label": "judge() 그대로"
+  },
+  {
+   "id": "v3",
+   "from": "out",
+   "to": "ejsonl",
+   "label": "최종 판정·조문 top-5"
+  },
+  {
+   "id": "v4",
+   "from": "ejsonl",
+   "to": "emet",
+   "label": ""
+  },
+  {
+   "id": "v5",
+   "from": "emet",
+   "to": "erep",
+   "label": "harness 값"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "읽는 법",
+   "items": [
+    "[새로]는 PR #20 대비 이번 PR이 더한 단계다. 판정 흐름 자체는 그대로다",
+    "eval.run은 API를 거치지 않고 judge()를 바로 부른다 — traces에 안 쓰고 하루 판정 한도도 안 센다"
+   ]
+  }
+ ]
 }

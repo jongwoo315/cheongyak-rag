@@ -130,6 +130,25 @@
 - 빈 칸은 「모른다」는 뜻이다. `partial`은 부분 프로필 문항이다.
 - `full` 프로필은 `homeless_since`·`spouse_savings_join_date`가 있어서 항상 혼인 중이고 무주택자가 된 날이 있다(`Profile`이 소유 이력과 배우자 통장을 그 칸에서 정한다). 유주택·미혼 사례는 `partial`에 있다.
 
+## eval 지표 7개 — 골든셋과 시스템 판정을 맞춰 센 값
+
+정의: `src/cheongyak_rag/eval/metrics.py`의 지표 함수 하나가 지표 하나다. 만든 티켓 #76.
+못 맞춘 라벨(`matched=false` — 시스템에 같은 하위 질의가 없거나, 문항 판정이 실패했거나, 실행이 멈춰 문항이 안 돈 정답 라벨)은 분모에 남고 분자에는 못 든다.
+citation precision만 예외다. 분모가 시스템이 인용한 조문이라 못 맞춘 라벨은 분모에도 없다.
+
+| 이름(코드 식별자) | 뜻 | 정의한 곳 | 만든 티켓 |
+| --- | --- | --- | --- |
+| recall@5 (`recall_at_5`) | 정답 근거 조문 (라벨, 조) 쌍 중 시스템 조문 검색 top-5에 든 쌍의 비율 | `eval/metrics.py:31` | #76 |
+| hit@5 (`hit_at_5`) | 정답 근거 조문이 하나라도 top-5에 든 정답 라벨의 비율 | `eval/metrics.py:37` | #76 |
+| citation precision (`citation_precision`) | 시스템이 인용한 조문 중 정답 근거 조문인 것의 비율. FAQ 인용은 뺀다 | `eval/metrics.py:42` | #76 |
+| 판정 정확도 (`judgment_accuracy`) | 시스템 최종 판정값이 정답 라벨과 같은 비율. 축 7개마다 + 전체 | `eval/metrics.py:48` | #76 |
+| 치명오답률 (`fatal_error_rate`) | 정답이 `INELIGIBLE`인 라벨 중 시스템이 `ELIGIBLE`을 낸 비율 | `eval/metrics.py:64` | #76 |
+| 정당 abstain 비율 (`justified_abstain`) | 정답이 `NEED_INFO`인 라벨 중 시스템도 abstain한 비율 | `eval/metrics.py:71` | #76 |
+| 부당 abstain 비율 (`unjustified_abstain`) | 정답이 `ELIGIBLE`·`INELIGIBLE`인 라벨 중 시스템이 abstain한 비율 | `eval/metrics.py:78` | #76 |
+
+- 시스템 판정이 실패한 하위 질의(`Verdict.error`)는 판정 정확도에서 틀린 것이고 abstain이 아닌 것이다
+- 리포트(`eval/report.py`)는 같은 지표를 `run.jsonl`에서 이 함수들을 부르지 않고 따로 다시 센다
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.
@@ -150,3 +169,7 @@ plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 
 | 공고문 근거 | 정답 라벨이 기대는 공고문 쪽수와 그 쪽에서 그대로 옮긴 구절 | 공고 인용 · 출처 | Claude | #75 |
 | 라벨 규칙 | 축마다 볼 프로필 칸·공고문 사실, 판정값 조건, 정답 근거 조문을 적은 문서 | 라벨링 가이드 | Claude | #75 |
 | 따로 붙인 라벨 | 첫 라벨을 보지 않은 하위 에이전트가 라벨 규칙과 원문만 보고 같은 문항에 붙인 라벨 | 2차 라벨 · 교차 검증 | Claude | #75 |
+| abstain | 시스템 최종 판정이 `NEED_INFO` 또는 `UNVERIFIABLE`인 것. 판정을 내리지 않았다는 뜻이다 | 기권 · 판정 보류 | 바탕 설계 §7 「기권」을 Claude가 원어로 바꿈 | #76 |
+| 정당 abstain · 부당 abstain | 정답 라벨이 `NEED_INFO`일 때의 abstain / 정답 라벨이 `ELIGIBLE`·`INELIGIBLE`일 때의 abstain | 정당 기권 · 부당 기권 | 바탕 설계 §7 | #76 |
+| 치명오답 | 정답 라벨이 `INELIGIBLE`인 하위 질의에 시스템이 `ELIGIBLE`을 낸 것 | 치명 오류 · false eligible | 바탕 설계 §7 | #76 |
+| 판정 정확도 | 시스템 최종 판정값이 정답 라벨 판정값과 같은 비율 | 정답률 · 일치율 | 바탕 설계 §7 「요건별 판정 정확도」 | #76 |
