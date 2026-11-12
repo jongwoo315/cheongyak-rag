@@ -5,7 +5,7 @@
 
 ## 축 7개 — 공고 하나의 청약 요건을 나눈 갈래
 
-정의: `src/cheongyak_rag/retrieval/axes.py:78` `AXES`. 만든 티켓 #79.
+정의: `src/cheongyak_rag/retrieval/axes.py:101` `AXES`. 만든 티켓 #79.
 
 | id | 이름 | 켜지는 때 | 보는 조문 |
 | --- | --- | --- | --- |
