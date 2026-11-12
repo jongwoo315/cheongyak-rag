@@ -58,6 +58,28 @@ Q_SPECIAL = "{type} 특별공급의 신청 자격과 요건은 어떻게 되나�
 # 유형별 세대수가 전부 0일 때
 Q_SPECIAL_NO_TYPE = "특별공급 유형별 신청 자격과 요건은 어떻게 되나요?"
 
+# 검색에 넣는 문장 (#138, 설계 §3). 공고의 주택 구분(`notices.house_dtl_secd`)이
+# `01` 민영·`03` 국민일 때만 아래 표의 문장을 쓰고, 그 밖이면 하위 질의 문장 그대로다. 문장은 정답 근거 조문과 본문을 보고 썼다
+_Q_INSTT = Q_SPECIAL.format(type="기관추천")
+_SEARCH_TEXTS = {
+    (Q_ACCOUNT, "01"): "민영주택 1순위 청약통장 가입 기간과 예치금 기준은 어떻게 되나요?",
+    (Q_ACCOUNT, "03"): "국민주택 1순위 청약통장 가입 기간과 납입 횟수 기준은 어떻게 되나요?",
+    (_Q_INSTT, "01"): (
+        "민영주택 관계기관의 장이 추천하는 특별공급(국가유공자·장애인 등)의 "
+        "신청 자격과 요건은 어떻게 되나요?"
+    ),
+    (_Q_INSTT, "03"): (
+        "국민주택 관계기관의 장이 추천하는 특별공급(국가유공자·장애인 등)의 "
+        "신청 자격과 요건은 어떻게 되나요?"
+    ),
+}
+
+
+def search_text(query: str, house_dtl_secd: str | None) -> str:
+    """하위 질의 문장 → BM25·임베딩에 넣는 문장. 표에 없으면 `query` 그대로."""
+    return _SEARCH_TEXTS.get((query, house_dtl_secd), query)
+
+
 # 기대 조(설계 §2). 구현 전에 조 제목만 보고 정했고 결과를 보고 바꾸지 않는다
 SPECIAL_LABELS = (
     "제35조",
@@ -115,6 +137,7 @@ class AxisPlan:
     reason: str  # 왜 켜졌나/꺼졌나 한 줄
     queries: list[str] = field(default_factory=list)  # 꺼진 축은 비어 있다
     law_mst: str | None = None
+    house_dtl_secd: str | None = None  # 공고 주택 구분. `search_text`가 검색 문장을 고르는 데 쓴다
 
     @property
     def line(self) -> str:
@@ -133,6 +156,7 @@ class Facts(NamedTuple):
     special: int  # 주택형의 특별공급 세대수 합
     by_type: dict[str, int]  # SPECIAL_TYPES의 키 → 세대수 합
     law_mst: str | None
+    house_dtl_secd: str | None = None  # `01` 민영주택 · `03` 국민주택
 
 
 def load_facts(engine: Engine, house_manage_no: str, pblanc_no: str | None = None) -> tuple:
@@ -143,13 +167,15 @@ def load_facts(engine: Engine, house_manage_no: str, pblanc_no: str | None = Non
     )
     flag_cols = ", ".join(f"n.{c}" for c, _ in REGULATION_FLAGS)
     sql = sa.text(
-        f"SELECT n.pblanc_no, n.house_nm, n.subscrpt_area_nm, {flag_cols}, v.mst,"
+        f"SELECT n.pblanc_no, n.house_nm, n.subscrpt_area_nm, n.house_dtl_secd, {flag_cols}, v.mst,"
         f" coalesce(sum(m.spsply_hshldco), 0) AS special, {sums}"
         " FROM notices n"
         " LEFT JOIN notice_models m USING (house_manage_no, pblanc_no)"
         " JOIN notice_law_versions v USING (house_manage_no, pblanc_no)"
         " WHERE n.house_manage_no = :h AND (CAST(:p AS text) IS NULL OR n.pblanc_no = :p)"
-        " GROUP BY n.pblanc_no, n.house_nm, n.subscrpt_area_nm, " + flag_cols + ", v.mst"
+        " GROUP BY n.pblanc_no, n.house_nm, n.subscrpt_area_nm, n.house_dtl_secd, "
+        + flag_cols
+        + ", v.mst"
         " ORDER BY n.pblanc_no LIMIT 1"
     )
     with engine.connect() as conn:
@@ -162,6 +188,7 @@ def load_facts(engine: Engine, house_manage_no: str, pblanc_no: str | None = Non
         special=int(row["special"]),
         by_type={key: int(row[key.lower()]) for key, _ in SPECIAL_TYPES},
         law_mst=row["mst"],
+        house_dtl_secd=row["house_dtl_secd"],
     )
     return row["pblanc_no"], row["house_nm"], facts
 
@@ -215,7 +242,9 @@ def plan_from_facts(facts: Facts) -> list[AxisPlan]:
     out = []
     for axis in AXES:
         on, reason, queries = _decide(axis.id, facts)
-        out.append(AxisPlan(axis.id, axis.name, on, reason, queries, facts.law_mst))
+        out.append(
+            AxisPlan(axis.id, axis.name, on, reason, queries, facts.law_mst, facts.house_dtl_secd)
+        )
     return out
 
 
@@ -317,10 +346,10 @@ def search(
     plans = plans or plan(engine, house_manage_no, pblanc_no)
     cache = {} if cache is None else cache
     on = [p for p in plans if p.on]
-    queries = list(dict.fromkeys(q for p in on for q in p.queries))
-    if not queries:
+    texts = list(dict.fromkeys(search_text(q, p.house_dtl_secd) for p in on for q in p.queries))
+    if not texts:
         return []
-    vecs = dict(zip(queries, embedder.embed(queries), strict=True))  # 한 번에 묶어 임베딩한다
+    vecs = dict(zip(texts, embedder.embed(texts), strict=True))  # 한 번에 묶어 임베딩한다
     mst = plans[0].law_mst
     law = _corpus(engine, "law", mst, cache) if mst is not None else None
     faq = _corpus(engine, "faq", None, cache)
@@ -328,16 +357,21 @@ def search(
     for p in on:
         hits = []
         for q in p.queries:
+            text = search_text(
+                q, p.house_dtl_secd
+            )  # 검색에는 이 문장을, 결과에는 하위 질의 문장 `q`를
             law_hits, pool, n_dense = [], 0, 0
             if law is not None and law.bm25 is not None:
                 pool = len(law.by_id)
-                dense = [c for c, _ in index_db.nearest(engine, vecs[q], "law", pool, law_mst=mst)]
+                dense = [
+                    c for c, _ in index_db.nearest(engine, vecs[text], "law", pool, law_mst=mst)
+                ]
                 n_dense = len(dense)
-                law_hits = _law_top(law, dense, q, k)
+                law_hits = _law_top(law, dense, text, k)
             faq_hits = []
             if faq.bm25 is not None:
-                dense = [c for c, _ in index_db.nearest(engine, vecs[q], "faq", len(faq.by_id))]
-                faq_hits = _faq_top(faq, dense, q, faq_k)
+                dense = [c for c, _ in index_db.nearest(engine, vecs[text], "faq", len(faq.by_id))]
+                faq_hits = _faq_top(faq, dense, text, faq_k)
             hits.append(QueryHits(q, law_hits, faq_hits, pool, n_dense))
         out.append(AxisResult(p.id, p.name, hits))
     return out
