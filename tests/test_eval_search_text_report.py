@@ -195,6 +195,7 @@ def _runs(tmp_path, base_rows, now_rows):
         )
         m = {"value": 0.5, "num": 1, "den": 2}
         metrics = {k: m for k, _, _ in METRIC_NAMES}
+        metrics["judgment_accuracy"] = {"total": m, "axes": {}}  # 실제 metrics.json 꼴
         (d / "metrics.json").write_text(
             json.dumps(
                 {
