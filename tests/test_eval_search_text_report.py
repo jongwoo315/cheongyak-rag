@@ -242,3 +242,12 @@ def test_render_lists_miss_leak_mismatch_and_fatal_rows(tmp_path):
     assert "**1/1**, #76은 0/1 → 구간 **정상**" in md
     assert "| 제53조 |" in md and "Q12" not in md  # 치명오답 표의 인용 조문
     assert "#76 3, 이번 3" in md and "비용 $0.5000" in md
+    assert "세지 못한 공고: **0개**" in md
+
+
+def test_render_counts_notices_whose_house_is_unknown(tmp_path):
+    rows = [acct("g01", ["제28조"]), instt("g01", ["제36조"]), acct("g02", ["제28조"])]
+    base, now = _runs(tmp_path, rows, rows)
+    house = {"g01": "01", "g02": None}  # g02는 주택 구분이 비었다 → 어긋남이 0이어도 못 센 것이다
+    md = st.render(rows, rows, house, st.read_metrics(base), st.read_metrics(now))
+    assert "세지 못한 공고: **1개**" in md

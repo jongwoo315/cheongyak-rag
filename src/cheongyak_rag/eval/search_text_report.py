@@ -38,6 +38,9 @@ WRONG = {
 }
 
 
+WRONG_HOUSES = ("01", "03")
+
+
 def group(r: dict) -> str | None:
     if r["axis"] == "account":
         return "account"
@@ -214,6 +217,7 @@ def render(base: list[dict], now: list[dict], house: dict, base_m: dict, now_m: 
     band1 = band_jw(j1)
     leaks = leak(base, now)
     bad_house = house_mismatch(now, house)
+    unknown_house = {r["id"] for r in now if group(r) and house.get(r["id"]) not in WRONG_HOUSES}
     f0, d0 = fatal(base)
     f1, d1 = fatal(now)
     out = [
@@ -287,6 +291,7 @@ def render(base: list[dict], now: list[dict], house: dict, base_m: dict, now_m: 
         "(`docs/75-label-rules.md`). 어긋난 짝을 센다",
         f"- 어긋난 하위 질의: **{len(bad_house)}개**"
         f" → 구간 **{band_house(len(bad_house))}** (정상: 0 / 다시 잰다: 1~3 / 미완: 4 이상)",
+        f"- 주택 구분이 `01`·`03`이 아니거나 비어서 세지 못한 공고: **{len(unknown_house)}개**",
     ]
     if bad_house:
         out += [""]
