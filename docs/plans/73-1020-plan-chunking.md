@@ -103,7 +103,7 @@ Task 하나 = 커밋 하나.
 - 지표는 `evaluate.metrics` 재사용. 줄에 정답 조마다 bm25·dense·hybrid 순위, 그리고 그 조에서 가장 높이 오른
   청크의 `path`를 남긴다
 - `config.json`: 후보·청크 수·모델·k1·b·RRF k·질문 수·실행 시각·커밋(`evaluate._commit` 재사용)·OpenAI 호출 수
-- 테스트: 가짜 청크로 집계 손계산 / 같은 조 청크 둘이 순위에 한 번만 / 가짜 임베더 주입(API 0) /
+- 테스트: 가짜 청크로 집계 직접 계산 / 같은 조 청크 둘이 순위에 한 번만 / 가짜 임베더 주입(API 0) /
   가짜 데이터에서 `article` 후보가 `evaluate.evaluate_run`과 같은 순위를 낸다
 
 ### Task 3 — FAQ 검색 (`chunk_eval.py --faq`)
@@ -111,7 +111,7 @@ Task 하나 = 커밋 하나.
 - golden 문항 i마다 FAQ 청크에서 쌍 i와 질문 텍스트가 같은 쌍을 빼고 BM25·dense·hybrid 순위
 - `faq_hit@5`: 남은 상위 5개 중 하나라도 `cited`가 정답 조와 겹치면 1. `faq_hit@1`도 같이
 - 실패 징후 5의 자기 포함 점검 run도 같이 돌려 `runs/73/faq/self_check.json`에 쓴다
-- 테스트: 자기 쌍이 결과에 안 나온다 / 같은 질문 텍스트 쌍도 빠진다 / 손계산
+- 테스트: 자기 쌍이 결과에 안 나온다 / 같은 질문 텍스트 쌍도 빠진다 / 직접 계산
 
 ### Task 4 — 붙은 단어 측정
 

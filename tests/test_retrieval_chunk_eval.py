@@ -292,7 +292,7 @@ def test_leak_count_counts_own_q_no_even_if_excluded_list_misses_it():
     assert ce.leak_count([line]) == len(ce.RANKERS)
 
 
-# ── 조 순위 손계산 ──────────────────────────────────────────────────────
+# ── 조 순위 직접 계산 ──────────────────────────────────────────────────────
 
 
 def test_article_ranks_hybrid_is_rrf_over_article_lists_hand_computed():

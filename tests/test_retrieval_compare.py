@@ -134,7 +134,7 @@ def test_first_line_is_conclusion_sentence_without_judgment_words(report):
 
 
 def test_headline_value_is_hybrid_minus_dense():
-    # 손계산: dense 순위 1,9,8,3,10,7 → 5위 안 2/6. hybrid 1,2,4,7,10,2 → 4/6. 차이 +0.333
+    # 직접 계산: dense 순위 1,9,8,3,10,7 → 5위 안 2/6. hybrid 1,2,4,7,10,2 → 4/6. 차이 +0.333
     first = build_report(_results(SPECS), GoldenResult(), ARTICLES, None).splitlines()[0]
     assert "+0.333" in first
 

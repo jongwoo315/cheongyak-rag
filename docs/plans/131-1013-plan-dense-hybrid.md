@@ -102,7 +102,7 @@ dense, hybrid 비교가 잘 이루어지고 이해가 된다
 - `embed.py` — `embed(texts) -> np.ndarray`. 캐시 `data/cache/embed-<model>.jsonl`(텍스트 sha256 → 벡터). 캐시에 없는 것만 API로 보내고, 한 요청에 묶어 보낸다
 - `dense_rank(query_vec, doc_vecs, labels) -> list[label]` — 코사인
 - `rrf(rankings, k=60) -> list[(label, score)]`
-- 테스트: 작은 가짜 문서로 BM25 손계산 값과 비교, 조사가 붙은 형태가 같은 토큰이 되는지(`주택을`/`주택은` → `주택`), RRF 손계산, 임베딩은 가짜 함수 주입(테스트에서 API 호출 0), 캐시 적중 시 API 호출 0
+- 테스트: 작은 가짜 문서로 BM25를 직접 계산한 값과 비교, 조사가 붙은 형태가 같은 토큰이 되는지(`주택을`/`주택은` → `주택`), RRF 직접 계산, 임베딩은 가짜 함수 주입(테스트에서 API 호출 0), 캐시 적중 시 API 호출 0
 
 ### Task 5 — 실행과 지표 (`evaluate.py`)
 
@@ -110,7 +110,7 @@ dense, hybrid 비교가 잘 이루어지고 이해가 된다
 - CLI `--run bm25|dense|hybrid` → `runs/<run>/results.jsonl` + `config.json`(모델·k1·b·RRF k·문서 수·질문 수·실행 시각·커밋)
 - hybrid 줄에는 정답 조마다 BM25 순위·dense 순위·RRF 점수도 남긴다 (리포트 설명용)
 - CLI `--sanity` → 실패 징후 3의 점검 run. `runs/sanity/results.jsonl`
-- 테스트: 지표 손계산, 정답 2개 중 1개만 상위 5개 안일 때 `recall@5 = 0.5`
+- 테스트: 지표 직접 계산, 정답 2개 중 1개만 상위 5개 안일 때 `recall@5 = 0.5`
 
 ### Task 6 — 비교와 리포트 (`compare.py`)
 

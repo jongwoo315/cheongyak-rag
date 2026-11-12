@@ -27,7 +27,7 @@ def test_variant_verb_tags_are_kept():
     assert "받" in tokenize("보조금을 받는다")
 
 
-WS = str.split  # 손계산용 공백 토크나이저
+WS = str.split  # 직접 계산용 공백 토크나이저
 DOCS = [
     Article("A", "a", "x x y"),  # 길이 3
     Article("B", "b", "x z"),  # 길이 2

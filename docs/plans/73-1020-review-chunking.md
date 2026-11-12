@@ -14,7 +14,7 @@
 | 3 | Important | `tests/test_retrieval_chunk_report.py:111-138` | 평균이 가장 큰 후보의 CI 하한이 0 이하이고 평균이 더 작은 후보의 하한이 0 초과인 경우가 없었다. `min(winners)`를 `best`로 바꿔도 통과했다 | fix `9e23a53` |
 | 4 | Important | `tests/test_retrieval_chunk_report.py:141-147` | 「모든 후보가 낮다」가 네 후보 전부 낮은 경우만 있었다. `all`을 `any`로 바꿔도 통과했다 | fix `d0e94aa` |
 | 5 | Important | `src/cheongyak_rag/retrieval/chunk_spacing.py:52` | 목차 파싱이 실패해 공백만 다른 쌍이 0개면 `np.mean([])`가 nan이 되고 `band`가 「쌍별 값을 리포트에 목록」을 돌려줘 측정값처럼 `spacing.json`에 쓰인다 | fix `37fe0af` |
-| 6 | Important | `tests/test_retrieval_chunk_eval.py:101-108` | `..._hand_computed_hybrid`가 같은 목록에서 나온 두 값을 비교하는 동어반복이다. 한 조에 청크가 여럿인 손계산이 없어, 조 순위끼리 RRF하는 순서가 안 고정돼 있었다 | fix `7883eff` |
+| 6 | Important | `tests/test_retrieval_chunk_eval.py:101-108` | `..._hand_computed_hybrid`가 같은 목록에서 나온 두 값을 비교하는 동어반복이다. 한 조에 청크가 여럿인 경우를 직접 계산한 테스트가 없어, 조 순위끼리 RRF하는 순서가 안 고정돼 있었다 | fix `7883eff` |
 | 7 | Important | `tests/test_retrieval_chunk_eval.py:111-118` | `best_path`(리포트 §4와 `query`가 보이는 path)가 순위를 통제한 입력으로 검증되지 않았다. bm25가 우연히 이기면 통과했다 | fix `7883eff` |
 | 8 | Important | `tests/test_retrieval_chunk_eval.py:214-225` | `faq_hit`가 「cited가 gold를 전부 덮는다」로 바뀌어도 통과했다. plan은 「겹치면 1」이다 | fix `7883eff` |
 | 9 | Important | `tests/test_retrieval_chunk_report.py:167-172` | 정답 조가 긴 문항 절 테스트가 `질문 5개`와 후보 이름만 본다. 절 3에 전체 문항을 넘겨도 통과했다 | fix `6e7d826` |
