@@ -1,0 +1,198 @@
+{
+  "run_at": "2026-11-12T23:39:56+09:00",
+  "model": "gpt-5.4-mini",
+  "items": 50,
+  "seconds": 185.4,
+  "stop": null,
+  "usd": 0.6240555000000001,
+  "calls": 92,
+  "cache_hits": 432,
+  "retries": 0,
+  "metrics": {
+    "recall_at_5": {
+      "value": 0.9279778393351801,
+      "num": 670,
+      "den": 722
+    },
+    "hit_at_5": {
+      "value": 1.0,
+      "num": 524,
+      "den": 524
+    },
+    "citation_precision": {
+      "value": 0.7418604651162791,
+      "num": 638,
+      "den": 860
+    },
+    "judgment_accuracy": {
+      "total": {
+        "value": 0.6564885496183206,
+        "num": 344,
+        "den": 524
+      },
+      "axes": {
+        "account": {
+          "value": 0.86,
+          "num": 43,
+          "den": 50
+        },
+        "homeless": {
+          "value": 0.72,
+          "num": 36,
+          "den": 50
+        },
+        "householder": {
+          "value": 0.9523809523809523,
+          "num": 40,
+          "den": 42
+        },
+        "income_asset": {
+          "value": 0.28888888888888886,
+          "num": 13,
+          "den": 45
+        },
+        "residence": {
+          "value": 0.68,
+          "num": 34,
+          "den": 50
+        },
+        "rewin": {
+          "value": 0.8695652173913043,
+          "num": 20,
+          "den": 23
+        },
+        "special_type": {
+          "value": 0.5984848484848485,
+          "num": 158,
+          "den": 264
+        }
+      }
+    },
+    "fatal_error_rate": {
+      "value": 0.02197802197802198,
+      "num": 2,
+      "den": 91
+    },
+    "justified_abstain": {
+      "value": 0.9444444444444444,
+      "num": 357,
+      "den": 378
+    },
+    "unjustified_abstain": {
+      "value": 0.6095890410958904,
+      "num": 89,
+      "den": 146
+    }
+  },
+  "counts": {
+    "labels": 524,
+    "unmatched_labels": 0,
+    "no_law_results": 0,
+    "search_incomplete": 0,
+    "item_failures": 0,
+    "verdict_errors": 0,
+    "faq_citations": 744,
+    "unmatched_system_queries": 0
+  },
+  "incomplete": false,
+  "usage_total": {
+    "calls": 92,
+    "cache_hits": 432,
+    "retries": 0,
+    "usd": 0.6240555000000001
+  },
+  "first_run": {
+    "run_at": "2026-11-12T23:39:56+09:00",
+    "metrics": {
+      "recall_at_5": {
+        "value": 0.9279778393351801,
+        "num": 670,
+        "den": 722
+      },
+      "hit_at_5": {
+        "value": 1.0,
+        "num": 524,
+        "den": 524
+      },
+      "citation_precision": {
+        "value": 0.7418604651162791,
+        "num": 638,
+        "den": 860
+      },
+      "judgment_accuracy": {
+        "total": {
+          "value": 0.6564885496183206,
+          "num": 344,
+          "den": 524
+        },
+        "axes": {
+          "account": {
+            "value": 0.86,
+            "num": 43,
+            "den": 50
+          },
+          "homeless": {
+            "value": 0.72,
+            "num": 36,
+            "den": 50
+          },
+          "householder": {
+            "value": 0.9523809523809523,
+            "num": 40,
+            "den": 42
+          },
+          "income_asset": {
+            "value": 0.28888888888888886,
+            "num": 13,
+            "den": 45
+          },
+          "residence": {
+            "value": 0.68,
+            "num": 34,
+            "den": 50
+          },
+          "rewin": {
+            "value": 0.8695652173913043,
+            "num": 20,
+            "den": 23
+          },
+          "special_type": {
+            "value": 0.5984848484848485,
+            "num": 158,
+            "den": 264
+          }
+        }
+      },
+      "fatal_error_rate": {
+        "value": 0.02197802197802198,
+        "num": 2,
+        "den": 91
+      },
+      "justified_abstain": {
+        "value": 0.9444444444444444,
+        "num": 357,
+        "den": 378
+      },
+      "unjustified_abstain": {
+        "value": 0.6095890410958904,
+        "num": 89,
+        "den": 146
+      }
+    },
+    "counts": {
+      "labels": 524,
+      "unmatched_labels": 0,
+      "no_law_results": 0,
+      "search_incomplete": 0,
+      "item_failures": 0,
+      "verdict_errors": 0,
+      "faq_citations": 744,
+      "unmatched_system_queries": 0
+    },
+    "calls": 92,
+    "cache_hits": 432,
+    "retries": 0,
+    "usd": 0.6240555000000001
+  },
+  "second_run": null
+}
