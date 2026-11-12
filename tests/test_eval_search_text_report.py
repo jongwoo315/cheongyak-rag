@@ -218,3 +218,27 @@ def test_render_has_every_section(tmp_path):
         assert head in md
     assert "정답 근거 조문과 그 본문을 보고 썼다" in md
     assert "구간: **통과**" in md and "1/1" in md
+
+
+def test_render_lists_miss_leak_mismatch_and_fatal_rows(tmp_path):
+    base_rows = [
+        acct("g01", ["제9조"]),
+        instt("g01", ["제49조"]),
+        line("g01", "homeless", top5=["제53조"], gold="INELIGIBLE", sys="NEED_INFO"),
+    ]
+    fatal_row = line("g01", "homeless", top5=["제46조"], gold="INELIGIBLE", sys="ELIGIBLE")
+    fatal_row["sys_citations"] = ["제53조", "Q12"]  # 조문이 아닌 인용은 표에서 뺀다
+    now_rows = [
+        acct("g01", ["제9조"]),  # 못 들었다. 03인데 정답 근거 조문이 제28조 → 어긋남
+        instt("g01", ["제35조"], cites=("제35조",)),  # 03 + 제35조 → 맞다
+        fatal_row,  # law_top5가 바뀌었다 → 샜다. 치명오답이다
+    ]
+    base, now = _runs(tmp_path, base_rows, now_rows)
+    md = st.render(base_rows, now_rows, {"g01": "03"}, st.read_metrics(base), st.read_metrics(now))
+    assert "구간: **미완**" in md and "0/1" in md  # 청약통장 0/1은 절반 이하
+    assert "청약통장에서 못 든 하위 질의 1개" in md
+    assert "`law_top5`가 #76과 글자까지 다른 것: **1개** → 구간 **다시 잰다**" in md
+    assert "어긋난 하위 질의: **1개** → 구간 **다시 잰다**" in md
+    assert "**1/1**, #76은 0/1 → 구간 **정상**" in md
+    assert "| 제53조 |" in md and "Q12" not in md  # 치명오답 표의 인용 조문
+    assert "#76 3, 이번 3" in md and "비용 $0.5000" in md
