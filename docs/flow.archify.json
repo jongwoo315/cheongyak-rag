@@ -2,14 +2,14 @@
  "schema_version": 2,
  "diagram_type": "workflow",
  "meta": {
-  "title": "청약 RAG 판정 흐름 — #76 PR #21",
+  "title": "청약 RAG 판정 흐름 — #138 PR #22",
   "locale": "ko",
   "quality_profile": "standard",
-  "output": "76-flow.html",
+  "output": "138-flow.html",
   "repository": {
    "url": "https://github.com/jongwoo315/cheongyak-rag",
    "provider": "github",
-   "revision": "32ba3e6b0d58d55a95b1308d8d9a6510f83281e9"
+   "revision": "019d5f84c0a5d07b8a3a62182d71b4cc10304bce"
   }
  },
  "lanes": [
@@ -117,13 +117,13 @@
    "col": 0,
    "type": "external",
    "label": "공고 값",
-   "sublabel": "규제 표시·특별공급·공고일",
-   "tag": "그대로",
+   "sublabel": "[바뀜] 규제 표시·특별공급·공고일 + 주택 구분",
+   "tag": "조건 바뀜",
    "sources": [
     {
-     "path": "src/cheongyak_rag/generate/verdict.py",
-     "line": 435,
-     "end_line": 436,
+     "path": "src/cheongyak_rag/retrieval/axes.py",
+     "line": 163,
+     "end_line": 192,
      "label": "load_facts"
     }
    ]
@@ -168,14 +168,14 @@
    "col": 2,
    "type": "database",
    "label": "켜진 축만 검색",
-   "sublabel": "조문 5 · FAQ 3",
-   "tag": "그대로",
+   "sublabel": "[바뀜] 두 하위 질의는 검색 문장으로",
+   "tag": "조건 바뀜",
    "sources": [
     {
-     "path": "src/cheongyak_rag/generate/verdict.py",
-     "line": 441,
-     "end_line": 451,
-     "label": "axes.search"
+     "path": "src/cheongyak_rag/retrieval/axes.py",
+     "line": 61,
+     "end_line": 81,
+     "label": "search_text"
     }
    ]
   },
@@ -701,8 +701,8 @@
    "col": 1,
    "type": "backend",
    "label": "eval.run",
-   "sublabel": "[새로] 문항 50을 judge에 · 배포와 같은 모델",
-   "tag": "새로 생김",
+   "sublabel": "문항 50을 judge에 · 배포와 같은 모델",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/eval/run.py",
@@ -714,11 +714,11 @@
   {
    "id": "ejsonl",
    "lane": "eval",
-   "col": 3,
+   "col": 2,
    "type": "database",
    "label": "run.jsonl",
-   "sublabel": "[새로] 정답 라벨마다 한 줄 · 524줄",
-   "tag": "새로 생김",
+   "sublabel": "정답 라벨마다 한 줄 · 524줄",
+   "tag": "그대로",
    "sources": [
     {
      "path": "runs/76/run.jsonl",
@@ -730,11 +730,11 @@
   {
    "id": "emet",
    "lane": "eval",
-   "col": 4,
+   "col": 3,
    "type": "backend",
    "label": "지표 7개",
-   "sublabel": "[새로] metrics.json · 값·분자·분모",
-   "tag": "새로 생김",
+   "sublabel": "metrics.json · 값·분자·분모",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/eval/metrics.py",
@@ -746,16 +746,33 @@
   {
    "id": "erep",
    "lane": "eval",
-   "col": 5,
+   "col": 4,
    "type": "security",
    "label": "리포트 · 따로 계산",
-   "sublabel": "[새로] docs/76-eval.md · 다른 지표 0/7",
-   "tag": "새로 생김",
+   "sublabel": "docs/76-eval.md · 다른 지표 0/7",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/eval/report.py",
      "line": 1,
      "label": "report.py"
+    }
+   ]
+  },
+  {
+   "id": "erep2",
+   "lane": "eval",
+   "col": 5,
+   "type": "backend",
+   "label": "검색 문장 리포트",
+   "sublabel": "[새로] docs/138-search-text.md · #76 run.jsonl과 대조",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/eval/search_text_report.py",
+     "line": 63,
+     "end_line": 143,
+     "label": "jw·실패 징후"
     }
    ]
   }
@@ -1032,6 +1049,12 @@
    "from": "emet",
    "to": "erep",
    "label": "harness 값"
+  },
+  {
+   "id": "v6",
+   "from": "ejsonl",
+   "to": "erep2",
+   "label": "law_top5"
   }
  ],
  "cards": [
@@ -1039,8 +1062,8 @@
    "dot": "amber",
    "title": "읽는 법",
    "items": [
-    "[새로]는 PR #20 대비 이번 PR이 더한 단계다. 판정 흐름 자체는 그대로다",
-    "eval.run은 API를 거치지 않고 judge()를 바로 부른다 — traces에 안 쓰고 하루 판정 한도도 안 센다"
+    "[새로]·[바뀜]은 PR #21(#76) 대비 이번 PR이 바꾼 단계다",
+    "하위 질의 문장은 그대로다. 검색에 넣는 문장만 청약통장·기관추천 두 하위 질의에서 바뀐다"
    ]
   }
  ]
