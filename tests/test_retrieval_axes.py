@@ -25,7 +25,7 @@ def _version(engine, mst="286965", effective="2026-06-15"):
         )
 
 
-def _notice(engine, n=1, area="경기", de="2026-10-01", models=(), **flags):
+def _notice(engine, n=1, area="경기", de="2026-10-01", models=(), house_dtl_secd=None, **flags):
     """공고 하나 + 주택형. models는 주택형마다 (spsply_hshldco, 유형별 세대수 dict)."""
     hmn = f"2026{n:06d}"
     cols = {
@@ -39,8 +39,8 @@ def _notice(engine, n=1, area="경기", de="2026-10-01", models=(), **flags):
             text(
                 "INSERT INTO notices (house_manage_no, pblanc_no, house_nm, subscrpt_area_nm,"
                 " rcrit_pblanc_de, speclt_rdn_earth_at, mdat_trget_area_secd, parcprc_uls_at,"
-                " public_house_earth_at, raw) VALUES (:h, :h, :nm, :a, :de, :f1, :f2, :f3, :f4,"
-                " '{}')"
+                " public_house_earth_at, house_dtl_secd, raw) VALUES (:h, :h, :nm, :a, :de,"
+                " :f1, :f2, :f3, :f4, :dtl, '{}')"
             ),
             {
                 "h": hmn,
@@ -51,6 +51,7 @@ def _notice(engine, n=1, area="경기", de="2026-10-01", models=(), **flags):
                 "f2": cols["mdat_trget_area_secd"],
                 "f3": cols["parcprc_uls_at"],
                 "f4": cols["public_house_earth_at"],
+                "dtl": house_dtl_secd,
             },
         )
         for i, (special, by_type) in enumerate(models, start=1):
@@ -347,3 +348,110 @@ def test_law_top_fills_k_from_bm25_when_dense_returns_fewer(dense):
     """HNSW가 후보를 덜 돌려줘도(dense가 비거나 일부) 조문은 BM25로 k개가 찬다."""
     top = axes._law_top(_law_corpus(), dense, "규정", 5)
     assert len(top) == 5 and len({c.label for c in top}) == 5
+
+
+# ── 검색 문장 (#138) ─────────────────────────────────────────────────────
+
+Q_INSTT = axes.Q_SPECIAL.format(type="기관추천")
+
+SEARCH_TEXTS = [
+    (
+        axes.Q_ACCOUNT,
+        "01",
+        "민영주택 1순위 청약통장 가입 기간과 예치금 기준은 어떻게 되나요?",
+    ),
+    (
+        axes.Q_ACCOUNT,
+        "03",
+        "국민주택 1순위 청약통장 가입 기간과 납입 횟수 기준은 어떻게 되나요?",
+    ),
+    (
+        Q_INSTT,
+        "01",
+        "민영주택 관계기관의 장이 추천하는 특별공급(국가유공자·장애인 등)의 "
+        "신청 자격과 요건은 어떻게 되나요?",
+    ),
+    (
+        Q_INSTT,
+        "03",
+        "국민주택 관계기관의 장이 추천하는 특별공급(국가유공자·장애인 등)의 "
+        "신청 자격과 요건은 어떻게 되나요?",
+    ),
+]
+
+
+@pytest.mark.parametrize(("query", "dtl", "want"), SEARCH_TEXTS)
+def test_search_text_is_the_design_sentence(query, dtl, want):
+    assert axes.search_text(query, dtl) == want
+
+
+@pytest.mark.parametrize("dtl", ["02", "", None])
+def test_search_text_keeps_the_query_for_other_house_types(dtl):
+    for q in (axes.Q_ACCOUNT, Q_INSTT):
+        assert axes.search_text(q, dtl) == q
+
+
+@pytest.mark.parametrize("dtl", ["01", "03"])
+def test_search_text_keeps_other_queries(dtl):
+    others = [
+        axes.Q_HOMELESS,
+        axes.Q_RESIDENCE.format(area="경기"),
+        axes.Q_INCOME_ASSET,
+        axes.Q_REWIN,
+        axes.Q_HOUSEHOLDER,
+        axes.Q_SPECIAL.format(type="신혼부부"),
+        axes.Q_SPECIAL_NO_TYPE,
+    ]
+    for q in others:
+        assert axes.search_text(q, dtl) == q
+
+
+def test_plan_carries_house_dtl_secd_but_not_into_queries(pg_engine):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})], house_dtl_secd="03")
+    plans = axes.plan(pg_engine, hmn)
+    assert {p.house_dtl_secd for p in plans} == {"03"}
+    assert {p.id: p for p in plans}["account"].queries == [axes.Q_ACCOUNT]
+
+
+def test_search_embeds_search_text_and_keeps_the_query_on_hits(pg_engine):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(4, {"INSTT_RECOMEND_HSHLDCO": 4})], house_dtl_secd="03")
+    emb = _load_chunks(pg_engine)
+    seen = []
+    orig = emb.embed
+    emb.embed = lambda texts: (seen.extend(texts), orig(texts))[1]
+    res = {r.id: r for r in axes.search(pg_engine, emb, hmn)}
+    assert [h.query for h in res["account"].hits] == [axes.Q_ACCOUNT]
+    assert [h.query for h in res["special_type"].hits] == [Q_INSTT]
+    assert SEARCH_TEXTS[1][2] in seen and SEARCH_TEXTS[3][2] in seen
+    assert axes.Q_ACCOUNT not in seen and Q_INSTT not in seen
+    assert axes.Q_HOMELESS in seen  # 다른 축은 그대로
+
+
+def test_search_without_house_type_embeds_the_query(pg_engine):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})])
+    emb = _load_chunks(pg_engine)
+    seen = []
+    orig = emb.embed
+    emb.embed = lambda texts: (seen.extend(texts), orig(texts))[1]
+    axes.search(pg_engine, emb, hmn)
+    assert axes.Q_ACCOUNT in seen
+
+
+def test_search_gives_the_search_text_to_bm25_for_law_and_faq(pg_engine, monkeypatch):
+    _version(pg_engine)
+    hmn = _notice(pg_engine, models=[(0, {})], house_dtl_secd="01")
+    emb = _load_chunks(pg_engine)
+    law_q, faq_q = [], []
+    law_top, faq_top = axes._law_top, axes._faq_top
+    monkeypatch.setattr(
+        axes, "_law_top", lambda c, d, q, k: (law_q.append(q), law_top(c, d, q, k))[1]
+    )
+    monkeypatch.setattr(
+        axes, "_faq_top", lambda c, d, q, k: (faq_q.append(q), faq_top(c, d, q, k))[1]
+    )
+    axes.search(pg_engine, emb, hmn)
+    assert SEARCH_TEXTS[0][2] in law_q and SEARCH_TEXTS[0][2] in faq_q
+    assert axes.Q_ACCOUNT not in law_q and axes.Q_ACCOUNT not in faq_q
