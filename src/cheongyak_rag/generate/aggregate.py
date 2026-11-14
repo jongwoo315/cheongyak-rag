@@ -209,6 +209,8 @@ def _source(kind: str, label: str, mst: str | None, effective: str | None) -> st
 
 def _note(v: vd.Verdict) -> str:
     if v.ruled:
+        if v.original_verdict == "INELIGIBLE":  # 판정은 그대로고 이유만 규칙의 것이다
+            return f"프로필 불가 규칙 {v.rule}이 걸림 (모델 판정도 INELIGIBLE)"
         return f"프로필 불가 규칙 {v.rule}이 INELIGIBLE로 바꿈 (모델 판정 {v.original_verdict})"
     if v.forced:
         return f"인용이 모두 기각돼 UNVERIFIABLE로 바뀜 (모델 판정 {v.original_verdict})"

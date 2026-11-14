@@ -291,3 +291,8 @@ def test_note_names_the_rule_before_any_other_change():
     both = _fv("homeless", "INELIGIBLE", ruled=True, rule="homeless-1", forced=True,
                original_verdict="NEED_INFO")  # fmt: skip
     assert agg._note(both).startswith("프로필 불가 규칙 homeless-1")
+
+
+def test_note_does_not_say_changed_when_the_model_already_said_ineligible():
+    v = _fv("homeless", "INELIGIBLE", ruled=True, rule="homeless-1", original_verdict="INELIGIBLE")
+    assert agg._note(v) == "프로필 불가 규칙 homeless-1이 걸림 (모델 판정도 INELIGIBLE)"
