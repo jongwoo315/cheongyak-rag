@@ -106,7 +106,7 @@ def analyze(axis: str, query: str, profile: dict, facts: axes.Facts) -> Missing:
 
     `profile`은 `Profile.to_dict()` 꼴이고 `None`이 빈 칸이다.
     """
-    out = [f for f in rules.profile_fields(axis, query) if _empty(profile, f)]
+    out = [f for f in rules.profile_fields(axis, query, profile) if _empty(profile, f)]
     return Missing(_info(axis, query, profile, facts), out)
 
 

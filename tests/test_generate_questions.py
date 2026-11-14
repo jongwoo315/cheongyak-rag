@@ -354,3 +354,22 @@ def test_render_text_lists_questions_in_order():
 
 def test_render_text_with_no_question_keeps_the_none_line():
     assert agg.render_text(_answer([])).splitlines()[-1] == "확인할 질문: 없음"
+
+
+# ── 규칙이 더 걸릴 수 없는 칸은 묻지 않는다 ─────────────────────────────
+
+
+def test_marriage_date_is_not_a_rule_cell_for_someone_who_is_not_married():
+    q = TYPE(type="신혼부부")
+    unmarried = _info("special_type", q, {"married": False})
+    assert "marriage_date" not in unmarried.can_rule_out
+    assert "married" not in unmarried.can_rule_out  # 답한 칸이다
+    assert unmarried.info[-1] == "marriage_status"
+    for profile in ({}, {"married": True}):  # 모르거나 혼인 중이면 혼인신고일이 규칙을 가를 수 있다
+        assert "marriage_date" in _info("special_type", q, profile).can_rule_out
+
+
+def test_profile_fields_without_a_profile_keeps_every_rule_cell():
+    assert "marriage_date" in rules.profile_fields("special_type", TYPE(type="신혼부부"))
+    got = rules.profile_fields("special_type", TYPE(type="신혼부부"), {"married": False})
+    assert "marriage_date" not in got

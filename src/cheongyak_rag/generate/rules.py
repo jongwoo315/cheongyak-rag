@@ -53,6 +53,8 @@ class Rule:
     fields: tuple[str, ...]  # 규칙이 보는 프로필 칸
     when: str  # 사람이 읽는 조건(`docs/concepts.md`가 옮긴다)
     check: Check
+    # 다른 칸의 답으로 이 규칙이 더 걸릴 수 없게 됐으면 False. 그 규칙의 빈 칸은 물을 이유가 없다
+    possible: Callable[[dict], bool] = lambda p: True  # noqa: E731
 
 
 def _date(p: dict, name: str) -> date | None:
@@ -128,7 +130,8 @@ RULES: tuple[Rule, ...] = (
     Rule("newlywed-1", _ST, "신혼부부", ("homeless_now",), "homeless_now = false",
          _is(*_HOMELESS)),
     Rule("newlywed-2", _ST, "신혼부부", ("married", "marriage_date"),
-         "married = true이고 marriage_date가 있고 혼인기간 7년 초과", _newlywed_over),
+         "married = true이고 marriage_date가 있고 혼인기간 7년 초과", _newlywed_over,
+         lambda p: p.get("married") is not False),
     Rule("newlywed-4", _ST, "신혼부부", ("savings_join_date",),
          "savings_join_date가 있고 6개월이 안 지났다", _SPECIAL_6M),
     Rule("firsttime-1", _ST, "생애최초", ("ever_owned",), "ever_owned = true",
@@ -172,9 +175,13 @@ def _rules_for(axis: str, query: str) -> list[Rule]:
     return [r for r in RULES if r.axis == axis and r.type == t]
 
 
-def profile_fields(axis: str, query: str) -> list[str]:
-    """이 하위 질의에 걸리는 규칙이 보는 프로필 칸. 규칙 표 순서이고 같은 칸은 한 번만 적는다."""
-    return list(dict.fromkeys(f for r in _rules_for(axis, query) for f in r.fields))
+def profile_fields(axis: str, query: str, profile: dict | None = None) -> list[str]:
+    """이 하위 질의에 걸리는 규칙이 보는 프로필 칸. 규칙 표 순서이고 같은 칸은 한 번만 적는다.
+
+    `profile`을 주면 그 답으로 더 걸릴 수 없는 규칙(`possible`이 False)의 칸은 뺀다.
+    """
+    live = [r for r in _rules_for(axis, query) if profile is None or r.possible(profile)]
+    return list(dict.fromkeys(f for r in live for f in r.fields))
 
 
 def rule_ineligible(
