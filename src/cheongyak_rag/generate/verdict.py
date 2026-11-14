@@ -5,7 +5,8 @@ python -m cheongyak_rag.generate.verdict <house_manage_no> --profile runs/80/pro
 #79 `axes`가 켠 축마다 조문·FAQ를 찾고(B5), 판정 LLM이 요건 정의 + 프로필 값 + 근거로 판정값 5개 중
 하나를 낸다(B6). 코드 guardrail(B7)이 근거 0개 · 문맥에 없는 인용 · `chunks`에 없는 인용 ·
 남은 인용이 0개인 판정을 걸러낸다. 그 뒤에 ELIGIBLE guard가 축별로 필요한 프로필 칸이 비어 있는
-ELIGIBLE을 NEED_INFO로 바꾼다 (프롬프트로는 0이 안 나왔다).
+ELIGIBLE을 NEED_INFO로 바꾼다 (프롬프트로는 0이 안 나왔다). 마지막으로 프로필 불가 규칙(#82)이
+프로필·공고 값만으로 정해지는 INELIGIBLE을 덮는다.
 꺼진 축은 LLM을 부르지 않는다. 응답은 #139의 `GenCache`에 둔다.
 """
 
@@ -24,7 +25,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from cheongyak_rag import profile as prof
 from cheongyak_rag.config import settings
-from cheongyak_rag.generate import aggregate
+from cheongyak_rag.generate import aggregate, rules
 from cheongyak_rag.generate.answer import (
     MAX_COMPLETION_TOKENS,
     GenCache,
@@ -175,7 +176,9 @@ class Verdict:
     titles: dict[str, str] = field(default_factory=dict)  # 인용한 라벨 → 조 제목 · FAQ 질문
     forced: bool = False  # 인용이 모두 기각돼 코드가 UNVERIFIABLE로 바꿨다
     guarded: bool = False  # 필요한 프로필 값이 없어 코드가 ELIGIBLE을 NEED_INFO로 바꿨다
-    original_verdict: str | None = None  # forced · guarded일 때 모델이 낸 판정
+    ruled: bool = False  # 프로필 불가 규칙(`rules.py`)이 걸려 코드가 INELIGIBLE로 바꿨다
+    rule: str | None = None  # ruled일 때 규칙 번호(`homeless-1` 꼴)
+    original_verdict: str | None = None  # forced · guarded · ruled일 때 모델이 낸 판정
     no_context: bool = False  # 근거가 0개라 호출하지 않았다
     context_labels: list[str] = field(default_factory=list)
     input_tokens: int = 0
@@ -396,6 +399,11 @@ def judge_one(
     elif out.verdict == "ELIGIBLE" and not eligible_guard(axis.id, payload["profile"]):
         out.original_verdict, out.verdict, out.guarded = "ELIGIBLE", "NEED_INFO", True
         out.need_info = [NEED_INFO_TEXT[axis.id]]
+    hit = rules.rule_ineligible(axis.id, hits.query, payload["profile"], notice.facts, notice.as_of)
+    if hit:  # 모델 판정이 무엇이든 프로필로 정해진 INELIGIBLE이 앞선다. forced여도 그렇다
+        out.original_verdict, out.verdict, out.ruled = data["verdict"], "INELIGIBLE", True
+        out.rule, out.reason = hit
+        out.conditions, out.need_info = [], []
     return out
 
 
@@ -474,6 +482,8 @@ def format_verdict(v: Verdict) -> str:
         flags.append(f"인용이 모두 기각돼 코드가 바꿈 — 모델 판정 {v.original_verdict}")
     if v.guarded:
         flags.append(f"프로필 값이 없어 코드가 바꿈 — 모델 판정 {v.original_verdict}")
+    if v.ruled:
+        flags.append(f"프로필 불가 규칙 {v.rule}이 바꿈 — 모델 판정 {v.original_verdict}")
     out = [head, f"판정: {v.verdict}" + (f" ({', '.join(flags)})" if flags else "")]
     if v.reason:
         out.append(f"이유{'(모델)' if v.guarded else ''}: {v.reason}")

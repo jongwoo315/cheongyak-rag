@@ -289,7 +289,8 @@ def test_guard_counts_false_as_a_value(engine_with_chunks):
         engine=engine_with_chunks,
         payload=_payload(homeless_now=False),
     )
-    assert (v.verdict, v.guarded) == ("ELIGIBLE", False)
+    # guard는 안 걸린다. 프로필 불가 규칙(homeless-1)이 그 뒤에 INELIGIBLE로 바꾼다
+    assert (v.guarded, v.verdict, v.rule) == (False, "INELIGIBLE", "homeless-1")
 
 
 @pytest.mark.parametrize("verdict", ["INELIGIBLE", "CONDITIONAL", "NEED_INFO", "UNVERIFIABLE"])
@@ -498,3 +499,91 @@ def test_cli_summary_does_not_charge_cached_verdicts():
     plan = axes.AxisPlan("homeless", "무주택", True, "r", ["q", "q2"], "1")
     out = vd.format_report(_notice_info(), [plan], [cached, fresh])
     assert "호출 1 · 캐시 1" in out and "$0.2500" in out and "토큰 입력 10 " in out
+
+
+# ── 프로필 불가 규칙 (#82) ───────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("model", ["ELIGIBLE", "NEED_INFO", "CONDITIONAL", "INELIGIBLE"])
+def test_rule_turns_any_model_verdict_into_ineligible(engine_with_chunks, model):
+    reply = _reply(model, conditions=["전입해야 한다"], need_info=["무주택 기간"])
+    v = _call(FakeChat([reply]), engine=engine_with_chunks, payload=_payload(homeless_now=False))
+    assert (v.verdict, v.ruled, v.rule, v.original_verdict) == (
+        "INELIGIBLE",
+        True,
+        "homeless-1",
+        model,
+    )
+    assert "homeless_now" in v.reason and v.reason != "문맥대로다."
+    assert v.conditions == [] and v.need_info == []
+    assert v.citations == ["제2조"]  # 인용은 그대로 둔다
+
+
+def test_rule_applies_to_a_forced_unverifiable_too(engine_with_chunks):
+    reply = _reply("NEED_INFO", citations=["제99조"])  # 인용이 모두 기각돼 forced
+    v = _call(FakeChat([reply]), engine=engine_with_chunks, payload=_payload(homeless_now=False))
+    assert (v.verdict, v.ruled, v.original_verdict) == ("INELIGIBLE", True, "NEED_INFO")
+    assert v.forced is True and v.citations == []
+
+
+def test_rule_applies_after_the_eligible_guard(engine_with_chunks):
+    axis = axes.AXIS_BY_ID["householder"]
+    v = _call(
+        FakeChat([_reply("ELIGIBLE")]),
+        engine=engine_with_chunks,
+        axis=axis,
+        payload=_payload(is_household_head=False),
+    )
+    assert (v.verdict, v.rule, v.original_verdict) == ("INELIGIBLE", "householder-1", "ELIGIBLE")
+
+
+def test_no_rule_leaves_the_model_verdict_alone(engine_with_chunks):
+    v = _call(
+        FakeChat([_reply("ELIGIBLE")]),
+        engine=engine_with_chunks,
+        payload=_payload(homeless_now=True),
+    )
+    assert (v.verdict, v.ruled, v.rule, v.original_verdict) == ("ELIGIBLE", False, None, None)
+    v = _call(FakeChat([_reply("NEED_INFO")]), engine=engine_with_chunks)  # 빈 프로필
+    assert (v.verdict, v.ruled) == ("NEED_INFO", False)
+
+
+def test_rule_does_not_apply_when_the_call_failed(engine_with_chunks):
+    class Boom:
+        calls: list = []
+
+        class chat:  # noqa: N801
+            class completions:  # noqa: N801
+                @staticmethod
+                def create(**kw):
+                    raise RuntimeError("끊김")
+
+    v = _call(Boom(), engine=engine_with_chunks, payload=_payload(homeless_now=False))
+    assert v.error and v.verdict is None and v.ruled is False
+
+
+def test_rule_uses_the_special_type_in_the_query(engine_with_chunks):
+    hits = axes.QueryHits(axes.Q_SPECIAL.format(type="기관추천"), _hits().law, _hits().faq)
+    axis = axes.AXIS_BY_ID["special_type"]
+    v = _call(
+        FakeChat([_reply("NEED_INFO")]),
+        hits=hits,
+        engine=engine_with_chunks,
+        axis=axis,
+        payload=_payload(homeless_now=False),
+    )
+    assert (v.verdict, v.ruled) == ("NEED_INFO", False)  # 기관추천에는 규칙이 없다
+    hits = axes.QueryHits(axes.Q_SPECIAL.format(type="신혼부부"), _hits().law, _hits().faq)
+    v = _call(
+        FakeChat([_reply("NEED_INFO")]),
+        hits=hits,
+        engine=engine_with_chunks,
+        axis=axis,
+        payload=_payload(homeless_now=False),
+    )
+    assert (v.verdict, v.rule) == ("INELIGIBLE", "newlywed-1")
+
+
+def test_rule_does_not_change_the_cache_key():
+    messages = vd.build_messages(AXIS, _hits(), _notice_info(), _payload(homeless_now=False))
+    assert "homeless-1" not in messages[0]["content"] + messages[1]["content"]
