@@ -39,7 +39,7 @@
 
 ## 판정값 5개
 
-정의: `src/cheongyak_rag/generate/verdict.py:41` `VERDICTS`, 뜻은 같은 파일 system 프롬프트 88~97줄. 만든 티켓 #80.
+정의: `src/cheongyak_rag/generate/verdict.py:43` `VERDICTS`, 뜻은 같은 파일 system 프롬프트 89~99줄. 만든 티켓 #80.
 
 | 값 | 뜻 |
 | --- | --- |
@@ -78,7 +78,7 @@
 
 ## 경로 — 신청할 수 있는 길 하나의 합친 판정
 
-정의: `src/cheongyak_rag/generate/aggregate.py:71` `aggregate`, 일반 축 목록은 같은 파일 29줄 `GENERAL_AXES`. 만든 티켓 #81.
+정의: `src/cheongyak_rag/generate/aggregate.py:72` `aggregate`, 일반 축 목록은 같은 파일 30줄 `GENERAL_AXES`. 만든 티켓 #81.
 
 | 경로 | 합치는 축 | 개수 |
 | --- | --- | --- |
