@@ -39,7 +39,7 @@
 
 ## 판정값 5개
 
-정의: `src/cheongyak_rag/generate/verdict.py:41` `VERDICTS`, 뜻은 같은 파일 system 프롬프트 88~97줄. 만든 티켓 #80.
+정의: `src/cheongyak_rag/generate/verdict.py:43` `VERDICTS`, 뜻은 같은 파일 system 프롬프트 89~99줄. 만든 티켓 #80.
 
 | 값 | 뜻 |
 | --- | --- |
@@ -50,7 +50,7 @@
 | `UNVERIFIABLE` | 근거 문맥에서 요건의 근거를 못 찾았거나 규정끼리 부딪힌다 |
 
 - 합칠 때 우선순위: `INELIGIBLE` > `UNVERIFIABLE` > `NEED_INFO` > `CONDITIONAL` > `ELIGIBLE`(`docs/plans/0727-design-cheongyak-rag.md:168`). 여럿을 합치면 가장 앞의 값이 결과다. 집계(B8)는 #81
-- 코드가 LLM 판정을 바꾸는 경우 둘: 남은 인용이 0개면 `UNVERIFIABLE`(`forced`), 축에 필요한 프로필 칸이 없으면 `ELIGIBLE`을 `NEED_INFO`로(`guarded`, `verdict.py:130` `REQUIRED_FIELDS`)
+- 코드가 LLM 판정을 바꾸는 경우 셋: 남은 인용이 0개면 `UNVERIFIABLE`(`forced`), 축에 필요한 프로필 칸이 없으면 `ELIGIBLE`을 `NEED_INFO`로(`guarded`, `verdict.py` `REQUIRED_FIELDS`), 프로필·공고 값만으로 정해지는 불가 규칙이 걸리면 `INELIGIBLE`로(`ruled`, 아래 「프로필 불가 규칙 23개」)
 
 ## 프로필 칸 15개
 
@@ -78,7 +78,7 @@
 
 ## 경로 — 신청할 수 있는 길 하나의 합친 판정
 
-정의: `src/cheongyak_rag/generate/aggregate.py:71` `aggregate`, 일반 축 목록은 같은 파일 29줄 `GENERAL_AXES`. 만든 티켓 #81.
+정의: `src/cheongyak_rag/generate/aggregate.py:72` `aggregate`, 일반 축 목록은 같은 파일 30줄 `GENERAL_AXES`. 만든 티켓 #81.
 
 | 경로 | 합치는 축 | 개수 |
 | --- | --- | --- |
@@ -162,6 +162,69 @@ citation precision만 예외다. 분모가 시스템이 인용한 조문이라 �
 - 값이 `01`·`03`이 아니거나 비었으면 모든 하위 질의의 검색 문장이 하위 질의 문장 그대로다
 - 조문 번호는 정답 근거 조문의 기준이다(`docs/75-label-rules.md`)
 
+## 프로필 불가 규칙 23개 — 프로필 칸 값과 공고 값만으로 하위 질의를 INELIGIBLE로 정하는 규칙
+
+정의: `src/cheongyak_rag/generate/rules.py:117` `RULES`. 만든 티켓 #82. 규칙 번호는 라벨 규칙(`docs/75-label-rules.md` §4)의 번호 그대로다.
+
+| 규칙 | 축 · 유형 | 조건 | 정의한 곳 | 만든 티켓 |
+| --- | --- | --- | --- | --- |
+| `homeless-1` | 무주택 `homeless` | homeless_now = false | `rules.py:118` | #82 |
+| `account-1` | 청약통장 `account` | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:120` | #82 |
+| `householder-1` | 세대주 `householder` | is_household_head = false | `rules.py:122` | #82 |
+| `multichild-1` | `special_type` · 다자녀가구 | homeless_now = false | `rules.py:124` | #82 |
+| `multichild-2` | `special_type` · 다자녀가구 | children_unmarried = 0 | `rules.py:126` | #82 |
+| `multichild-3` | `special_type` · 다자녀가구 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:128` | #82 |
+| `newlywed-1` | `special_type` · 신혼부부 | homeless_now = false | `rules.py:130` | #82 |
+| `newlywed-2` | `special_type` · 신혼부부 | married = true이고 marriage_date가 있고 혼인기간 7년 초과 | `rules.py:132` | #82 |
+| `newlywed-4` | `special_type` · 신혼부부 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:135` | #82 |
+| `firsttime-1` | `special_type` · 생애최초 | ever_owned = true | `rules.py:137` | #82 |
+| `firsttime-2` | `special_type` · 생애최초 | homeless_now = false | `rules.py:139` | #82 |
+| `firsttime-3` | `special_type` · 생애최초 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:141` | #82 |
+| `elderly-1` | `special_type` · 노부모 부양 | ascendants_3y = 0 | `rules.py:143` | #82 |
+| `elderly-2` | `special_type` · 노부모 부양 | is_household_head = false | `rules.py:145` | #82 |
+| `elderly-3` | `special_type` · 노부모 부양 | homeless_now = false | `rules.py:147` | #82 |
+| `elderly-4` | `special_type` · 노부모 부양 | ascendants_any_owner = true | `rules.py:149` | #82 |
+| `elderly-5` | `special_type` · 노부모 부양 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:151` | #82 |
+| `newborn-1` | `special_type` · 신생아 | homeless_now = false | `rules.py:153` | #82 |
+| `newborn-2` | `special_type` · 신생아 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:155` | #82 |
+| `youth-1` | `special_type` · 청년 | ever_owned = true | `rules.py:157` | #82 |
+| `youth-2` | `special_type` · 청년 | married = true | `rules.py:159` | #82 |
+| `youth-3` | `special_type` · 청년 | birth_date가 있고 만 나이가 19세 미만 또는 39세 초과 | `rules.py:161` | #82 |
+| `youth-4` | `special_type` · 청년 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:163` | #82 |
+
+- `judge_one`이 LLM 판정 뒤에 부른다(`verdict.py`). 걸리면 판정이 무엇이든 `INELIGIBLE`로 바꾸고 모델 판정은 `original_verdict`에 남긴다(`Verdict.ruled`·`rule`)
+- 한 하위 질의에 규칙이 여럿 맞으면 표에서 위에 있는 규칙이다. 칸이 비어 있으면(모르는 값) 걸리지 않는다. `False`·`0`은 답한 값이다
+- 1순위 가입 기간 N(`account-1`·`firsttime-3`·`elderly-5`·`newborn-2`)은 공고 DB 값으로 정한다: 투기과열지구 또는 청약과열지역 표시가 있으면 24개월, 공급지역이 서울·경기·인천이면 12개월, 그 밖은 6개월(`rules.py` `first_rank_months`). 시·도지사가 늘려 공고한 경우는 DB에 안 보여 틀린다
+- 옮기지 않은 규칙 둘: `referral-1`(공고문의 도시재생 부지제공자 표시가 필요), `newlywed-3`(공고문의 예비신혼부부·한부모 갈래가 필요). 둘 다 DB에 없는 공고문 사실이다
+- 기관추천(`referral`)·이전기관 종사자(`relocated`)·`residence`·`income_asset`·`rewin` 하위 질의에는 규칙이 없다
+
+## 정보 이름 17개 — 하위 질의 판정에 필요한데 프로필에 없는 정보
+
+정의: `src/cheongyak_rag/generate/questions.py:22` `INFO`. 이름은 라벨 규칙(`docs/75-label-rules.md`) `need` 칸의 이름 그대로다. 만든 티켓 #82(이름은 #75).
+
+| 이름 | 뜻 | 프로필에 칸이 있는지 | 정의한 곳 |
+| --- | --- | --- | --- |
+| `homeless_now` | 지금 무주택세대구성원인가요? | 있음 | `questions.py:22` |
+| `savings_join_date` | 청약통장 가입일이 언제인가요? | 있음 | `questions.py:22` |
+| `is_household_head` | 세대주인가요? | 있음 | `questions.py:22` |
+| `deposit_amount` | 청약통장 예치금이 얼마인가요? | 없음 | `questions.py:22` |
+| `payment_count` | 청약통장 납입 횟수와 금액이 어떻게 되나요? | 없음 | `questions.py:22` |
+| `household_income` | 세대의 월평균 소득이 얼마인가요? | 없음 | `questions.py:22` |
+| `real_estate_value` | 보유한 부동산 자산 가액이 얼마인가요? | 없음 | `questions.py:22` |
+| `residence_area` | 어느 지역에 거주하나요? | 없음 | `questions.py:22` |
+| `residence_period` | 그 지역에 얼마나 거주했나요? | 없음 | `questions.py:22` |
+| `referral_status` | 기관 추천 대상인가요? | 없음 | `questions.py:22` |
+| `child_age` | 자녀의 나이(출생 시점)가 어떻게 되나요? | 없음 | `questions.py:22` |
+| `minor_children_count` | 미성년 자녀가 몇 명인가요? (태아·입양 포함) | 없음 | `questions.py:22` |
+| `winning_history` | 과거 당첨 이력이 있나요? | 없음 | `questions.py:22` |
+| `ascendant_age` | 부양하는 직계존속이 몇 세인가요? | 없음 | `questions.py:22` |
+| `income_tax_years` | 소득세를 낸 기간이 몇 년인가요? | 없음 | `questions.py:22` |
+| `employer_status` | 이전기관 종사자인가요? | 없음 | `questions.py:22` |
+| `marriage_status` | 혼인 상태(예비신혼부부·한부모 여부)가 어떻게 되나요? | 없음 | `questions.py:22` |
+
+- 응답의 질문(`Answer.questions`) 한 줄은 정보 이름 하나다. 프로필에 칸이 없는 정보(14개)도 질문에 들어가고 웹은 「입력란 없음」으로 보여 준다
+- 규칙이 보는 프로필 칸 중 위 17개에 없는 칸(`ever_owned`·`married`·`marriage_date`·`children_unmarried`·`ascendants_3y`·`ascendants_any_owner`·`birth_date`)은 「불가 판정을 낼 수 있는 빈 칸」으로만 질문에 나온다(`questions.py` `RULE_ONLY`)
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.
@@ -189,3 +252,9 @@ plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 
 | 판정 정확도 | 시스템 최종 판정값이 정답 라벨 판정값과 같은 비율 | 정답률 · 일치율 | 바탕 설계 §7 「요건별 판정 정확도」 | #76 |
 | 검색 문장 | 하위 질의 문장 대신 BM25·임베딩에 넣는 문장. 하위 질의 문장은 그대로 두고, 정답 라벨 맞추기도 하위 질의 문장으로 한다 | 검색 쿼리 · 재작성 질의 | Claude | #138 |
 | 주택 구분 | 공고가 민영주택(`01`)인지 국민주택(`03`)인지. `notices.house_dtl_secd` 칸이다 | 주택 유형 · 공급 구분 | Claude | #138 |
+| 결손 분석 | 하위 질의마다 판정에 필요한데 프로필에 없는 정보를 정보 이름으로 적는 것. 이름은 라벨 규칙 `need` 칸의 이름이다 | 누락 분석 · 갭 분석 | 바탕 설계 §5 B1b 「결손분석」 | #82 |
+| 질문 | 응답의 `questions` 한 줄. 사용자에게 더 물을 정보 하나와, 그 정보가 쓰이는 축·경로 | 추가 질문 · follow-up | 바탕 설계 §5 B9b 「질문랭킹」 | #82 |
+| 프로필 불가 규칙 | 프로필 칸 값과 DB 공고 값만으로 하위 질의를 INELIGIBLE로 정하는 규칙. LLM 판정보다 우선한다 | 하드 룰 · INELIGIBLE guard | Claude | #82 |
+| 불가 판정을 낼 수 있는 빈 칸 | 프로필 불가 규칙이 그 하위 질의에서 보는 프로필 칸 중 비어 있는 것 | 블로커 | Claude | #82 |
+| 불필요한 질문 | 시스템이 냈는데 필요하지 않은 질문. 필요한 질문은 정답 라벨이 NEED_INFO인 하위 질의에 쓰이고, 그 하위 질의의 경로 중 하나라도 정답 라벨로 합친 경로 판정이 INELIGIBLE이 아닌 질문이다 | 쓸데없는 질문 | jw 기준에 씀 | #82 |
+| 빠진 질문 | 필요한데 시스템이 안 낸 질문 | 누락 질문 | Claude | #82 |

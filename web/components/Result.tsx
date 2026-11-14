@@ -1,5 +1,5 @@
 import { FIELDS } from "@/lib/profile";
-import type { Answer, ChecklistItem, Route, Verdict } from "@/lib/types";
+import type { Answer, ChecklistItem, Question, Route, Verdict } from "@/lib/types";
 import { gloss, rangeText, verdictText } from "@/lib/verdict";
 
 const fieldLabel = (name: string) => FIELDS.find((f) => f.name === name)?.label ?? name;
@@ -21,6 +21,17 @@ function RouteRow({ r }: { r: Route }) {
       </td>
       <td>{gloss(r.verdict)}</td>
     </tr>
+  );
+}
+
+function QuestionRow({ q }: { q: Question }) {
+  return (
+    <li data-testid="question" data-question-name={q.name}>
+      {q.text}
+      {q.can_rule_out && <span className="hint"> · 답에 따라 신청 불가가 정해질 수 있음</span>}
+      {!q.has_field && <span className="hint"> · 입력란 없음</span>}
+      <p className="hint">쓰이는 경로: {q.routes.join(", ")}</p>
+    </li>
   );
 }
 
@@ -133,6 +144,17 @@ export default function Result({ answer }: { answer: Answer }) {
           </tbody>
         </table>
       </div>
+
+      <h3>확인할 질문 {answer.questions.length}개</h3>
+      {answer.questions.length === 0 ? (
+        <p>없음</p>
+      ) : (
+        <ol data-testid="questions">
+          {answer.questions.map((q) => (
+            <QuestionRow key={q.name} q={q} />
+          ))}
+        </ol>
+      )}
 
       <h3>가점 범위</h3>
       <p>
