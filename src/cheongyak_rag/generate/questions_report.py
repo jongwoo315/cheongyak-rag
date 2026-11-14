@@ -363,11 +363,13 @@ def render(golden: list[dict], now: list[dict], base: list[dict], m: dict) -> st
                 ],
             )  # fmt: skip
         )
-        by_gap = [s for x in m["unneeded"] for s in x["sources"] if s["gold_rule"] in NOT_PORTED]
+        sources = [s for x in m["unneeded"] for s in x["sources"]]
+        by_gap = [s for s in sources if s["gold_rule"] in NOT_PORTED]
         out += [
             "",
-            f"- 이 질문 {len(by_gap)}개 중 정답 규칙이 이번에 옮기지 않은 규칙"
-            f"({'·'.join(NOT_PORTED)}, 공고문 사실이 필요하다)인 것: **{len(by_gap)}개**."
+            f"- 위 표 {len(sources)}줄(불필요한 질문 × 쓰인 하위 질의) 중"
+            " 정답 규칙이 이번에 옮기지 않은 규칙"
+            f"({'·'.join(NOT_PORTED)}, 공고문 사실이 필요하다)인 것: **{len(by_gap)}줄**."
             " 시스템은 그 경로를 INELIGIBLE로 닫지 못해 질문이 남았다",
         ]
     out += [
