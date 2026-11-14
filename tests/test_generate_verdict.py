@@ -491,6 +491,15 @@ def test_cli_shows_the_original_verdict_of_a_guarded_verdict():
     assert "이유(모델): 경기로 확인되어" in out and "필요한 정보: 거주 지역·기간" in out
 
 
+def test_cli_labels_the_reason_of_a_guarded_and_ruled_verdict_as_the_rules():
+    v = vd.Verdict(
+        "special_type", "특별공급", "q", verdict="INELIGIBLE", reason="ever_owned가 true라 불가",
+        guarded=True, ruled=True, rule="firsttime-1", original_verdict="ELIGIBLE",
+    )  # fmt: skip
+    out = vd.format_verdict(v)
+    assert "이유: ever_owned가 true라 불가" in out and "이유(모델)" not in out
+
+
 def test_cli_summary_does_not_charge_cached_verdicts():
     cached = vd.Verdict("homeless", "무주택", "q", verdict="ELIGIBLE", cached=True,
                         input_tokens=1000, output_tokens=100, usd=0.5)  # fmt: skip

@@ -486,7 +486,7 @@ def format_verdict(v: Verdict) -> str:
         flags.append(f"프로필 불가 규칙 {v.rule}이 바꿈 — 모델 판정 {v.original_verdict}")
     out = [head, f"판정: {v.verdict}" + (f" ({', '.join(flags)})" if flags else "")]
     if v.reason:
-        out.append(f"이유{'(모델)' if v.guarded else ''}: {v.reason}")
+        out.append(f"이유{'(모델)' if v.guarded and not v.ruled else ''}: {v.reason}")
     out += [f"조건: {x}" for x in v.conditions]
     out += [f"필요한 정보: {x}" for x in v.need_info]
     cites = " · ".join(f"{c}({v.titles[c]})" if c in v.titles else c for c in v.citations)
