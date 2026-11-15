@@ -50,7 +50,7 @@
 | `UNVERIFIABLE` | 근거 문맥에서 요건의 근거를 못 찾았거나 규정끼리 부딪힌다 |
 
 - 합칠 때 우선순위: `INELIGIBLE` > `UNVERIFIABLE` > `NEED_INFO` > `CONDITIONAL` > `ELIGIBLE`(`docs/plans/0727-design-cheongyak-rag.md:168`). 여럿을 합치면 가장 앞의 값이 결과다. 집계(B8)는 #81
-- 코드가 LLM 판정을 바꾸는 경우 셋: 남은 인용이 0개면 `UNVERIFIABLE`(`forced`), 축에 필요한 프로필 칸이 없으면 `ELIGIBLE`을 `NEED_INFO`로(`guarded`, `verdict.py` `REQUIRED_FIELDS`), 프로필·공고 값만으로 정해지는 불가 규칙이 걸리면 `INELIGIBLE`로(`ruled`, 아래 「프로필 불가 규칙 23개」)
+- 코드가 LLM 판정을 바꾸는 경우 셋: 남은 인용이 0개면 `UNVERIFIABLE`(`forced`), 축에 필요한 프로필 칸이 없으면 `ELIGIBLE`을 `NEED_INFO`로(`guarded`, `verdict.py` `REQUIRED_FIELDS`), 프로필·공고 값만으로 정해지는 불가 규칙이 걸리면 `INELIGIBLE`로(`ruled`, 아래 「프로필 불가 규칙 24개」)
 
 ## 프로필 칸 15개
 
@@ -162,40 +162,42 @@ citation precision만 예외다. 분모가 시스템이 인용한 조문이라 �
 - 값이 `01`·`03`이 아니거나 비었으면 모든 하위 질의의 검색 문장이 하위 질의 문장 그대로다
 - 조문 번호는 정답 근거 조문의 기준이다(`docs/75-label-rules.md`)
 
-## 프로필 불가 규칙 23개 — 프로필 칸 값과 공고 값만으로 하위 질의를 INELIGIBLE로 정하는 규칙
+## 프로필 불가 규칙 24개 — 프로필 칸 값과 공고 값만으로 하위 질의를 INELIGIBLE로 정하는 규칙
 
-정의: `src/cheongyak_rag/generate/rules.py:117` `RULES`. 만든 티켓 #82. 규칙 번호는 라벨 규칙(`docs/75-label-rules.md` §4)의 번호 그대로다.
+정의: `src/cheongyak_rag/generate/rules.py:128` `RULES`. 만든 티켓 #82. 규칙 번호는 라벨 규칙(`docs/75-label-rules.md` §4)의 번호 그대로다.
 
 | 규칙 | 축 · 유형 | 조건 | 정의한 곳 | 만든 티켓 |
 | --- | --- | --- | --- | --- |
-| `homeless-1` | 무주택 `homeless` | homeless_now = false | `rules.py:118` | #82 |
-| `account-1` | 청약통장 `account` | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:120` | #82 |
-| `householder-1` | 세대주 `householder` | is_household_head = false | `rules.py:122` | #82 |
-| `multichild-1` | `special_type` · 다자녀가구 | homeless_now = false | `rules.py:124` | #82 |
-| `multichild-2` | `special_type` · 다자녀가구 | children_unmarried = 0 | `rules.py:126` | #82 |
-| `multichild-3` | `special_type` · 다자녀가구 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:128` | #82 |
-| `newlywed-1` | `special_type` · 신혼부부 | homeless_now = false | `rules.py:130` | #82 |
-| `newlywed-2` | `special_type` · 신혼부부 | married = true이고 marriage_date가 있고 혼인기간 7년 초과 | `rules.py:132` | #82 |
-| `newlywed-4` | `special_type` · 신혼부부 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:135` | #82 |
-| `firsttime-1` | `special_type` · 생애최초 | ever_owned = true | `rules.py:137` | #82 |
-| `firsttime-2` | `special_type` · 생애최초 | homeless_now = false | `rules.py:139` | #82 |
-| `firsttime-3` | `special_type` · 생애최초 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:141` | #82 |
-| `elderly-1` | `special_type` · 노부모 부양 | ascendants_3y = 0 | `rules.py:143` | #82 |
-| `elderly-2` | `special_type` · 노부모 부양 | is_household_head = false | `rules.py:145` | #82 |
-| `elderly-3` | `special_type` · 노부모 부양 | homeless_now = false | `rules.py:147` | #82 |
-| `elderly-4` | `special_type` · 노부모 부양 | ascendants_any_owner = true | `rules.py:149` | #82 |
-| `elderly-5` | `special_type` · 노부모 부양 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:151` | #82 |
-| `newborn-1` | `special_type` · 신생아 | homeless_now = false | `rules.py:153` | #82 |
-| `newborn-2` | `special_type` · 신생아 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:155` | #82 |
-| `youth-1` | `special_type` · 청년 | ever_owned = true | `rules.py:157` | #82 |
-| `youth-2` | `special_type` · 청년 | married = true | `rules.py:159` | #82 |
-| `youth-3` | `special_type` · 청년 | birth_date가 있고 만 나이가 19세 미만 또는 39세 초과 | `rules.py:161` | #82 |
-| `youth-4` | `special_type` · 청년 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:163` | #82 |
+| `homeless-1` | 무주택 `homeless` | homeless_now = false | `rules.py:129` | #82 |
+| `account-1` | 청약통장 `account` | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:131` | #82 |
+| `householder-1` | 세대주 `householder` | is_household_head = false | `rules.py:133` | #82 |
+| `multichild-1` | `special_type` · 다자녀가구 | homeless_now = false | `rules.py:135` | #82 |
+| `multichild-2` | `special_type` · 다자녀가구 | children_unmarried = 0 | `rules.py:137` | #82 |
+| `multichild-3` | `special_type` · 다자녀가구 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:139` | #82 |
+| `newlywed-1` | `special_type` · 신혼부부 | homeless_now = false | `rules.py:141` | #82 |
+| `newlywed-2` | `special_type` · 신혼부부 | married = true이고 marriage_date가 있고 혼인기간 7년 초과 | `rules.py:143` | #82 |
+| `newlywed-3` | `special_type` · 신혼부부 | married = false이고 공고 주택 구분이 민영(`01`). 국민(`03`)이거나 모르면 안 걸린다 | `rules.py:146` | #82 |
+| `newlywed-4` | `special_type` · 신혼부부 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:149` | #82 |
+| `firsttime-1` | `special_type` · 생애최초 | ever_owned = true | `rules.py:151` | #82 |
+| `firsttime-2` | `special_type` · 생애최초 | homeless_now = false | `rules.py:153` | #82 |
+| `firsttime-3` | `special_type` · 생애최초 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:155` | #82 |
+| `elderly-1` | `special_type` · 노부모 부양 | ascendants_3y = 0 | `rules.py:157` | #82 |
+| `elderly-2` | `special_type` · 노부모 부양 | is_household_head = false | `rules.py:159` | #82 |
+| `elderly-3` | `special_type` · 노부모 부양 | homeless_now = false | `rules.py:161` | #82 |
+| `elderly-4` | `special_type` · 노부모 부양 | ascendants_any_owner = true | `rules.py:163` | #82 |
+| `elderly-5` | `special_type` · 노부모 부양 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:165` | #82 |
+| `newborn-1` | `special_type` · 신생아 | homeless_now = false | `rules.py:167` | #82 |
+| `newborn-2` | `special_type` · 신생아 | savings_join_date가 있고 1순위 가입 기간 N개월이 안 지났다 | `rules.py:169` | #82 |
+| `youth-1` | `special_type` · 청년 | ever_owned = true | `rules.py:171` | #82 |
+| `youth-2` | `special_type` · 청년 | married = true | `rules.py:173` | #82 |
+| `youth-3` | `special_type` · 청년 | birth_date가 있고 만 나이가 19세 미만 또는 39세 초과 | `rules.py:175` | #82 |
+| `youth-4` | `special_type` · 청년 | savings_join_date가 있고 6개월이 안 지났다 | `rules.py:177` | #82 |
 
 - `judge_one`이 LLM 판정 뒤에 부른다(`verdict.py`). 걸리면 판정이 무엇이든 `INELIGIBLE`로 바꾸고 모델 판정은 `original_verdict`에 남긴다(`Verdict.ruled`·`rule`)
 - 한 하위 질의에 규칙이 여럿 맞으면 표에서 위에 있는 규칙이다. 칸이 비어 있으면(모르는 값) 걸리지 않는다. `False`·`0`은 답한 값이다
 - 1순위 가입 기간 N(`account-1`·`firsttime-3`·`elderly-5`·`newborn-2`)은 공고 DB 값으로 정한다: 투기과열지구 또는 청약과열지역 표시가 있으면 24개월, 공급지역이 서울·경기·인천이면 12개월, 그 밖은 6개월(`rules.py` `first_rank_months`). 시·도지사가 늘려 공고한 경우는 DB에 안 보여 틀린다
-- 옮기지 않은 규칙 둘: `referral-1`(공고문의 도시재생 부지제공자 표시가 필요), `newlywed-3`(공고문의 예비신혼부부·한부모 갈래가 필요). 둘 다 DB에 없는 공고문 사실이다
+- 옮기지 않은 규칙 하나: `referral-1`(공고문의 도시재생 부지제공자 표시가 필요). DB에 없는 공고문 사실이다
+- `newlywed-3`은 공고문의 예비신혼부부·한부모 갈래 대신 공고 주택 구분(`notices.house_dtl_secd`)으로 옮겼다. 골든셋 신혼부부 공고 18건 중 갈래가 있는 공고는 국민주택 1건뿐이고 민영 17건에는 없다. 민영 공고문이 갈래를 적으면 틀린다(설계 `docs/plans/82-1114-design-missing-info.md` §7)
 - 기관추천(`referral`)·이전기관 종사자(`relocated`)·`residence`·`income_asset`·`rewin` 하위 질의에는 규칙이 없다
 
 ## 정보 이름 17개 — 하위 질의 판정에 필요한데 프로필에 없는 정보
