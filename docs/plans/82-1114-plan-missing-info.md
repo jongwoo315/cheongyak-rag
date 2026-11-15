@@ -132,3 +132,25 @@
 - **PR 본문 맨 위에 `## 착수 전 기준 (jw)` 절** — plan의 `## jw 기준` 원문 + 그 기준으로 잰 결과(실패 징후 1의 ①·② 값과 비교값, 구간, 실패 징후 2~4 값과 구간). 그 아래 Summary / Changes / Notes. Notes에 설계 §4 세 줄을 그대로 옮긴다
 - PR을 만든 뒤 Notion #82 페이지의 `PR` 프로퍼티에 PR URL을 넣는다. `"$HOME/.claude/tools/notion-api/notion-api" PATCH /v1/pages/3aa41e61-65c0-810c-b320-cd1693305103 -`에 stdin으로 `{"properties":{"PR":{"url":"<PR URL>"}}}`. `상태`·`작업일`은 건드리지 않는다
 - `docs/decisions.md`는 건드리지 않는다 — PR 게이트에서 main 세션이 채운다
+
+## RESUME — 반려 뒤 재작업 (2026-11-16)
+
+PR #23은 1차 게이트에서 반려됐다. jw 원문: 「반려 / 결손분석이 제대로 이루어졌으나 플랩 기준으로 필요 없는 질문이 있는 문항이 1개라 그걸 처리할 필요가 있음」. 바꿀 것은 설계 §7이 기준이다.
+
+**이미 있는 산출물 — 덮어쓰지 말고 테스트로 검증한다. 파일이 있다고 통과 기준을 채운 것이 아니다.** Task 1~8은 커밋돼 있다(`d378f8c`~`0f68afe`): `generate/rules.py`(규칙 23개) · `verdict.py` 연결 · `generate/questions.py` · `generate/questions_report.py` · 웹 질문 목록 · `runs/82` · `docs/82-eval.md` · `docs/82-missing-info.md` · `docs/concepts.md` 개념 표 · 리뷰 파일 `docs/plans/82-1114-review-missing-info.md`.
+
+이번 재작업 Tasks:
+
+9. **`newlywed-3` 규칙** — `rules.py` 규칙 표에 `newlywed-2`와 `newlywed-4` 사이로 더한다. 조건: `married` = false이고 공고 주택 구분(`facts.house_dtl_secd`)이 `01`. `03`·`None`·그 밖이면 걸지 않는다. 이유 문장: 「민영주택 공고라 신혼부부 특별공급에 예비신혼부부·한부모 갈래가 없어, 혼인 중이 아니면 혼인기간 요건을 채울 수 없다(제41조)」. 모듈 docstring의 「옮기지 않은 규칙 둘」을 고친다.
+   단위 테스트: `01`+`married=false`면 걸린다 · `03`이면 안 걸린다 · `None`이면 안 걸린다 · `married` 비었으면 안 걸린다 · `married=true`면 이 규칙은 안 걸린다. 불가 판정을 낼 수 있는 빈 칸 목록이 규칙 표에서 칸을 뽑으므로, `01` 공고의 신혼부부 하위 질의에서 `married`가 비었으면 그 목록에 들어가는지 테스트한다
+10. **harness 다시 돌리기** — Task 6과 같은 명령으로 `runs/82`·`docs/82-eval.md`를 다시 만든다(프롬프트가 같아 판정 캐시가 맞는다). `runs/138`은 그대로다
+11. **리포트** — `docs/82-missing-info.md`를 같은 코드로 다시 만든다. 맨 위 jw 기준 절에 「1차(`0f68afe`) 값」 열을 더한다: ① 378/378 · ② 1문항(g21) · 빠진 질문 24문항 · 규칙이 걸린 하위 질의 87개. 규칙이 정답과 어긋난 수(실패 징후 3)는 `newlywed-3`을 넣은 뒤 값이다
+12. **문서** — `docs/concepts.md`의 「프로필 불가 규칙」 표에 `newlywed-3` 행을 더하고, 「옮기지 않은 규칙 둘」 줄을 `referral-1` 하나로 고친다
+
+재작업 Done criteria (위 Done criteria에 더한다):
+
+- 실패 징후 1~4의 구간 정의는 바꾸지 않는다. 결과가 통과 구간이 아니어도 그 값과 구간을 적고 끝낸다
+- 새 PR을 만들지 않는다. 같은 브랜치에 커밋을 push하면 PR #23이 갱신된다. PR 본문 맨 위 `## 착수 전 기준 (jw)` 절을 새 값으로 고치고, 그 아래에 「1차 게이트 반려 — jw 원문」 한 줄과 바꾼 것 한 줄을 더한다(`gh pr edit 23 --body-file`)
+- 리뷰 파일 `docs/plans/82-1114-review-missing-info.md`는 건드리지 않는다. 재작업 리뷰는 다음 리뷰 세션이 따로 쓴다
+- Notion `PR` 프로퍼티는 이미 있다. 다시 쓰지 않는다
+- main을 작업 브랜치에 merge·rebase하지 않는다
