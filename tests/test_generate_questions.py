@@ -166,6 +166,16 @@ def test_newlywed_adds_marriage_status_only_when_married_is_false():
     assert _info("special_type", q).info == base
 
 
+def test_private_notice_newlywed_lists_empty_married_as_a_rule_out_cell():
+    """newlywed-3(민영 공고)이 보는 칸 `married`가 비었으면 불가 판정을 낼 수 있는 칸에 든다."""
+    q = TYPE(type="신혼부부")
+    for secd in ("01", "03"):
+        got = _info("special_type", q, facts=_facts(secd))
+        assert "married" in got.can_rule_out
+    # 답이 있으면 빠진다
+    assert "married" not in _info("special_type", q, {"married": False}).can_rule_out
+
+
 def test_can_rule_out_lists_only_the_empty_cells():
     got = _info("special_type", TYPE(type="다자녀가구"), {"homeless_now": True})
     assert got.can_rule_out == ["children_unmarried", "savings_join_date"]

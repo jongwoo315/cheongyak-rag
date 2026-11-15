@@ -10,10 +10,10 @@ AS_OF = date(2026, 9, 10)
 Q_TYPE = axes.Q_SPECIAL.format
 
 
-def _facts(area="부산", *, speclt=False, mdat=False):
+def _facts(area="부산", *, speclt=False, mdat=False, dtl="01"):
     flags = dict.fromkeys((c for c, _ in axes.REGULATION_FLAGS), False)
     flags["speclt_rdn_earth_at"], flags["mdat_trget_area_secd"] = speclt, mdat
-    return axes.Facts(area, flags, 10, {k: 0 for k, _ in axes.SPECIAL_TYPES}, "286965", "01")
+    return axes.Facts(area, flags, 10, {k: 0 for k, _ in axes.SPECIAL_TYPES}, "286965", dtl)
 
 
 def _hit(axis, query, profile, facts=None, as_of=AS_OF):
@@ -161,20 +161,61 @@ def test_newlywed_seven_year_limit_is_inclusive_of_the_same_day():
     assert _rule("special_type", q, same) is None
     assert _rule("special_type", q, over) == "newlywed-2"
     # married가 false이거나 비었으면 걸리지 않는다
-    assert _rule("special_type", q, {"married": False, "marriage_date": "2019-09-09"}) is None
-    assert _rule("special_type", q, {"marriage_date": "2019-09-09"}) is None
+    # (newlywed-3은 민영 공고에서만 걸리므로 이 줄은 국민주택 공고로 본다)
+    f03 = _facts(dtl="03")
+    assert (
+        _rule("special_type", q, {"married": False, "marriage_date": "2019-09-09"}, facts=f03)
+        is None
+    )
+    assert _rule("special_type", q, {"marriage_date": "2019-09-09"}, facts=f03) is None
 
 
-def test_newlywed_3_and_referral_1_are_not_ported():
-    ids = {r.id for r in rules.RULES}
-    assert "newlywed-3" not in ids and "referral-1" not in ids
+def test_referral_1_is_not_ported():
+    assert "referral-1" not in {r.id for r in rules.RULES}
+
+
+# ── newlywed-3: 민영(01) 공고에서 혼인 중이 아니면 신혼부부 특별공급 INELIGIBLE ───────────
+
+
+def test_newlywed_3_fires_only_on_private_housing_notice_with_married_false():
+    q = Q_TYPE(type="신혼부부")
+    single = {"married": False}
+    assert _rule("special_type", q, single, facts=_facts(dtl="01")) == "newlywed-3"
+    assert _rule("special_type", q, single, facts=_facts(dtl="03")) is None
+    assert _rule("special_type", q, single, facts=_facts(dtl=None)) is None
+    assert _rule("special_type", q, single, facts=_facts(dtl="02")) is None
+
+
+def test_newlywed_3_does_not_fire_when_married_is_empty_or_true():
+    q = Q_TYPE(type="신혼부부")
+    assert _rule("special_type", q, {}, facts=_facts(dtl="01")) is None
+    assert _rule("special_type", q, {"married": None}, facts=_facts(dtl="01")) is None
+    assert _rule("special_type", q, {"married": True}, facts=_facts(dtl="01")) is None
+
+
+def test_newlywed_3_reason_names_the_cause_and_article():
+    _, why = _hit("special_type", Q_TYPE(type="신혼부부"), {"married": False})
+    assert "민영주택" in why and "제41조" in why and "\n" not in why
+
+
+def test_newlywed_3_sits_between_newlywed_2_and_newlywed_4_and_loses_to_newlywed_1():
+    ids = [r.id for r in rules.RULES if r.type == "신혼부부"]
+    assert ids == ["newlywed-1", "newlywed-2", "newlywed-3", "newlywed-4"]
+    q = Q_TYPE(type="신혼부부")
+    both = {"married": False, "homeless_now": False}
+    assert _rule("special_type", q, both) == "newlywed-1"
+
+
+def test_newlywed_3_is_not_ported_for_other_special_types():
+    for t in ("청년", "생애최초", "신생아"):
+        assert _rule("special_type", Q_TYPE(type=t), {"married": False}) != "newlywed-3"
 
 
 def test_rule_ids_are_exactly_the_ported_list():
     want = {
         "homeless-1", "account-1", "householder-1",
         "multichild-1", "multichild-2", "multichild-3",
-        "newlywed-1", "newlywed-2", "newlywed-4",
+        "newlywed-1", "newlywed-2", "newlywed-3", "newlywed-4",
         "firsttime-1", "firsttime-2", "firsttime-3",
         "elderly-1", "elderly-2", "elderly-3", "elderly-4", "elderly-5",
         "newborn-1", "newborn-2",

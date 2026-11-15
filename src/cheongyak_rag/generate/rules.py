@@ -2,8 +2,9 @@
 
 규칙은 라벨 규칙(`docs/75-label-rules.md` §4)의 INELIGIBLE 줄을 같은 번호로 옮긴 것이다.
 `judge_one`이 LLM 판정 뒤에 부르고, 결손 분석(`questions.py`)이 규칙이 보는 칸을 이 표에서 읽는다.
-옮기지 않은 규칙은 둘이다: `referral-1`(공고문의 도시재생 부지제공자 표시)과 `newlywed-3`
-(공고문의 예비신혼부부·한부모 갈래). 둘 다 DB에 없는 공고문 사실이 필요하다.
+옮기지 않은 규칙은 `referral-1`(공고문의 도시재생 부지제공자 표시) 하나다. 그 표시는 DB에 없다.
+`newlywed-3`(공고문의 예비신혼부부·한부모 갈래)은 공고문 대신 주택 구분(`house_dtl_secd`)으로
+옮겼다: 민영(`01`) 공고는 갈래가 없다(골든셋 17/17). 민영 공고문이 갈래를 적으면 틀린다.
 LLM·네트워크·DB를 부르지 않는다.
 """
 
@@ -40,6 +41,7 @@ def first_rank_months(facts: axes.Facts) -> int:
 class Ctx:
     as_of: date
     first_rank: int  # 1순위 가입 기간(개월)
+    house_dtl_secd: str | None = None  # 공고 주택 구분. `01` 민영 · `03` 국민
 
 
 Check = Callable[[dict, Ctx], str | None]  # 걸리면 이유 한 문장, 아니면 None
@@ -94,6 +96,15 @@ def _newlywed_over(p: dict, c: Ctx) -> str | None:
     return f"혼인신고일 {marriage}부터 공고일 {c.as_of}까지 혼인기간이 {NEWLYWED_YEARS}년을 넘는다"
 
 
+def _newlywed_no_branch(p: dict, c: Ctx) -> str | None:
+    if p.get("married") is not False or c.house_dtl_secd != "01":
+        return None
+    return (
+        "민영주택 공고라 신혼부부 특별공급에 예비신혼부부·한부모 갈래가 없어, "
+        "혼인 중이 아니면 혼인기간 요건을 채울 수 없다(제41조)"
+    )
+
+
 def _youth_age(p: dict, c: Ctx) -> str | None:
     birth = _date(p, "birth_date")
     if birth is None:
@@ -132,6 +143,9 @@ RULES: tuple[Rule, ...] = (
     Rule("newlywed-2", _ST, "신혼부부", ("married", "marriage_date"),
          "married = true이고 marriage_date가 있고 혼인기간 7년 초과", _newlywed_over,
          lambda p: p.get("married") is not False),
+    Rule("newlywed-3", _ST, "신혼부부", ("married",),
+         "married = false이고 공고 주택 구분이 민영(01)", _newlywed_no_branch,
+         lambda p: p.get("married") is not True),
     Rule("newlywed-4", _ST, "신혼부부", ("savings_join_date",),
          "savings_join_date가 있고 6개월이 안 지났다", _SPECIAL_6M),
     Rule("firsttime-1", _ST, "생애최초", ("ever_owned",), "ever_owned = true",
@@ -191,7 +205,7 @@ def rule_ineligible(
 
     `profile`은 `Profile.to_dict()` 꼴이다. 빈 칸(None)은 모르는 값이라 규칙이 안 걸린다.
     """
-    ctx = Ctx(as_of, first_rank_months(facts))
+    ctx = Ctx(as_of, first_rank_months(facts), facts.house_dtl_secd)
     for rule in _rules_for(axis, query):
         why = rule.check(profile, ctx)
         if why:
