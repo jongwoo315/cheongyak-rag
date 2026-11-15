@@ -201,6 +201,9 @@ def test_render_has_every_section_and_the_design_lines():
     assert all(h in md for h in heads)
     assert qr.JW_CRITERIA in md and all(s in md for s in qr.DESIGN_SECTION_4)
     assert "newlywed-3" in md and "이번에 옮기지 않은 규칙" in md
+    # 반려 뒤 값과 1차 값이 나란히 있다. newlywed-3은 이제 옮긴 규칙이다
+    assert qr.FIRST_ROUND_LABEL in md and qr.NOT_PORTED == ("referral-1",)
+    assert "378/" in md and "87개" in md
 
 
 def _full(lines):

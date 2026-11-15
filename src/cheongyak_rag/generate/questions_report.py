@@ -32,7 +32,12 @@ NOW_DIR = ROOT / "runs/82"
 BASE_DIR = ROOT / "runs/138"
 OUT_MD = ROOT / "docs/82-missing-info.md"
 
-NOT_PORTED = ("referral-1", "newlywed-3")  # 이번에 안 옮긴 라벨 규칙 (규칙 표 머리말)
+NOT_PORTED = (
+    "referral-1",
+)  # 이번에 안 옮긴 라벨 규칙 (규칙 표 머리말). newlywed-3은 반려 뒤 옮겼다
+# 1차 게이트(`0f68afe`, newlywed-3 없이)에서 같은 코드로 잰 값. 반려 뒤 값과 나란히 적으려고 둔다
+FIRST_ROUND = {"found": 378, "unneeded": 1, "missing": 24, "ruled": 87}
+FIRST_ROUND_LABEL = "1차(`0f68afe`) 값"
 JW_CRITERIA = (
     "입력한 프로필에서 어느 필드가 부족한지 분석이 된다, 불가 판정 여부를 먼저 진행하여 "
     "불필요한 질문을 하지 않는다"
@@ -305,17 +310,19 @@ def render(golden: list[dict], now: list[dict], base: list[dict], m: dict) -> st
         f" 미완: ①이 {RETRY_FLOOR - 1}개 이하이거나 ②가 4문항 이상)",
         "",
         _table(
-            ["값", "이번(runs/82)", "비교값"],
+            ["값", "이번(runs/82)", FIRST_ROUND_LABEL, "비교값"],
             [
                 [
                     "① 결손 분석 — 정답 라벨이 NEED_INFO인 하위 질의 중"
                     " 없는 정보 집합이 정답 `need`와 같은 수",
                     f"{a}/{den}",
+                    f"{FIRST_ROUND['found']}/{den}",
                     "—",
                 ],
                 [
                     "② 불필요한 질문 — 시스템 질문에 불필요한 질문이 있는 문항 수 (50문항 중)",
                     n_unneeded,
+                    f"{FIRST_ROUND['unneeded']} (g21)",
                     f"{n_unfiltered} (규칙 없이 `runs/138` 판정으로 경로를 안 거르고"
                     " NEED_INFO 하위 질의의 없는 정보를 다 묻는 값)",
                 ],
@@ -377,7 +384,8 @@ def render(golden: list[dict], now: list[dict], base: list[dict], m: dict) -> st
         "## 실패 징후 2 — 빠진 질문이 늘었나",
         "",
         f"- 빠진 질문이 있는 문항: **{n_miss}개** (비교값 {n_miss_base}개: 같은 질문 거르기를"
-        f" `runs/138` 판정에 돌린 값) → 구간 **{band_missing(n_miss, n_miss_base)}**"
+        f" `runs/138` 판정에 돌린 값. {FIRST_ROUND_LABEL} {FIRST_ROUND['missing']}개)"
+        f" → 구간 **{band_missing(n_miss, n_miss_base)}**"
         " (정상: 비교값 이하 / 다시 잰다: 1~3 많다 / 미완: 4 이상 많다)",
     ]
     if m["missing"]:
@@ -405,7 +413,8 @@ def render(golden: list[dict], now: list[dict], base: list[dict], m: dict) -> st
         "",
         "## 실패 징후 3 — 규칙이 정답과 어긋났나",
         "",
-        f"- 규칙이 INELIGIBLE로 정한 하위 질의 {len(hits)}개 중 정답 라벨이 INELIGIBLE이 아닌 것:"
+        f"- 규칙이 INELIGIBLE로 정한 하위 질의 {len(hits)}개"
+        f" ({FIRST_ROUND_LABEL} {FIRST_ROUND['ruled']}개) 중 정답 라벨이 INELIGIBLE이 아닌 것:"
         f" **{len(wrong)}개** → 구간 **{band_rule(len(wrong))}**"
         " (정상: 0 / 다시 잰다: 1~3 / 미완: 4 이상)",
     ]
