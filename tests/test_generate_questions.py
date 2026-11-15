@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 import pytest
 
@@ -166,14 +167,21 @@ def test_newlywed_adds_marriage_status_only_when_married_is_false():
     assert _info("special_type", q).info == base
 
 
-def test_private_notice_newlywed_lists_empty_married_as_a_rule_out_cell():
-    """newlywed-3(민영 공고)이 보는 칸 `married`가 비었으면 불가 판정을 낼 수 있는 칸에 든다."""
+def test_private_notice_single_profile_asks_no_marriage_status():
+    """g21: 민영(01) 공고에서 married=false면 newlywed-3이 신혼부부 경로를 닫아 갈래 질문을 안 한다.
+
+    규칙 결과를 판정으로 옮겨 질문 만들기까지 잇는다. `newlywed-3`을 빼면 01 줄이 깨진다
+    (칸 `married`는 `newlywed-2`도 보므로 `can_rule_out` 목록만 보는 테스트는 규칙을 빼도 통과한다).
+    """
     q = TYPE(type="신혼부부")
-    for secd in ("01", "03"):
-        got = _info("special_type", q, facts=_facts(secd))
-        assert "married" in got.can_rule_out
-    # 답이 있으면 빠진다
-    assert "married" not in _info("special_type", q, {"married": False}).can_rule_out
+    profile = {**EMPTY, "homeless_now": True, "married": False}
+    for secd, asked in (("01", False), ("03", True)):
+        facts = _facts(secd)
+        ruled = rules.rule_ineligible("special_type", q, profile, facts, date(2026, 9, 10))
+        verdict = "INELIGIBLE" if ruled else "NEED_INFO"
+        verdicts = [_v("homeless", "ELIGIBLE"), _special("신혼부부", verdict)]
+        got = qs.build_questions(_plans("homeless", "special_type"), verdicts, profile, facts)
+        assert ("marriage_status" in _names(got)) is asked, secd
 
 
 def test_can_rule_out_lists_only_the_empty_cells():
