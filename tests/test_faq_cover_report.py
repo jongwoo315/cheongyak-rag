@@ -242,4 +242,45 @@ def test_build_report_has_every_section_and_the_plan_numbers():
     assert "| Q1 | 2 | 제1조 |" in out  # 갈린 자리 한 줄
     assert "- 쌍마다 갈린 자리 수: Q1 1" in out
     assert "모름" in out
-    assert len(fcr.sample_places(ps, labels, {"제1조", "제2조"}, faq)) <= 20
+    assert len(fcr.sample_places(ps, {"제1조", "제2조"}, faq)) <= 20
+
+
+def test_even_sample_reaches_the_tail():
+    items = list(range(53))
+
+    got = fcr.even_sample(items, 10)
+
+    assert len(got) == 10 and got[0] == 0 and got[-1] >= 47  # 꼬리 쪽도 뽑힌다
+
+
+def test_sample_groups_split_the_candidates_by_the_plan_filters():
+    faq = [
+        {
+            **_faq(1, "「주택법」 제999조를 본다."),
+            "cited_articles": ["제999조"],
+        },  # 번호로 커버 안 됨
+        {
+            **_faq(2, "「주택법」 제1조를 본다."),
+            "cited_articles": ["제1조"],
+        },  # 조 번호가 규칙에 있다
+        _faq(3, "제1조를 본다."),  # 이름 없음
+    ]
+
+    uncovered, in_rule, none = fcr.sample_groups(fcr.places(faq), {"제1조"}, faq)
+
+    assert [(p.q_no, p.label) for p in uncovered] == [(1, "제999조")]
+    assert [(p.q_no, p.label) for p in in_rule] == [(2, "제1조")]
+    assert [(p.q_no, p.label) for p in none] == [(3, "제1조")]
+
+
+def test_gold_pair_changes_lists_added_and_removed_labels_and_keeps_unknown():
+    faq = [_faq(1, "「주택법」 제2조. 제9조"), _faq(2, "「주택법」 제5조"), _faq(3, "제7조")]
+    ps = fcr.places(faq)
+    labels = [
+        _row(1, 1, "제2조", "규칙"),  # 정답에 제2조가 더해진다
+        _row(1, 2, "제9조", "이름 없음"),
+        _row(2, 1, "제5조", "다른 법령", "주택법"),  # 같다
+        _row(3, 1, "제7조", "모름"),  # 분류 쪽 그대로
+    ]
+
+    assert fcr.gold_pair_changes(ps, labels) == [(1, {"제2조"}, set(), {"제2조", "제9조"})]

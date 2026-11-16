@@ -80,7 +80,7 @@ def extract_citations(answer: str) -> list[Citation]:
                 kind, name = found, _name_text(nm)
         if ADDENDA.search(answer[: m.start()]):
             kind = "other"  # 부칙 조문은 규칙 본문 조문이 아니라 정답에서 뺀다
-            name = name or "부칙"
+            name = f"{name} 부칙" if name else "부칙"
         label = f"제{m[1]}조" + (f"의{m[2]}" if m[2] else "")
         before = re.sub(r"\s+", " ", answer[max(0, m.start() - BEFORE_CHARS) : m.start()])
         out.append(Citation(label, kind, before, name))

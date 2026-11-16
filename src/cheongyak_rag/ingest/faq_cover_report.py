@@ -182,6 +182,28 @@ def gold_changing(ps: list[Place], rows: list[dict], diffs: list[Diff]) -> list[
     return out
 
 
+def gold_pair_changes(
+    ps: list[Place], rows: list[dict]
+) -> list[tuple[int, set[str], set[str], set[str]]]:
+    """법령 이름 라벨을 전부 따르면 정답 조 집합이 달라지는 쌍.
+
+    (쌍 번호, 더해지는 조, 빠지는 조, 새 집합).
+
+    `모름`은 분류 쪽을 그대로 둔다.
+    """
+    by_pair: dict[int, list[tuple[Place, str]]] = {}
+    for p, r in zip(ps, rows, strict=True):
+        side = label_side(r["law_label"])
+        by_pair.setdefault(p.q_no, []).append((p, p.side if side == "unknown" else side))
+    out = []
+    for q_no, items in by_pair.items():
+        old = {p.label for p, _ in items if p.side == "rule"}
+        new = {p.label for p, side in items if side == "rule"}
+        if old != new:
+            out.append((q_no, new - old, old - new, new))
+    return out
+
+
 @dataclass
 class LabelCover:
     rule_pairs: int  # 법령 이름 라벨로 규칙 인용이 하나 이상 있는 쌍
@@ -206,11 +228,12 @@ def label_based_cover(ps: list[Place], rows: list[dict], current: set[str]) -> L
 
 
 def even_sample(items: list, n: int) -> list:
-    """순서대로 고르게(간격 뽑기). 간격은 len // n, 앞에서 n개."""
+    """순서대로 고르게(간격 뽑기). 목록을 n칸으로 똑같이 나눠 칸마다 첫 항목 하나씩 뽑는다."""
     if n <= 0 or not items:
         return []
-    step = max(1, len(items) // n)
-    return items[::step][:n]
+    if len(items) <= n:
+        return list(items)
+    return [items[i * len(items) // n] for i in range(n)]
 
 
 # ── 입력 파일·결과 합치기 ─────────────────────────────────────────────────
@@ -291,15 +314,11 @@ SAMPLE_OTHER_IN_RULE = 5
 SAMPLE_NONE = 5
 
 
-def sample_places(
-    ps: list[Place], rows: list[dict], current: set[str], faq_rows: list[dict]
-) -> list[Place]:
-    """jw가 직접 읽을 표본. 고르는 방법은 `even_sample`(순서대로 고르게)이다.
-
-    - 다른 법령 인용 중 번호로만 센 커버 안 됨 쌍의 것(현행에 없는 조) 10
-    - 다른 법령 인용 중 조 번호가 규칙에 있는 것 5
-    - 분류가 `이름 없음`인 것 5
-    """
+def sample_groups(
+    ps: list[Place], current: set[str], faq_rows: list[dict]
+) -> tuple[list[Place], list[Place], list[Place]]:
+    """표본 후보 세 목록(자리 순서). 첫째는 번호로만 센 커버 안 됨 쌍의 다른 법령 인용 중
+    현행에 없는 조, 둘째는 조 번호가 현행에 있는 다른 법령 인용, 셋째는 분류가 이름 없음인 것."""
     from .law_report import _cited_labels
 
     old_uncovered = {
@@ -307,12 +326,24 @@ def sample_places(
     }
     other = [p for p in ps if p.kind == "other"]
     return (
-        even_sample(
-            [p for p in other if p.q_no in old_uncovered and p.label not in current],
-            SAMPLE_OTHER_UNCOVERED,
-        )
-        + even_sample([p for p in other if p.label in current], SAMPLE_OTHER_IN_RULE)
-        + even_sample([p for p in ps if p.kind == "none"], SAMPLE_NONE)
+        [p for p in other if p.q_no in old_uncovered and p.label not in current],
+        [p for p in other if p.label in current],
+        [p for p in ps if p.kind == "none"],
+    )
+
+
+def sample_places(ps: list[Place], current: set[str], faq_rows: list[dict]) -> list[Place]:
+    """jw가 직접 읽을 표본. 고르는 방법은 `even_sample`(순서대로 고르게)이다.
+
+    - 다른 법령 인용 중 번호로만 센 커버 안 됨 쌍의 것(현행에 없는 조) 10
+    - 다른 법령 인용 중 조 번호가 규칙에 있는 것 5
+    - 분류가 `이름 없음`인 것 5
+    """
+    uncovered, in_rule, none = sample_groups(ps, current, faq_rows)
+    return (
+        even_sample(uncovered, SAMPLE_OTHER_UNCOVERED)
+        + even_sample(in_rule, SAMPLE_OTHER_IN_RULE)
+        + even_sample(none, SAMPLE_NONE)
     )
 
 
@@ -333,6 +364,19 @@ def _label_text(r: dict) -> str:
     return f"{r['law_label']}({_cell(r['law_name'])})" if r.get("law_name") else r["law_label"]
 
 
+def _pair_change_text(q: int, add: set[str], rem: set[str], new: set[str]) -> str:
+    parts = []
+    if add:
+        parts.append(
+            f"더해짐 {len(add)}개" + (f" {'·'.join(sorted(add))}" if len(add) <= 3 else "")
+        )
+    if rem:
+        parts.append(f"빠짐 {len(rem)}개" + (f" {'·'.join(sorted(rem))}" if len(rem) <= 3 else ""))
+    if not new:
+        parts.append("정답이 비어 이 쌍은 정답 라벨에서 빠진다")
+    return f"Q{q}({', '.join(parts)})"
+
+
 def build_report(
     faq_rows: list[dict], law_rows: list[dict], label_rows: list[dict], golden_same: bool
 ) -> str:
@@ -346,8 +390,11 @@ def build_report(
     cover_changing = [d for d in diffs if d.place.label not in current]
     gold_changing_ = gold_changing(ps, label_rows, diffs)
     new_cover = (cross.rule_pairs, cross.covered_pairs, cross.other_only_pairs)
-    sample = sample_places(ps, label_rows, current, faq_rows)
+    sample = sample_places(ps, current, faq_rows)
+    groups = sample_groups(ps, current, faq_rows)
+    pair_changes = gold_pair_changes(ps, label_rows)
     by_place = {(p.q_no, p.no): r for p, r in zip(ps, label_rows, strict=True)}
+    label_names = Counter(" ".join(r["law_name"].split()) for r in label_rows if r.get("law_name"))
     side_counts = {k: sum(1 for p in ps if p.kind == k) for k in ("rule", "other", "none")}
     label_counts = {k: sum(1 for r in label_rows if r["law_label"] == k) for k in LAW_LABELS}
 
@@ -362,6 +409,8 @@ def build_report(
         " 주택공급에 관한 규칙이거나 이름이 없는 인용 자리",
         "- 법령 이름 라벨은 분류 결과를 보지 않은 하위 에이전트가 답변 원문을 읽고 붙였다."
         " **같은 모델이 읽은 것이라 완전히 독립된 확인이 아니다**",
+        "- 하위 에이전트에게 `부칙 제N조`는 본문 조가 아니니 `다른 법령`으로 붙이라고 알려 줬다."
+        " 분류의 부칙 처리와 같은 약속이라 이 맞댐으로는 부칙 처리를 검사하지 못한다",
         f"- 인용 자리 {len(ps)}개(착수 때 {KICKOFF_PLACES}). 분류: 규칙 {side_counts['rule']}"
         f" · 다른 법령 {side_counts['other']} · 이름 없음 {side_counts['none']}."
         f" 법령 이름 라벨: 규칙 {label_counts['규칙']} · 다른 법령 {label_counts['다른 법령']}"
@@ -388,11 +437,16 @@ def build_report(
         "- 징후 2는 0~4 정상 · 5~20 다시 잰다 · 21 이상 미완이다",
         "- 징후 3은 같으면 정상 · 다르면 미완이다."
         " 지금 코드로 정답 라벨을 다시 만들어 파일과 글자 그대로 맞췄다",
-        "- 징후 4는 세 값이 같으면 정상 · 다르면 다시 잰다이다",
+        "- 징후 4는 세 값이 같으면 정상 · 다르면 다시 잰다",
+        f"- 징후 1의 분모는 라벨 기준 {lab.rule_pairs}쌍, 분류 기준 {cross.rule_pairs}쌍이다."
+        " 라벨이 규칙 인용으로 붙인 자리가 하나도 없는 쌍은 라벨 기준 분모에서 빠진다",
         f"- 징후 2에서 커버 판정을 바꾸는 자리(조가 현행 규칙에 없는 것) {len(cover_changing)}"
         " · #131 정답 라벨을 바꾸는 자리"
         "(그 한 자리만 라벨 쪽으로 바꾸면 그 쌍의 정답 조 집합이 달라진다)"
         f" {len(gold_changing_)}",
+        "- 법령 이름 라벨을 전부 따르면 정답 조 집합이 달라지는 쌍 "
+        f"{len(pair_changes)}: "
+        + (" · ".join(_pair_change_text(*c) for c in pair_changes) or "없음"),
         "",
         "## 새 커버와 번호로만 센 커버",
         "",
@@ -409,6 +463,8 @@ def build_report(
         f" · 다른 법령 인용만 있는 쌍 {cross.other_only_pairs}",
         f"- 다른 법령 인용 자리 {cross.other_places}. 앞 법령 이름별: "
         + " · ".join(f"{n} {c}" for n, c in cross.other_by_name.items()),
+        "- 다른 법령 인용 자리를 법령 이름 라벨의 이름별로 센 값(공백 정리): "
+        + (" · ".join(f"{n} {c}" for n, c in label_names.most_common()) or "없음"),
         "",
         "## 분류와 법령 이름 라벨이 다른 자리",
         "",
@@ -466,11 +522,13 @@ def build_report(
         f"## jw 표본 {len(sample)}자리",
         "",
         "고르는 방법: 순서대로 고르게(간격 뽑기). 후보 목록을 쌍 번호·자리 순서로 두고"
-        " `len // n`칸마다 하나씩 앞에서 n개를 뽑았다.",
+        " 후보를 n칸으로 똑같이 나눠 칸마다 첫 항목을 뽑았다(꼬리도 닿는다).",
         "- 다른 법령 인용 중 번호로만 센 커버 안 됨 쌍의 것(현행에 없는 조)"
-        f" {SAMPLE_OTHER_UNCOVERED}",
-        f"- 다른 법령 인용 중 조 번호가 현행 규칙에 있는 것 {SAMPLE_OTHER_IN_RULE}",
-        f"- 분류가 이름 없음인 것 {SAMPLE_NONE}",
+        f" {SAMPLE_OTHER_UNCOVERED}개(후보 {len(groups[0])}자리. 착수 때 46은 쌍마다 같은 조를"
+        " 한 번만 센 값이고 자리로 세면 이 수다)",
+        f"- 다른 법령 인용 중 조 번호가 현행 규칙에 있는 것 {SAMPLE_OTHER_IN_RULE}개"
+        f"(후보 {len(groups[1])}자리)",
+        f"- 분류가 이름 없음인 것 {SAMPLE_NONE}개(후보 {len(groups[2])}자리)",
         "",
         "| 쌍 | 자리 | 조 | 문장 전체 | 분류 | 법령 이름 라벨 |",
         "| --- | --- | --- | --- | --- | --- |",

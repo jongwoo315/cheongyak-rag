@@ -32,3 +32,11 @@ def test_citation_carries_the_nearest_preceding_law_name():
         ("제5조", "none", None),
         ("제6조", "other", "부칙"),
     ]
+
+
+def test_addenda_citation_keeps_the_law_name_it_follows():
+    got = citations.extract_citations("「주택공급에 관한 규칙」 부칙 제6조는 경과조치다.")
+
+    assert [(c.label, c.kind, c.name) for c in got] == [
+        ("제6조", "other", "주택공급에 관한 규칙 부칙")
+    ]
