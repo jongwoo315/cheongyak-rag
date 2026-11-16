@@ -525,7 +525,8 @@ def format_report(
             "  커버 = 쌍의 규칙 인용 조(항·호는 뗀다)가 전부 현행 규칙에 있다."
             " 개정 여부는 안 본다.",
             "  규칙 인용 = 답변의 `제N조` 한 자리 앞, 같은 문장에서 가장 가까운 법령 이름이"
-            " 주택공급에 관한 규칙이거나 법령 이름이 없는 것(`ingest/citations.py`의 분류).",
+            " 주택공급에 관한 규칙이거나 법령 이름이 없는 것. 부칙 조문은 이름과 상관없이 다른 법령"
+            " 인용이다(`ingest/citations.py`의 분류).",
             "  번호로만 센 커버 (참고, 법령 이름을 안 본 예전 셈): 인용 있는 쌍"
             f" {cross.by_number_cited} · 커버 {cross.by_number_covered}"
             f" · 커버 안 됨 {cross.by_number_uncovered}",
