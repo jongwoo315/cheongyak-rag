@@ -5,11 +5,11 @@
   "title": "청약 RAG 판정 흐름 — #138 PR #22",
   "locale": "ko",
   "quality_profile": "standard",
-  "output": "138-flow.html",
+  "output": "82-flow.html",
   "repository": {
    "url": "https://github.com/jongwoo315/cheongyak-rag",
    "provider": "github",
-   "revision": "019d5f84c0a5d07b8a3a62182d71b4cc10304bce"
+   "revision": "0f68afe67d14785ba3bb3df38ee8a80111db07a2"
   }
  },
  "lanes": [
@@ -58,6 +58,10 @@
    "label": "B8 집계와 B9 응답"
   },
   {
+   "id": "qlane",
+   "label": "질문 (B1b·B9b)"
+  },
+  {
    "id": "trace",
    "label": "#83 trace 저장"
   },
@@ -74,6 +78,7 @@
   "llm",
   "incontext",
   "guard",
+  "rule",
   "out"
  ],
  "nodes": [
@@ -117,8 +122,8 @@
    "col": 0,
    "type": "external",
    "label": "공고 값",
-   "sublabel": "[바뀜] 규제 표시·특별공급·공고일 + 주택 구분",
-   "tag": "조건 바뀜",
+   "sublabel": "규제 표시·특별공급·공고일 + 주택 구분",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/retrieval/axes.py",
@@ -168,8 +173,8 @@
    "col": 2,
    "type": "database",
    "label": "켜진 축만 검색",
-   "sublabel": "[바뀜] 두 하위 질의는 검색 문장으로",
-   "tag": "조건 바뀜",
+   "sublabel": "두 하위 질의는 검색 문장으로",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/retrieval/axes.py",
@@ -316,8 +321,8 @@
    "col": 5,
    "type": "backend",
    "label": "B9 응답",
-   "sublabel": "체크리스트·근거 원문·출처·검색 밖 언급",
-   "tag": "그대로",
+   "sublabel": "[바뀜] questions 채움",
+   "tag": "조건 바뀜",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/aggregate.py",
@@ -424,8 +429,8 @@
    "col": 5,
    "type": "frontend",
    "label": "결과 화면",
-   "sublabel": "전역·경로별 판정 · 체크리스트 · 근거",
-   "tag": "그대로",
+   "sublabel": "[바뀜] 확인할 질문 목록 추가",
+   "tag": "조건 바뀜",
    "sources": [
     {
      "path": "web/components/Result.tsx",
@@ -765,14 +770,78 @@
    "col": 5,
    "type": "backend",
    "label": "검색 문장 리포트",
-   "sublabel": "[새로] docs/138-search-text.md · #76 run.jsonl과 대조",
-   "tag": "새로 생김",
+   "sublabel": "docs/138-search-text.md · #76 run.jsonl과 대조",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/eval/search_text_report.py",
      "line": 63,
      "end_line": 143,
      "label": "jw·실패 징후"
+    }
+   ]
+  },
+  {
+   "id": "rule",
+   "lane": "judge",
+   "col": 4,
+   "type": "backend",
+   "label": "프로필 불가 규칙",
+   "sublabel": "[새로] 프로필 칸 값이면 INELIGIBLE",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/rules.py",
+     "line": 187,
+     "label": "rule_ineligible"
+    }
+   ]
+  },
+  {
+   "id": "qa",
+   "lane": "qlane",
+   "col": 4,
+   "type": "backend",
+   "label": "결손 분석",
+   "sublabel": "[새로] 없는 정보 · 불가 판정을 낼 수 있는 빈 칸",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/questions.py",
+     "line": 104,
+     "label": "analyze"
+    }
+   ]
+  },
+  {
+   "id": "qb",
+   "lane": "qlane",
+   "col": 5,
+   "type": "backend",
+   "label": "질문",
+   "sublabel": "[새로] 닫힌 경로 빼고 순서대로",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/questions.py",
+     "line": 134,
+     "label": "build_questions"
+    }
+   ]
+  },
+  {
+   "id": "erep3",
+   "lane": "eval",
+   "col": 0,
+   "type": "backend",
+   "label": "결손 분석·질문 리포트",
+   "sublabel": "[새로] docs/82-missing-info.md",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/questions_report.py",
+     "line": 96,
+     "label": "needed_questions"
     }
    ]
   }
@@ -849,12 +918,6 @@
    "label": "0개",
    "variant": "security",
    "role": "error"
-  },
-  {
-   "id": "e13",
-   "from": "guard",
-   "to": "out",
-   "label": "판정"
   },
   {
    "id": "a1",
@@ -1055,6 +1118,46 @@
    "from": "ejsonl",
    "to": "erep2",
    "label": "law_top5"
+  },
+  {
+   "id": "x1",
+   "from": "guard",
+   "to": "rule"
+  },
+  {
+   "id": "x2",
+   "from": "rule",
+   "to": "out"
+  },
+  {
+   "id": "x3",
+   "from": "profile",
+   "to": "qa"
+  },
+  {
+   "id": "x4",
+   "from": "qa",
+   "to": "qb"
+  },
+  {
+   "id": "x5",
+   "from": "b8",
+   "to": "qb"
+  },
+  {
+   "id": "x6",
+   "from": "qb",
+   "to": "b9"
+  },
+  {
+   "id": "x7",
+   "from": "ejsonl",
+   "to": "erep3"
+  },
+  {
+   "id": "x8",
+   "from": "ggold",
+   "to": "erep3"
   }
  ],
  "cards": [
@@ -1062,7 +1165,7 @@
    "dot": "amber",
    "title": "읽는 법",
    "items": [
-    "[새로]·[바뀜]은 PR #21(#76) 대비 이번 PR이 바꾼 단계다",
+    "[새로]·[바뀜]은 main(#138 머지 뒤) 대비 이번 PR #23이 바꾼 단계다",
     "하위 질의 문장은 그대로다. 검색에 넣는 문장만 청약통장·기관추천 두 하위 질의에서 바뀐다"
    ]
   }
