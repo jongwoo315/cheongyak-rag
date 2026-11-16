@@ -18,3 +18,17 @@ def test_classifier_splits_rule_other_and_none():
         ("제23조", "rule"),
         ("제4조", "none"),
     ]
+
+
+def test_citation_carries_the_nearest_preceding_law_name():
+    got = citations.extract_citations(
+        "「주택법」 제2조와 「민법」 제3조를 본다. 시행령 제4조. 제5조. 부칙 제6조."
+    )
+
+    assert [(c.label, c.kind, c.name) for c in got] == [
+        ("제2조", "other", "주택법"),
+        ("제3조", "other", "민법"),
+        ("제4조", "other", "시행령"),
+        ("제5조", "none", None),
+        ("제6조", "other", "부칙"),
+    ]

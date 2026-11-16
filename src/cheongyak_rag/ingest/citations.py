@@ -35,6 +35,7 @@ class Citation:
     label: str
     kind: str  # rule | other | none
     before: str  # 인용 앞 글자 (표본 출력용)
+    name: str | None = None  # 분류가 따른 앞 법령 이름. 이름이 없으면 None. 부칙이면 `부칙`
 
 
 def _name_kind(m: re.Match) -> str | None:
@@ -50,6 +51,10 @@ def _name_kind(m: re.Match) -> str | None:
     return "rule" if is_rule or word.endswith("공급규칙") else "other"
 
 
+def _name_text(m: re.Match) -> str:
+    return re.sub(r"\s+", " ", m["b"]).strip() if m["b"] is not None else m["w"]
+
+
 def _sentence_start(text: str, pos: int) -> int:
     cuts = [m.end() for m in SENTENCE_END.finditer(text, 0, pos)]
     cuts += [m.start() + 1 for m in LIST_START.finditer(text, 0, pos)]
@@ -62,12 +67,14 @@ def extract_citations(answer: str) -> list[Citation]:
     for m in ARTICLE.finditer(answer):
         start = _sentence_start(answer, m.start())
         sentence = answer[start : m.start()]
-        kind = "none"
+        kind, name = "none", None
         for nm in NAME.finditer(sentence):
-            kind = _name_kind(nm) or kind  # 가장 가까운(마지막) 이름을 따른다
+            if found := _name_kind(nm):  # 가장 가까운(마지막) 이름을 따른다
+                kind, name = found, _name_text(nm)
         if ADDENDA.search(answer[: m.start()]):
             kind = "other"  # 부칙 조문은 규칙 본문 조문이 아니라 정답에서 뺀다
+            name = name or "부칙"
         label = f"제{m[1]}조" + (f"의{m[2]}" if m[2] else "")
         before = re.sub(r"\s+", " ", answer[max(0, m.start() - BEFORE_CHARS) : m.start()])
-        out.append(Citation(label, kind, before))
+        out.append(Citation(label, kind, before, name))
     return out

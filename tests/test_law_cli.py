@@ -127,15 +127,20 @@ def test_missing_faq_jsonl_skips_only_that_item_with_a_hint(dirs, capsys):
 def test_faq_cross_is_in_report_when_faq_jsonl_exists(dirs, tmp_path, capsys):
     faq = tmp_path / "faq.jsonl"
     pairs = [
-        {"q_no": 1, "as_of": "2024-05-29", "cited_articles": ["제3조제1항"]},
-        {"q_no": 2, "as_of": "2024-05-29", "cited_articles": ["제999조"]},
+        {
+            "q_no": 1,
+            "as_of": "2024-05-29",
+            "cited_articles": ["제3조제1항"],
+            "answer": "제3조제1항",
+        },
+        {"q_no": 2, "as_of": "2024-05-29", "cited_articles": ["제999조"], "answer": "제999조"},
     ]
     faq.write_text("\n".join(json.dumps(p, ensure_ascii=False) for p in pairs), encoding="utf-8")
 
     assert run(Fake(), dirs, faq=faq) == 0
 
     out = capsys.readouterr().out
-    assert "인용 있는 쌍 2" in out
+    assert "규칙 인용 있는 쌍 2" in out
     assert "커버 1 (50%)" in out
     assert "커버 안 됨 1" in out
     assert "Q2 제999조" in out
@@ -205,12 +210,12 @@ def test_refetched_stale_cache_is_reported_as_download_not_cache(dirs, capsys):
 
 def test_blank_lines_in_faq_jsonl_do_not_skip_the_whole_file(dirs, tmp_path, capsys):
     faq = tmp_path / "faq.jsonl"
-    pair = {"q_no": 1, "as_of": "2024-05-29", "cited_articles": ["제3조제1항"]}
+    pair = {"q_no": 1, "as_of": "2024-05-29", "cited_articles": ["제3조제1항"], "answer": "제3조"}
     faq.write_text(json.dumps(pair, ensure_ascii=False) + "\n\n", encoding="utf-8")
 
     assert run(Fake(), dirs, faq=faq) == 0
 
-    assert "인용 있는 쌍 1" in capsys.readouterr().out
+    assert "규칙 인용 있는 쌍 1" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(
