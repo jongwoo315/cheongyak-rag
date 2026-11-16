@@ -14,7 +14,7 @@
 | 2 | Important | `src/cheongyak_rag/generate/eligible_report.py:84` | 골든셋 행 수·시연 쌍 수·`stop`·`cell_errors`·verdict `error`를 검사하지 않는다. 잘리거나 중간에 멈춘 입력이면 징후 1~3이 0으로 나와 통과로 읽힐 수 있다 | defer — 커밋된 입력은 직접 확인했다(골든셋 524행 전부 `matched`, 시연 18쌍 135판정, `error`·`stop` 없음). 분모(`0/55`, `421/524`)가 표에 찍히고 징후 4는 절대값이라 잘린 입력에서 미완이 된다. 재측정 가드는 후속 |
 | 3 | Important | `tests/test_generate_aggregate_report.py:34` | 두 테스트 모듈이 `ELIGIBLE_RULES = ()`로 가능 규칙을 끄고 돌아서, 가능 규칙이 쓴 행이 `answer.md`·`last_run.json`까지 가는 경로를 보는 테스트가 없다. `last_run.json`이 `original_verdict`를 안 써도 테스트가 통과한다 | defer — `_note`·`judge_one` 단위 테스트는 있고 실제 `runs/180/demo/last_run.json`에 `ruled` 8행과 `original_verdict`가 들어 있다. 끝까지 도는 테스트 한 건은 후속 |
 | 4 | Important | `src/cheongyak_rag/generate/eligible_report.py:84` | `golden_records`·`demo_records`가 직접 테스트되지 않는다. `matched` 필터나 `changed` 조건을 지워도 테스트가 통과한다 | defer — 위 3번과 같은 후속 테스트 티켓에 묶는다. 커밋된 리포트 값은 주석 에이전트가 원본 `run.jsonl`에서 따로 세어 같았다 |
-| 5 | Suggestion | `src/cheongyak_rag/generate/verdict.py:409` | 모델 UNVERIFIABLE에 인용이 0개이면 `forced`가 아니라 가능 규칙이 걸려 인용 없는 ELIGIBLE이 나갈 수 있다 | 기록만 — plan 통과 기준 2가 정한 동작이고 테스트가 그것을 못 박았다. 이번 측정 11건은 모두 인용이 있다 |
+| 5 | Important | `src/cheongyak_rag/generate/verdict.py:409` | 모델이 UNVERIFIABLE을 내고 인용이 0개이면 `forced`가 안 서서 가능 규칙이 걸리고, 인용 없는 ELIGIBLE이 나간다. 설계 §2는 「근거 없는 ELIGIBLE이 화면에 나가지 않게」 인용이 모두 기각된 판정에는 안 건다고 했고, plan 통과 기준 2는 모델 UNVERIFIABLE도 ELIGIBLE로 바꾼다고 했다. 둘이 어긋나고 코드·테스트는 plan 쪽을 골랐다. `docs/concepts.md:212`도 이 경우를 말하지 않는다 | defer — 설계와 plan 중 어느 쪽이 맞는지는 jw가 정한다. 이번 측정에서 최종 ELIGIBLE 63건은 모두 인용이 있다. 고치려면 `elif out.citations:`로 조건을 바꾸고 `test_eligible_rule_also_applies_to_a_model_unverifiable_without_citations`가 기대를 뒤집는다 |
 | 6 | Suggestion | `src/cheongyak_rag/generate/rules.py:244`, `tests/test_generate_verdict.py:657,665` | 단어장 「쓰지 말 말」 `빈 칸`을 새 주석에 썼다 | fix `92010fe` |
 | 7 | Suggestion | `src/cheongyak_rag/generate/verdict.py:8` | 모듈 docstring이 불가 규칙이 마지막 단계라고 한다. 가능 규칙 단계가 빠졌다 | fix `efd32fa` |
 | 8 | Suggestion | `docs/180-eval.md:1` | `eval.report`가 #76 제목·jw 기준·「첫 측정이라 baseline 없음」 문구를 그대로 낸다. 이 PR의 baseline은 `runs/82`다 | defer — 생성물이고 고치려면 `eval.report`를 바꿔야 한다. 이번 티켓의 기준·baseline은 `docs/180-eligible.md`에 있다 |
@@ -23,6 +23,8 @@
 | 11 | Suggestion | `docs/concepts.md:212` | 가능 규칙을 안 거는 경우에 근거 0개로 호출하지 않은 `no_context`가 빠졌다 | 기록만 |
 | 12 | Suggestion | `src/cheongyak_rag/generate/verdict.py:496`, `src/cheongyak_rag/generate/aggregate.py:213` | 조사 「가」를 가능 규칙 번호가 모두 2로 끝난다는 가정으로 고정했다. 규칙을 더하면 조사가 틀린다 | 기록만 — 주석이 가정을 적고 있고 규칙은 둘이다 |
 | 13 | Suggestion | `src/cheongyak_rag/generate/verdict.py:179` | `ruled=True`가 불가·가능 두 뜻이고 읽는 쪽 코드가 `verdict == "ELIGIBLE"`로 가른다. `rule_kind` 칸이 없다 | 기록만 — 규칙 종류가 둘이고 둘 다 판정을 바꾼다 |
+| 14 | Suggestion | `src/cheongyak_rag/generate/rules.py:232` | 가능 규칙 이유 문장이 제53조·제2조제3호를 늘 적는다. 그 하위 질의 검색 결과에 그 조문이 없으면 웹이 「이유에서 언급했지만 검색 결과에는 없던 근거」 안내를 코드가 쓴 문장에 붙인다 | 기록만 — 현재 두 표본의 최종 ELIGIBLE은 모두 그 조문이 검색 결과에 있다 |
+| 15 | Suggestion | `src/cheongyak_rag/generate/eligible_report.py:188` | `measure()`가 돌려주는 `count` 람다(`# noqa: E731`)를 아무도 읽지 않는다 | 기록만 |
 
 ## plan 대조
 
@@ -44,4 +46,4 @@
 
 - 리뷰 시작 때 `uv run pytest -q` 1485 passed, `ruff check`·`ruff format --check` 통과. 마지막 fix 커밋 뒤 해당 테스트 파일 151 passed.
 - 주석 에이전트가 `docs/180-eligible.md` 숫자를 `runs/180/run.jsonl`·`runs/82/run.jsonl`·`metrics.json`에서 따로 세어 같았다.
-- 코드 리뷰 에이전트(`pr-review-toolkit:code-reviewer`) 결과는 이 파일을 쓰는 시점에 돌아오지 않았다. 그 결과는 이 파일에 없다.
+- 코드 리뷰 에이전트는 plan 통과 기준 1~5가 코드와 테스트로 채워졌고 「쓰지 말 말」이 diff에 없다고 확인했다. Important는 위 5번 하나다.
