@@ -406,9 +406,8 @@ def judge_one(
         out.original_verdict, out.verdict, out.ruled = data["verdict"], "INELIGIBLE", True
         out.rule, out.reason = hit
         out.conditions, out.need_info = [], []
-    elif (
-        not out.forced
-    ):  # 근거 없는 ELIGIBLE이 화면에 나가지 않게 forced에는 안 건다. 불가 규칙이 먼저다
+    elif not out.forced:
+        # 인용이 모두 기각된 판정(forced)에는 안 건다. 모델 UNVERIFIABLE은 건다(plan 기준 2)
         hit = rules.rule_eligible(axis.id, hits.query, payload["profile"])
         if hit:
             out.original_verdict, out.verdict, out.ruled = data["verdict"], "ELIGIBLE", True
@@ -493,8 +492,9 @@ def format_verdict(v: Verdict) -> str:
     if v.guarded:
         flags.append(f"프로필 값이 없어 코드가 바꿈 — 모델 판정 {v.original_verdict}")
     if v.ruled:
-        kind = "가능" if v.verdict == "ELIGIBLE" else "불가"
-        flags.append(f"프로필 {kind} 규칙 {v.rule}이 바꿈 — 모델 판정 {v.original_verdict}")
+        # 가능 규칙 번호(`homeless-2`·`householder-2`)는 모두 2로 끝나 조사가 「가」다
+        who = f"가능 규칙 {v.rule}가" if v.verdict == "ELIGIBLE" else f"불가 규칙 {v.rule}이"
+        flags.append(f"프로필 {who} 바꿈 — 모델 판정 {v.original_verdict}")
     out = [head, f"판정: {v.verdict}" + (f" ({', '.join(flags)})" if flags else "")]
     if v.reason:
         out.append(f"이유{'(모델)' if v.guarded and not v.ruled else ''}: {v.reason}")

@@ -690,5 +690,23 @@ def test_cli_labels_the_possible_rule_not_the_impossible_one():
     v = vd.Verdict("homeless", "무주택", "q", verdict="ELIGIBLE", ruled=True, rule="homeless-2",
                    original_verdict="NEED_INFO", reason="이유")  # fmt: skip
     out = vd.format_verdict(v)
-    assert "프로필 가능 규칙 homeless-2이 바꿈 — 모델 판정 NEED_INFO" in out
+    assert "프로필 가능 규칙 homeless-2가 바꿈 — 모델 판정 NEED_INFO" in out
     assert "불가" not in out
+
+
+def test_eligible_rule_also_applies_to_a_model_unverifiable_without_citations(engine_with_chunks):
+    """모델 UNVERIFIABLE은 `forced`가 아니다(인용 guard는 UNVERIFIABLE을 안 건드린다). plan 통과
+    기준 2는 UNVERIFIABLE도 ELIGIBLE로 바꾼다고 했으므로 인용이 0개여도 건다. 이 동작을 못 박는다.
+    """
+    v = _call(
+        FakeChat([_reply("UNVERIFIABLE", citations=[])]),
+        engine=engine_with_chunks,
+        payload=_payload(homeless_now=True),
+    )
+    assert (v.verdict, v.forced, v.rule, v.original_verdict) == (
+        "ELIGIBLE",
+        False,
+        "homeless-2",
+        "UNVERIFIABLE",
+    )
+    assert v.citations == []
