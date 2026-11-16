@@ -241,7 +241,12 @@ def test_build_report_has_every_section_and_the_plan_numbers():
     assert "규칙 인용 있는 쌍 1 · 커버 0 · 커버 안 됨 1 · 다른 법령 인용만 있는 쌍 2" in out
     assert "| Q1 | 2 | 제1조 |" in out  # 갈린 자리 한 줄
     assert "- 쌍마다 갈린 자리 수: Q1 1" in out
-    assert "모름" in out
+    assert "## `모름`으로 붙은 자리 1개" in out
+    # 실패 징후 표 1·2행: 값과 구간. 라벨 기준은 규칙 인용 쌍 2 중 현행에 없는 조가 1쌍이다
+    assert "| 라벨 기준 1/2 · 분류 기준 1/1 | 다시 잰다 |" in out
+    assert "| 1/5 (`모름` 1은 따로) | 정상 |" in out
+    assert "## 실패 징후 1에 걸린 쌍" in out
+    assert "| Q2 | 1 | 제999조 | 제999조는 없다. |" in out
     assert len(fcr.sample_places(ps, {"제1조", "제2조"}, faq)) <= 20
 
 
