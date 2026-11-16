@@ -624,7 +624,13 @@ def main(
     )  # fmt: skip
     ap.add_argument("--budget-usd", type=float, default=BUDGET_USD)
     ap.add_argument("--model", default=settings.openai_gen_model)
+    ap.add_argument(
+        "--out-dir", type=Path, default=None,
+        help="리포트(answer.md)와 last_run.json을 쓸 디렉터리. 없으면 docs/81-answer.md · runs/81",
+    )  # fmt: skip
     args = ap.parse_args(argv)
+    if args.out_dir is not None:
+        out_md, out_json = args.out_dir / "answer.md", args.out_dir / "last_run.json"
     try:
         notices = vr.sample_notices(samples_json)
         profiles = vr.load_profiles(profiles_dir)
