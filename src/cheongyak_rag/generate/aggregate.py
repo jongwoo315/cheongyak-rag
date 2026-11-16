@@ -20,6 +20,7 @@ from cheongyak_rag.retrieval import axes
 
 if TYPE_CHECKING:  # verdict.py가 이 모듈을 부르므로 실행할 때는 읽지 않는다
     from cheongyak_rag.generate import verdict as vd
+    from cheongyak_rag.generate.questions import Question
 
 PRIORITY = ("INELIGIBLE", "UNVERIFIABLE", "NEED_INFO", "CONDITIONAL", "ELIGIBLE")
 _RANK = {v: i for i, v in enumerate(PRIORITY)}
@@ -153,7 +154,7 @@ class Answer:
     applicable: list[Route]
     checklist: list[ChecklistItem]
     score: dict  # 가점 범위 {total: {lo, hi}, ..., missing: [...]}
-    questions: list = field(default_factory=list)  # 질문 랭킹은 #82
+    questions: list[Question] = field(default_factory=list)  # 순서가 곧 물을 차례다 (#82)
 
 
 def link_for(kind: str, mst: str | None) -> str | None:
@@ -207,6 +208,10 @@ def _source(kind: str, label: str, mst: str | None, effective: str | None) -> st
 
 
 def _note(v: vd.Verdict) -> str:
+    if v.ruled:
+        if v.original_verdict == "INELIGIBLE":  # 판정은 그대로고 이유만 규칙의 것이다
+            return f"프로필 불가 규칙 {v.rule}이 걸림 (모델 판정도 INELIGIBLE)"
+        return f"프로필 불가 규칙 {v.rule}이 INELIGIBLE로 바꿈 (모델 판정 {v.original_verdict})"
     if v.forced:
         return f"인용이 모두 기각돼 UNVERIFIABLE로 바뀜 (모델 판정 {v.original_verdict})"
     if v.guarded:
@@ -245,12 +250,15 @@ def build_answer(
         )
         for v in verdicts
     ]  # fmt: skip
+    from cheongyak_rag.generate import questions  # questions가 이 모듈을 import한다
+
     agg = aggregate(plans, verdicts)
     scores = prof.score(profile, notice.as_of).to_dict()
+    asked = questions.build_questions(plans, verdicts, profile.to_dict(), notice.facts)
     return Answer(
         notice.house_manage_no, notice.pblanc_no, notice.name, notice.as_of.isoformat(), mst,
         effective, agg.verdict, agg.general, agg.special, agg.applicable, checklist,
-        {**scores["scores"], "missing": scores["missing"]},
+        {**scores["scores"], "missing": scores["missing"]}, asked,
     )  # fmt: skip
 
 
@@ -296,6 +304,17 @@ def _item_lines(i: ChecklistItem, full_text: bool) -> list[str]:
     return out
 
 
+def _question_lines(questions: list[Question]) -> list[str]:
+    out = []
+    for n, q in enumerate(questions, 1):
+        tags = (["답이 불가 판정을 낼 수 있음"] if q.can_rule_out else []) + (
+            [] if q.has_field else ["입력란 없음"]
+        )
+        note = f" ({' · '.join(tags)})" if tags else ""
+        out.append(f"  {n}. {q.text}{note} — 쓰이는 경로: {' · '.join(q.routes)}")
+    return out
+
+
 def render_text(a: Answer, *, full_text: bool = False) -> str:
     """사람이 읽는 응답. 맨 위가 전역 판정 · 경로별 판정 · 신청 가능한 경로다."""
     out = [
@@ -315,4 +334,5 @@ def render_text(a: Answer, *, full_text: bool = False) -> str:
             out += ["", f"## {i.axis_name}"]
         out += _item_lines(i, full_text)
     out += ["", "확인할 질문: " + ("없음" if not a.questions else f"{len(a.questions)}개")]
+    out += _question_lines(a.questions)
     return "\n".join(out)

@@ -69,6 +69,17 @@ export type ChecklistItem = {
 
 export type Range = { lo: number | null; hi: number | null };
 
+// 응답의 질문 한 줄. 정의는 src/cheongyak_rag/generate/questions.py `Question`이 기준이다.
+// 배열 순서가 곧 물을 차례다.
+export type Question = {
+  name: string;
+  text: string;
+  has_field: boolean;
+  can_rule_out: boolean;
+  axes: string[];
+  routes: string[];
+};
+
 export type Answer = {
   house_manage_no: string;
   pblanc_no: string;
@@ -88,7 +99,7 @@ export type Answer = {
     total?: Range;
     missing?: string[];
   };
-  questions: unknown[];
+  questions: Question[];
   trace_id: number | null;
   trace_error: string | null;
 };

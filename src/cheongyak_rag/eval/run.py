@@ -63,7 +63,7 @@ def make_line(row: dict, gold: dict, v: vd.Verdict | None, cause: str | None = N
         ctx = v.context_labels
         line.update(
             sys_verdict=v.verdict,
-            sys_pre_verdict=v.original_verdict if (v.guarded or v.forced) else v.verdict,
+            sys_pre_verdict=v.original_verdict if (v.guarded or v.forced or v.ruled) else v.verdict,
             sys_reason=v.reason,
             sys_citations=v.citations,
             law_top5=list(dict.fromkeys(c for c in ctx if is_law(c))),

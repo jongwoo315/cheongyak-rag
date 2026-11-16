@@ -282,6 +282,10 @@ def test_make_line_splits_law_and_faq_and_keeps_pre_verdict():
     forced = sys_verdict("homeless", "무주택 질의", "UNVERIFIABLE")
     forced.forced, forced.original_verdict = True, "INELIGIBLE"
     assert run.make_line(row, g, forced)["sys_pre_verdict"] == "INELIGIBLE"
+    ruled = sys_verdict("homeless", "무주택 질의", "INELIGIBLE")
+    ruled.ruled, ruled.rule, ruled.original_verdict = True, "homeless-1", "NEED_INFO"
+    line = run.make_line(row, g, ruled)
+    assert (line["sys_verdict"], line["sys_pre_verdict"]) == ("INELIGIBLE", "NEED_INFO")
 
 
 def test_item_exception_does_not_stop_later_items():
