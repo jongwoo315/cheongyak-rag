@@ -2,14 +2,14 @@
  "schema_version": 2,
  "diagram_type": "workflow",
  "meta": {
-  "title": "청약 RAG 판정 흐름 — #138 PR #22",
+  "title": "청약 RAG 판정 흐름 — #180 PR #24",
   "locale": "ko",
   "quality_profile": "standard",
-  "output": "82-flow.html",
+  "output": "180-flow.html",
   "repository": {
    "url": "https://github.com/jongwoo315/cheongyak-rag",
    "provider": "github",
-   "revision": "0f68afe67d14785ba3bb3df38ee8a80111db07a2"
+   "revision": "ba04e890bb7bd70650b18377ebb888e3fad7f325"
   }
  },
  "lanes": [
@@ -79,6 +79,7 @@
   "incontext",
   "guard",
   "rule",
+  "elig",
   "out"
  ],
  "nodes": [
@@ -321,8 +322,8 @@
    "col": 5,
    "type": "backend",
    "label": "B9 응답",
-   "sublabel": "[바뀜] questions 채움",
-   "tag": "조건 바뀜",
+   "sublabel": "questions 채움",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/aggregate.py",
@@ -429,8 +430,8 @@
    "col": 5,
    "type": "frontend",
    "label": "결과 화면",
-   "sublabel": "[바뀜] 확인할 질문 목록 추가",
-   "tag": "조건 바뀜",
+   "sublabel": "확인할 질문 목록 추가",
+   "tag": "그대로",
    "sources": [
     {
      "path": "web/components/Result.tsx",
@@ -787,8 +788,8 @@
    "col": 4,
    "type": "backend",
    "label": "프로필 불가 규칙",
-   "sublabel": "[새로] 프로필 칸 값이면 INELIGIBLE",
-   "tag": "새로 생김",
+   "sublabel": "프로필 칸 값이면 INELIGIBLE",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/rules.py",
@@ -803,8 +804,8 @@
    "col": 4,
    "type": "backend",
    "label": "결손 분석",
-   "sublabel": "[새로] 없는 정보 · 불가 판정을 낼 수 있는 빈 칸",
-   "tag": "새로 생김",
+   "sublabel": "없는 정보 · 불가 판정을 낼 수 있는 빈 칸",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/questions.py",
@@ -819,8 +820,8 @@
    "col": 5,
    "type": "backend",
    "label": "질문",
-   "sublabel": "[새로] 닫힌 경로 빼고 순서대로",
-   "tag": "새로 생김",
+   "sublabel": "닫힌 경로 빼고 순서대로",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/questions.py",
@@ -835,13 +836,29 @@
    "col": 0,
    "type": "backend",
    "label": "결손 분석·질문 리포트",
-   "sublabel": "[새로] docs/82-missing-info.md",
-   "tag": "새로 생김",
+   "sublabel": "docs/82-missing-info.md",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/questions_report.py",
      "line": 96,
      "label": "needed_questions"
+    }
+   ]
+  },
+  {
+   "id": "elig",
+   "lane": "judge",
+   "col": 5,
+   "type": "backend",
+   "label": "프로필 가능 규칙",
+   "sublabel": "[새로] 칸이 true면 ELIGIBLE · 이유도 코드",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/generate/rules.py",
+     "line": 229,
+     "label": "ELIGIBLE_RULES"
     }
    ]
   }
@@ -1125,11 +1142,6 @@
    "to": "rule"
   },
   {
-   "id": "x2",
-   "from": "rule",
-   "to": "out"
-  },
-  {
    "id": "x3",
    "from": "profile",
    "to": "qa"
@@ -1158,6 +1170,16 @@
    "id": "x8",
    "from": "ggold",
    "to": "erep3"
+  },
+  {
+   "id": "x9",
+   "from": "rule",
+   "to": "elig"
+  },
+  {
+   "id": "x10",
+   "from": "elig",
+   "to": "out"
   }
  ],
  "cards": [
@@ -1165,8 +1187,8 @@
    "dot": "amber",
    "title": "읽는 법",
    "items": [
-    "[새로]·[바뀜]은 main(#138 머지 뒤) 대비 이번 PR #23이 바꾼 단계다",
-    "하위 질의 문장은 그대로다. 검색에 넣는 문장만 청약통장·기관추천 두 하위 질의에서 바뀐다"
+    "[새로]는 main(#82 머지 뒤) 대비 이번 PR #24가 더한 단계다",
+    "프로필 가능 규칙은 LLM 호출이 성공하고 인용이 모두 기각되지 않았을 때만 건다"
    ]
   }
  ]
