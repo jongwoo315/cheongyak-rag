@@ -313,3 +313,36 @@ def test_sample_places_takes_ten_five_five_in_group_order():
         24,
         25,
     ]
+
+
+def test_merge_raw_joins_batches_in_place_order_and_writes_only_the_known_keys(tmp_path):
+    faq = [_faq(7, ANSWER)]
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    rows = [
+        _row(7, 1, "제2조", "다른 법령", "주택법"),
+        _row(7, 2, "제9조", "이름 없음"),
+        _row(7, 3, "제6조", "다른 법령", "부칙"),
+    ]
+    lines = lambda rs: "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rs)  # noqa: E731
+    (raw / "batch-01.jsonl").write_text(lines([{**rows[2], "junk": 1}, rows[0]]), encoding="utf-8")
+    (raw / "batch-02.jsonl").write_text(lines([rows[1]]), encoding="utf-8")
+    out = tmp_path / "law-names.jsonl"
+
+    assert fcr.merge_raw(faq, raw, out) == []
+
+    assert fcr.load_jsonl(out) == rows
+
+
+def test_merge_raw_writes_nothing_when_a_row_is_missing(tmp_path):
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "batch-01.jsonl").write_text(
+        json.dumps(_row(7, 1, "제2조", "다른 법령", "주택법"), ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "law-names.jsonl"
+
+    problems = fcr.merge_raw([_faq(7, ANSWER)], raw, out)
+
+    assert problems and not out.exists()
