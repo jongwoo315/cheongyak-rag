@@ -61,6 +61,13 @@ def _sentence_start(text: str, pos: int) -> int:
     return max(cuts, default=0)
 
 
+def sentence_of(text: str, pos: int) -> tuple[int, int]:
+    """`pos`가 든 문장의 (시작, 끝). 분류가 쓰는 문장 경계와 같다. 끝은 마침표 바로 뒤다."""
+    ends = [m.end() for m in SENTENCE_END.finditer(text, pos)][:1]
+    ends += [m.start() for m in LIST_START.finditer(text, pos)][:1]
+    return _sentence_start(text, pos), min(ends, default=len(text))
+
+
 def extract_citations(answer: str) -> list[Citation]:
     """답변의 `제N조` 인용을 등장 순서대로. 항·호는 뗀다. 중복은 그대로 둔다(인용 자리 수)."""
     out = []
