@@ -6,7 +6,9 @@ python -m cheongyak_rag.generate.verdict <house_manage_no> --profile runs/80/pro
 하나를 낸다(B6). 코드 guardrail(B7)이 근거 0개 · 문맥에 없는 인용 · `chunks`에 없는 인용 ·
 남은 인용이 0개인 판정을 걸러낸다. 그 뒤에 ELIGIBLE guard가 축별로 필요한 프로필 칸이 비어 있는
 ELIGIBLE을 NEED_INFO로 바꾼다 (프롬프트로는 0이 안 나왔다). 마지막으로 프로필 불가 규칙(#82)이
-프로필·공고 값만으로 정해지는 INELIGIBLE을 덮는다.
+프로필·공고 값만으로 정해지는 INELIGIBLE을 덮는다. 불가 규칙이 안 걸리고 인용이 모두 기각된
+판정(`forced`)도 아니면 프로필 가능 규칙(#180)이 프로필 칸만으로 정해지는 ELIGIBLE을 정하고
+이유도 쓴다.
 꺼진 축은 LLM을 부르지 않는다. 응답은 #139의 `GenCache`에 둔다.
 """
 
