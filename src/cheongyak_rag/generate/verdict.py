@@ -176,7 +176,9 @@ class Verdict:
     titles: dict[str, str] = field(default_factory=dict)  # 인용한 라벨 → 조 제목 · FAQ 질문
     forced: bool = False  # 인용이 모두 기각돼 코드가 UNVERIFIABLE로 바꿨다
     guarded: bool = False  # 필요한 프로필 값이 없어 코드가 ELIGIBLE을 NEED_INFO로 바꿨다
-    ruled: bool = False  # 프로필 불가 규칙(`rules.py`)이 걸려 코드가 INELIGIBLE로 바꿨다
+    ruled: bool = (
+        False  # 프로필 규칙(`rules.py`)이 걸려 코드가 INELIGIBLE(불가)·ELIGIBLE(가능)로 정했다
+    )
     rule: str | None = None  # ruled일 때 규칙 번호(`homeless-1` 꼴)
     original_verdict: str | None = None  # forced · guarded · ruled일 때 모델이 낸 판정
     no_context: bool = False  # 근거가 0개라 호출하지 않았다
@@ -404,6 +406,14 @@ def judge_one(
         out.original_verdict, out.verdict, out.ruled = data["verdict"], "INELIGIBLE", True
         out.rule, out.reason = hit
         out.conditions, out.need_info = [], []
+    elif (
+        not out.forced
+    ):  # 근거 없는 ELIGIBLE이 화면에 나가지 않게 forced에는 안 건다. 불가 규칙이 먼저다
+        hit = rules.rule_eligible(axis.id, hits.query, payload["profile"])
+        if hit:
+            out.original_verdict, out.verdict, out.ruled = data["verdict"], "ELIGIBLE", True
+            out.rule, out.reason = hit
+            out.conditions, out.need_info = [], []
     return out
 
 
@@ -483,7 +493,8 @@ def format_verdict(v: Verdict) -> str:
     if v.guarded:
         flags.append(f"프로필 값이 없어 코드가 바꿈 — 모델 판정 {v.original_verdict}")
     if v.ruled:
-        flags.append(f"프로필 불가 규칙 {v.rule}이 바꿈 — 모델 판정 {v.original_verdict}")
+        kind = "가능" if v.verdict == "ELIGIBLE" else "불가"
+        flags.append(f"프로필 {kind} 규칙 {v.rule}이 바꿈 — 모델 판정 {v.original_verdict}")
     out = [head, f"판정: {v.verdict}" + (f" ({', '.join(flags)})" if flags else "")]
     if v.reason:
         out.append(f"이유{'(모델)' if v.guarded and not v.ruled else ''}: {v.reason}")

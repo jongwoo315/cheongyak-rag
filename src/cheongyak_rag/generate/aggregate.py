@@ -208,6 +208,10 @@ def _source(kind: str, label: str, mst: str | None, effective: str | None) -> st
 
 
 def _note(v: vd.Verdict) -> str:
+    if v.ruled and v.verdict == "ELIGIBLE":  # 프로필 가능 규칙(#180)
+        if v.original_verdict == "ELIGIBLE":
+            return f"프로필 가능 규칙 {v.rule}가 걸림 (모델 판정도 ELIGIBLE)"
+        return f"프로필 가능 규칙 {v.rule}가 ELIGIBLE로 정함 (모델 판정 {v.original_verdict})"
     if v.ruled:
         if v.original_verdict == "INELIGIBLE":  # 판정은 그대로고 이유만 규칙의 것이다
             return f"프로필 불가 규칙 {v.rule}이 걸림 (모델 판정도 INELIGIBLE)"

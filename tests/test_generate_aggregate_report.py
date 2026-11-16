@@ -5,6 +5,7 @@ import pytest
 
 from cheongyak_rag.generate import aggregate as agg
 from cheongyak_rag.generate import aggregate_report as ar
+from cheongyak_rag.generate import rules
 from cheongyak_rag.generate import verdict_report as vr
 from tests.fakes import FakeChat, FakeEmbedder
 from tests.test_retrieval_axes import _load_chunks, _notice, _version
@@ -25,6 +26,12 @@ def _echo(verdict="ELIGIBLE", reason="문맥대로다."):
         return json.dumps(body, ensure_ascii=False)
 
     return reply
+
+
+@pytest.fixture(autouse=True)
+def _model_writes_the_reason(monkeypatch):
+    """이 리포트는 모델이 쓴 이유를 잰다. 프로필 가능 규칙(#180)은 이유를 코드가 쓰므로 끈다."""
+    monkeypatch.setattr(rules, "ELIGIBLE_RULES", ())
 
 
 @pytest.fixture

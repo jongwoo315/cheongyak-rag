@@ -296,3 +296,13 @@ def test_note_names_the_rule_before_any_other_change():
 def test_note_does_not_say_changed_when_the_model_already_said_ineligible():
     v = _fv("homeless", "INELIGIBLE", ruled=True, rule="homeless-1", original_verdict="INELIGIBLE")
     assert agg._note(v) == "프로필 불가 규칙 homeless-1이 걸림 (모델 판정도 INELIGIBLE)"
+
+
+def test_note_names_the_possible_rule_differently_from_the_impossible_rule():
+    v = _fv("homeless", "ELIGIBLE", ruled=True, rule="homeless-2", original_verdict="NEED_INFO")
+    assert agg._note(v) == "프로필 가능 규칙 homeless-2가 ELIGIBLE로 정함 (모델 판정 NEED_INFO)"
+
+
+def test_note_says_the_model_agreed_when_it_already_said_eligible():
+    v = _fv("homeless", "ELIGIBLE", ruled=True, rule="homeless-2", original_verdict="ELIGIBLE")
+    assert agg._note(v) == "프로필 가능 규칙 homeless-2가 걸림 (모델 판정도 ELIGIBLE)"
