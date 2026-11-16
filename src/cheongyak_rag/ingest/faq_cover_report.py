@@ -549,6 +549,9 @@ def main(argv: list[str] | None = None) -> int:
     from cheongyak_rag.retrieval.golden import load_faq
 
     args = sys.argv[1:] if argv is None else argv
+    if args not in ([], ["inputs"], ["merge"]):
+        print(f"모르는 인자 {args}. 쓸 수 있는 것: inputs · merge · (인자 없음)", file=sys.stderr)
+        return 2
     faq_rows = load_faq()
     if args[:1] == ["inputs"]:
         paths = write_inputs(faq_rows)

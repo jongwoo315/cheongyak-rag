@@ -284,3 +284,8 @@ def test_gold_pair_changes_lists_added_and_removed_labels_and_keeps_unknown():
     ]
 
     assert fcr.gold_pair_changes(ps, labels) == [(1, {"제2조"}, set(), {"제2조", "제9조"})]
+
+
+def test_main_rejects_an_unknown_argument_without_touching_the_report(capsys):
+    assert fcr.main(["merg"]) == 2
+    assert "모르는 인자" in capsys.readouterr().err
