@@ -4,6 +4,7 @@ import re
 
 import pytest
 
+from cheongyak_rag.generate import rules
 from cheongyak_rag.generate import verdict as vd
 from cheongyak_rag.generate import verdict_report as vr
 from cheongyak_rag.retrieval import axes
@@ -31,6 +32,12 @@ def _echo(verdict="ELIGIBLE", reason="문맥대로다."):
         return json.dumps(body, ensure_ascii=False)
 
     return reply
+
+
+@pytest.fixture(autouse=True)
+def _model_writes_the_reason(monkeypatch):
+    """이 리포트는 모델이 쓴 이유를 잰다. 프로필 가능 규칙(#180)은 이유를 코드가 쓰므로 끈다."""
+    monkeypatch.setattr(rules, "ELIGIBLE_RULES", ())
 
 
 @pytest.fixture

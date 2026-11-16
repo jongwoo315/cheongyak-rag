@@ -5,6 +5,7 @@ import pytest
 
 from cheongyak_rag.generate import aggregate as agg
 from cheongyak_rag.generate import aggregate_report as ar
+from cheongyak_rag.generate import rules
 from cheongyak_rag.generate import verdict_report as vr
 from tests.fakes import FakeChat, FakeEmbedder
 from tests.test_retrieval_axes import _load_chunks, _notice, _version
@@ -25,6 +26,12 @@ def _echo(verdict="ELIGIBLE", reason="문맥대로다."):
         return json.dumps(body, ensure_ascii=False)
 
     return reply
+
+
+@pytest.fixture(autouse=True)
+def _model_writes_the_reason(monkeypatch):
+    """이 리포트는 모델이 쓴 이유를 잰다. 프로필 가능 규칙(#180)은 이유를 코드가 쓰므로 끈다."""
+    monkeypatch.setattr(rules, "ELIGIBLE_RULES", ())
 
 
 @pytest.fixture
@@ -204,3 +211,29 @@ def test_second_run_reads_the_cache_and_is_recorded(world):
     assert again.calls == [] and second["second_run"]["calls"] == 0
     assert second["first_run"]["calls"] == first["first_run"]["calls"]
     assert vr.system_sha() == second["system_sha"]
+
+
+# ── 출력 디렉터리 (#180) ─────────────────────────────────────────────────
+
+
+def test_out_dir_writes_the_report_and_the_json_into_that_directory(world):
+    root = world["root"]
+    out = root / "runs" / "demo"
+    code = ar.main(
+        ["--report", "--out-dir", str(out)],
+        engine=world["engine"], embedder=FakeEmbedder(dim=1536),
+        client=FakeChat([_echo("NEED_INFO")]), cache_path=root / "cache.jsonl",
+        samples_json=world["samples_json"], profiles_dir=world["profiles_dir"],
+        baseline_json=world["baseline_json"], sleep=lambda s: None,
+        fetch_status=lambda url: OK["faq" if "molit" in url else "law"],
+        combos=lambda: (279_936, 0),
+    )  # fmt: skip
+    assert code == 0
+    assert (out / "last_run.json").is_file() and (out / "answer.md").is_file()
+    assert json.loads((out / "last_run.json").read_text("utf-8"))["symptoms"]
+
+
+def test_default_output_paths_stay_the_81_ones():
+    assert ar.OUT_MD.name == "81-answer.md" and ar.OUT_JSON.as_posix().endswith(
+        "runs/81/last_run.json"
+    )

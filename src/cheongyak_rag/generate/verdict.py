@@ -6,7 +6,9 @@ python -m cheongyak_rag.generate.verdict <house_manage_no> --profile runs/80/pro
 하나를 낸다(B6). 코드 guardrail(B7)이 근거 0개 · 문맥에 없는 인용 · `chunks`에 없는 인용 ·
 남은 인용이 0개인 판정을 걸러낸다. 그 뒤에 ELIGIBLE guard가 축별로 필요한 프로필 칸이 비어 있는
 ELIGIBLE을 NEED_INFO로 바꾼다 (프롬프트로는 0이 안 나왔다). 마지막으로 프로필 불가 규칙(#82)이
-프로필·공고 값만으로 정해지는 INELIGIBLE을 덮는다.
+프로필·공고 값만으로 정해지는 INELIGIBLE을 덮는다. 불가 규칙이 안 걸리고 인용이 모두 기각된
+판정(`forced`)도 아니면 프로필 가능 규칙(#180)이 프로필 칸만으로 정해지는 ELIGIBLE을 정하고
+이유도 쓴다.
 꺼진 축은 LLM을 부르지 않는다. 응답은 #139의 `GenCache`에 둔다.
 """
 
@@ -176,7 +178,9 @@ class Verdict:
     titles: dict[str, str] = field(default_factory=dict)  # 인용한 라벨 → 조 제목 · FAQ 질문
     forced: bool = False  # 인용이 모두 기각돼 코드가 UNVERIFIABLE로 바꿨다
     guarded: bool = False  # 필요한 프로필 값이 없어 코드가 ELIGIBLE을 NEED_INFO로 바꿨다
-    ruled: bool = False  # 프로필 불가 규칙(`rules.py`)이 걸려 코드가 INELIGIBLE로 바꿨다
+    ruled: bool = (
+        False  # 프로필 규칙(`rules.py`)이 걸려 코드가 INELIGIBLE(불가)·ELIGIBLE(가능)로 정했다
+    )
     rule: str | None = None  # ruled일 때 규칙 번호(`homeless-1` 꼴)
     original_verdict: str | None = None  # forced · guarded · ruled일 때 모델이 낸 판정
     no_context: bool = False  # 근거가 0개라 호출하지 않았다
@@ -404,6 +408,13 @@ def judge_one(
         out.original_verdict, out.verdict, out.ruled = data["verdict"], "INELIGIBLE", True
         out.rule, out.reason = hit
         out.conditions, out.need_info = [], []
+    elif not out.forced:
+        # 인용이 모두 기각된 판정(forced)에는 안 건다. 모델 UNVERIFIABLE은 건다(plan 기준 2)
+        hit = rules.rule_eligible(axis.id, hits.query, payload["profile"])
+        if hit:
+            out.original_verdict, out.verdict, out.ruled = data["verdict"], "ELIGIBLE", True
+            out.rule, out.reason = hit
+            out.conditions, out.need_info = [], []
     return out
 
 
@@ -483,7 +494,9 @@ def format_verdict(v: Verdict) -> str:
     if v.guarded:
         flags.append(f"프로필 값이 없어 코드가 바꿈 — 모델 판정 {v.original_verdict}")
     if v.ruled:
-        flags.append(f"프로필 불가 규칙 {v.rule}이 바꿈 — 모델 판정 {v.original_verdict}")
+        # 가능 규칙 번호(`homeless-2`·`householder-2`)는 모두 2로 끝나 조사가 「가」다
+        who = f"가능 규칙 {v.rule}가" if v.verdict == "ELIGIBLE" else f"불가 규칙 {v.rule}이"
+        flags.append(f"프로필 {who} 바꿈 — 모델 판정 {v.original_verdict}")
     out = [head, f"판정: {v.verdict}" + (f" ({', '.join(flags)})" if flags else "")]
     if v.reason:
         out.append(f"이유{'(모델)' if v.guarded and not v.ruled else ''}: {v.reason}")

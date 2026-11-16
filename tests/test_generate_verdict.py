@@ -255,7 +255,10 @@ def test_guard_needs_the_axis_field_value(engine_with_chunks, axis_id):
         axis=axis,
         payload=_payload(**{name: value}),
     )
-    assert (kept.verdict, kept.guarded, kept.original_verdict) == ("ELIGIBLE", False, None)
+    assert (kept.verdict, kept.guarded) == ("ELIGIBLE", False)
+    assert (
+        kept.ruled is True and kept.original_verdict == "ELIGIBLE"
+    )  # 가능 규칙이 이유를 정했다 (#180)
 
 
 def test_guard_replaces_the_models_need_info_and_keeps_its_reason(engine_with_chunks):
@@ -548,11 +551,12 @@ def test_rule_applies_after_the_eligible_guard(engine_with_chunks):
 
 def test_no_rule_leaves_the_model_verdict_alone(engine_with_chunks):
     v = _call(
-        FakeChat([_reply("ELIGIBLE")]),
+        FakeChat([_reply("CONDITIONAL")]),
         engine=engine_with_chunks,
+        axis=axes.AXIS_BY_ID["account"],
         payload=_payload(homeless_now=True),
-    )
-    assert (v.verdict, v.ruled, v.rule, v.original_verdict) == ("ELIGIBLE", False, None, None)
+    )  # 계좌 축에는 규칙이 없다
+    assert (v.verdict, v.ruled, v.rule, v.original_verdict) == ("CONDITIONAL", False, None, None)
     v = _call(FakeChat([_reply("NEED_INFO")]), engine=engine_with_chunks)  # 빈 프로필
     assert (v.verdict, v.ruled) == ("NEED_INFO", False)
 
@@ -596,3 +600,113 @@ def test_rule_uses_the_special_type_in_the_query(engine_with_chunks):
 def test_rule_does_not_change_the_cache_key():
     messages = vd.build_messages(AXIS, _hits(), _notice_info(), _payload(homeless_now=False))
     assert "homeless-1" not in messages[0]["content"] + messages[1]["content"]
+
+
+# ── 프로필 가능 규칙 (#180) ──────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("model", ["ELIGIBLE", "NEED_INFO", "UNVERIFIABLE", "INELIGIBLE"])
+def test_eligible_rule_turns_any_model_verdict_into_eligible(engine_with_chunks, model):
+    reply = _reply(model, conditions=["전입해야 한다"], need_info=["무주택 기간"],
+                   reason="제53조상 예외 사유가 없어 볼 수 있다")  # fmt: skip
+    v = _call(FakeChat([reply]), engine=engine_with_chunks, payload=_payload(homeless_now=True))
+    assert (v.verdict, v.ruled, v.rule, v.original_verdict) == (
+        "ELIGIBLE",
+        True,
+        "homeless-2",
+        model,
+    )
+    assert v.reason.startswith("프로필에서 지금 무주택(`homeless_now`=true)이라")
+    assert "예외 사유가 없어" not in v.reason  # 모델이 쓴 이유는 화면에 안 나간다
+    assert v.conditions == [] and v.need_info == []
+    assert v.citations == ["제2조"]  # 인용은 그대로 둔다
+
+
+def test_eligible_rule_applies_to_the_householder_axis(engine_with_chunks):
+    v = _call(
+        FakeChat([_reply("NEED_INFO")]),
+        engine=engine_with_chunks,
+        axis=axes.AXIS_BY_ID["householder"],
+        payload=_payload(is_household_head=True),
+    )
+    assert (v.verdict, v.rule, v.original_verdict) == ("ELIGIBLE", "householder-2", "NEED_INFO")
+
+
+def test_eligible_rule_does_not_apply_to_a_forced_verdict(engine_with_chunks):
+    reply = _reply("ELIGIBLE", citations=["제99조"])  # 인용이 모두 기각돼 forced
+    v = _call(FakeChat([reply]), engine=engine_with_chunks, payload=_payload(homeless_now=True))
+    assert (v.verdict, v.forced, v.ruled, v.rule) == ("UNVERIFIABLE", True, False, None)
+    assert v.original_verdict == "ELIGIBLE"
+
+
+def test_eligible_rule_does_not_apply_when_the_call_failed(engine_with_chunks):
+    class Boom:
+        calls: list = []
+
+        class chat:  # noqa: N801
+            class completions:  # noqa: N801
+                @staticmethod
+                def create(**kw):
+                    raise RuntimeError("끊김")
+
+    v = _call(Boom(), engine=engine_with_chunks, payload=_payload(homeless_now=True))
+    assert v.error and v.verdict is None and v.ruled is False
+
+
+def test_empty_field_keeps_the_eligible_guard(engine_with_chunks):
+    v = _call(FakeChat([_reply("ELIGIBLE")]), engine=engine_with_chunks)  # homeless_now가 비어 있다
+    assert (v.verdict, v.guarded, v.ruled, v.original_verdict) == (
+        "NEED_INFO",
+        True,
+        False,
+        "ELIGIBLE",
+    )
+    v = _call(FakeChat([_reply("NEED_INFO")]), engine=engine_with_chunks)
+    assert (v.verdict, v.ruled) == ("NEED_INFO", False)  # 칸이 비어 있으면 모델 판정 그대로다
+
+
+def test_false_field_still_goes_to_the_ineligible_rule(engine_with_chunks):
+    v = _call(FakeChat([_reply("ELIGIBLE")]), engine=engine_with_chunks,
+              payload=_payload(homeless_now=False))  # fmt: skip
+    assert (v.verdict, v.rule) == ("INELIGIBLE", "homeless-1")
+
+
+def test_eligible_rule_leaves_other_axes_alone(engine_with_chunks):
+    v = _call(
+        FakeChat([_reply("NEED_INFO")]),
+        engine=engine_with_chunks,
+        axis=axes.AXIS_BY_ID["account"],
+        payload=_payload(homeless_now=True, is_household_head=True),
+    )
+    assert (v.verdict, v.ruled) == ("NEED_INFO", False)
+
+
+def test_eligible_rule_does_not_change_the_cache_key():
+    messages = vd.build_messages(AXIS, _hits(), _notice_info(), _payload(homeless_now=True))
+    assert "homeless-2" not in messages[0]["content"] + messages[1]["content"]
+
+
+def test_cli_labels_the_possible_rule_not_the_impossible_one():
+    v = vd.Verdict("homeless", "무주택", "q", verdict="ELIGIBLE", ruled=True, rule="homeless-2",
+                   original_verdict="NEED_INFO", reason="이유")  # fmt: skip
+    out = vd.format_verdict(v)
+    assert "프로필 가능 규칙 homeless-2가 바꿈 — 모델 판정 NEED_INFO" in out
+    assert "불가" not in out
+
+
+def test_eligible_rule_also_applies_to_a_model_unverifiable_without_citations(engine_with_chunks):
+    """모델 UNVERIFIABLE은 `forced`가 아니다(인용 guard는 UNVERIFIABLE을 안 건드린다). plan 통과
+    기준 2는 UNVERIFIABLE도 ELIGIBLE로 바꾼다고 했으므로 인용이 0개여도 건다. 이 동작을 못 박는다.
+    """
+    v = _call(
+        FakeChat([_reply("UNVERIFIABLE", citations=[])]),
+        engine=engine_with_chunks,
+        payload=_payload(homeless_now=True),
+    )
+    assert (v.verdict, v.forced, v.rule, v.original_verdict) == (
+        "ELIGIBLE",
+        False,
+        "homeless-2",
+        "UNVERIFIABLE",
+    )
+    assert v.citations == []
