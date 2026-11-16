@@ -1,10 +1,13 @@
-"""프로필 칸 값과 DB 공고 값만으로 하위 질의를 INELIGIBLE로 정하는 규칙 (#82).
+"""프로필 칸 값과 DB 공고 값만으로 하위 질의를 INELIGIBLE로 정하는 규칙 (#82)과,
+프로필 칸 값만으로 ELIGIBLE로 정하는 규칙 (#180).
 
 규칙은 라벨 규칙(`docs/75-label-rules.md` §4)의 INELIGIBLE 줄을 같은 번호로 옮긴 것이다.
 `judge_one`이 LLM 판정 뒤에 부르고, 결손 분석(`questions.py`)이 규칙이 보는 칸을 이 표에서 읽는다.
 옮기지 않은 규칙은 `referral-1`(공고문의 도시재생 부지제공자 표시) 하나다. 그 표시는 DB에 없다.
 `newlywed-3`(공고문의 예비신혼부부·한부모 갈래)은 공고문 대신 주택 구분(`house_dtl_secd`)으로
 옮겼다: 민영(`01`) 공고는 갈래가 없다(골든셋 17/17). 민영 공고문이 갈래를 적으면 틀린다.
+프로필 가능 규칙(`ELIGIBLE_RULES`)은 라벨 규칙의 ELIGIBLE 줄 `homeless-2`·`householder-2` 둘이다.
+무주택·세대주 축의 판정값과 이유 문장을 LLM 대신 코드가 정한다.
 LLM·네트워크·DB를 부르지 않는다.
 """
 
@@ -211,3 +214,42 @@ def rule_ineligible(
         if why:
             return rule.id, why
     return None
+
+
+@dataclass(frozen=True)
+class EligibleRule:
+    id: str
+    axis: str
+    field: str  # 규칙이 보는 프로필 칸. 이 칸이 true이면 걸린다
+    when: str  # 사람이 읽는 조건(`docs/concepts.md`가 옮긴다)
+    reason: str  # 화면에 나가는 이유 문장
+
+
+# 프로필 가능 규칙 표. 라벨 규칙(`docs/75-label-rules.md`)의 ELIGIBLE 줄이다
+ELIGIBLE_RULES: tuple[EligibleRule, ...] = (
+    EligibleRule(
+        "homeless-2", "homeless", "homeless_now", "homeless_now = true",
+        "프로필에서 지금 무주택(`homeless_now`=true)이라 무주택세대구성원 요건을 채운다(제53조)",
+    ),
+    EligibleRule(
+        "householder-2", "householder", "is_household_head", "is_household_head = true",
+        "프로필에서 세대주(`is_household_head`=true)라 세대주 요건을 채운다(제2조제3호)",
+    ),
+)  # fmt: skip
+
+
+def rule_eligible(axis: str, query: str, profile: dict) -> tuple[str, str] | None:
+    """하위 질의가 프로필 칸만으로 ELIGIBLE이면 (규칙 번호, 이유 한 문장), 아니면 None.
+
+    `profile`은 `Profile.to_dict()` 꼴이다. 칸이 true일 때만 걸린다. false·빈 칸(None)은 안 걸린다.
+    두 규칙 모두 축 하나에 질의 하나라 `query`는 보지 않는다. 프로필 불가 규칙과 시그니처만 맞췄다.
+    """
+    for rule in ELIGIBLE_RULES:
+        if rule.axis == axis and profile.get(rule.field) is True:
+            return rule.id, rule.reason
+    return None
+
+
+def eligible_fields(axis: str, query: str) -> list[str]:
+    """이 하위 질의에 걸리는 프로필 가능 규칙이 보는 프로필 칸. 없으면 빈 목록."""
+    return [r.field for r in ELIGIBLE_RULES if r.axis == axis]

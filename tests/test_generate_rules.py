@@ -237,3 +237,63 @@ def test_profile_fields_are_read_from_the_rule_table():
     youth = rules.profile_fields("special_type", Q_TYPE(type="청년"))
     assert youth == ["ever_owned", "married", "birth_date", "savings_join_date"]
     assert rules.profile_fields("special_type", Q_TYPE(type="기관추천")) == []
+
+
+# ── 프로필 가능 규칙 (#180) ──────────────────────────────────────────────
+
+ELIGIBLE_CASES = [
+    ("homeless-2", "homeless", Q_H, "homeless_now"),
+    ("householder-2", "householder", Q_HH, "is_household_head"),
+]
+
+
+@pytest.mark.parametrize(("rule_id", "axis", "query", "field"), ELIGIBLE_CASES)
+def test_eligible_rule_fires_only_when_the_field_is_true(rule_id, axis, query, field):
+    got = rules.rule_eligible(axis, query, {field: True})
+    assert got is not None and got[0] == rule_id
+    assert rules.rule_eligible(axis, query, {field: False}) is None
+    assert rules.rule_eligible(axis, query, {field: None}) is None
+    assert rules.rule_eligible(axis, query, {}) is None  # 비어 있으면 모르는 값이다
+
+
+def test_eligible_rule_reasons_are_the_design_sentences():
+    assert rules.rule_eligible("homeless", Q_H, {"homeless_now": True}) == (
+        "homeless-2",
+        "프로필에서 지금 무주택(`homeless_now`=true)이라 무주택세대구성원 요건을 채운다(제53조)",
+    )
+    assert rules.rule_eligible("householder", Q_HH, {"is_household_head": True}) == (
+        "householder-2",
+        "프로필에서 세대주(`is_household_head`=true)라 세대주 요건을 채운다(제2조제3호)",
+    )
+
+
+@pytest.mark.parametrize(
+    ("axis", "query"),
+    [
+        ("account", Q_A),
+        ("residence", "거주 질의"),
+        ("special_type", MC),
+        ("special_type", NW),
+    ],
+)
+def test_eligible_rule_ignores_other_axes(axis, query):
+    full = {"homeless_now": True, "is_household_head": True}
+    assert rules.rule_eligible(axis, query, full) is None
+
+
+def test_eligible_rule_does_not_fire_together_with_the_ineligible_rule():
+    for field, axis, query in (
+        ("homeless_now", "homeless", Q_H),
+        ("is_household_head", "householder", Q_HH),
+    ):
+        for value in (True, False, None):
+            p = {field: value}
+            both = rules.rule_eligible(axis, query, p) and _hit(axis, query, p)
+            assert not both
+
+
+def test_eligible_fields_lists_the_fields_a_possible_rule_reads():
+    assert rules.eligible_fields("homeless", Q_H) == ["homeless_now"]
+    assert rules.eligible_fields("householder", Q_HH) == ["is_household_head"]
+    assert rules.eligible_fields("account", Q_A) == []
+    assert rules.eligible_fields("special_type", NW) == []
