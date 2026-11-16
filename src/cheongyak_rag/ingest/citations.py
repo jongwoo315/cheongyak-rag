@@ -35,7 +35,8 @@ class Citation:
     label: str
     kind: str  # rule | other | none
     before: str  # 인용 앞 글자 (표본 출력용)
-    name: str | None = None  # 분류가 따른 앞 법령 이름. 이름이 없으면 None. 부칙이면 `부칙`
+    # 분류가 따른 앞 법령 이름. 이름이 없으면 None. 부칙이면 `<이름> 부칙`, 이름이 없으면 `부칙`
+    name: str | None = None
 
 
 def _name_kind(m: re.Match) -> str | None:
