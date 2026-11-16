@@ -289,3 +289,27 @@ def test_gold_pair_changes_lists_added_and_removed_labels_and_keeps_unknown():
 def test_main_rejects_an_unknown_argument_without_touching_the_report(capsys):
     assert fcr.main(["merg"]) == 2
     assert "모르는 인자" in capsys.readouterr().err
+
+
+def test_sample_places_takes_ten_five_five_in_group_order():
+    faq = (
+        [
+            {**_faq(i, "「주택법」 제999조를 본다."), "cited_articles": ["제999조"]}
+            for i in range(1, 13)
+        ]
+        + [
+            {**_faq(i, "「주택법」 제1조를 본다."), "cited_articles": ["제1조"]}
+            for i in range(13, 20)
+        ]
+        + [_faq(i, "제1조를 본다.") for i in range(20, 27)]
+    )
+
+    got = fcr.sample_places(fcr.places(faq), {"제1조"}, faq)
+
+    assert [p.q_no for p in got] == [1, 2, 3, 4, 5, 7, 8, 9, 10, 11] + [13, 14, 15, 17, 18] + [
+        20,
+        21,
+        22,
+        24,
+        25,
+    ]
