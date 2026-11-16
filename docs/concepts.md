@@ -241,6 +241,19 @@ citation precision만 예외다. 분모가 시스템이 인용한 조문이라 �
 - 응답의 질문(`Answer.questions`) 한 줄은 정보 이름 하나다. 프로필에 칸이 없는 정보(14개)도 질문에 들어가고 웹은 「입력란 없음」으로 보여 준다
 - 규칙이 보는 프로필 칸 중 위 17개에 없는 칸(`ever_owned`·`married`·`marriage_date`·`children_unmarried`·`ascendants_3y`·`ascendants_any_owner`·`birth_date`)은 「불가 판정을 낼 수 있는 빈 칸」으로만 질문에 나온다(`questions.py` `RULE_ONLY`)
 
+## 인용 법령 분류 3개 — FAQ 답변의 인용 자리를 앞 법령 이름으로 나눈 값
+
+정의: `src/cheongyak_rag/ingest/citations.py:34` `Citation.kind`, 분류 함수 `extract_citations`(`:71`). 만든 티켓 #131, `retrieval/golden.py`에서 옮긴 티켓 #135. #131 정답 라벨(`runs/golden.jsonl`)과 #135 FAQ 인용 커버(`law_report.faq_cross`)가 같은 함수를 쓴다.
+
+| 값 | 뜻 | 용어 | 정의한 곳 | 만든 티켓 |
+| --- | --- | --- | --- | --- |
+| `rule` | 같은 문장의 가장 가까운 앞 법령 이름이 주택공급에 관한 규칙이다 | 규칙 인용 | `citations.py:34` | #131 (옮긴 티켓 #135) |
+| `other` | 그 이름이 다른 법령이거나, 조 앞에 `부칙`이 있다 | 다른 법령 인용 | `citations.py:34` | #131 (옮긴 티켓 #135) |
+| `none` | 같은 문장에 법령 이름이 없다. FAQ가 청약 FAQ라 규칙으로 보고 센다 | 규칙 인용 | `citations.py:34` | #131 (옮긴 티켓 #135) |
+
+- 분류는 정규식이라 틀릴 수 있다. #135가 하위 에이전트가 따로 붙인 법령 이름 라벨과 맞대 갈린 자리를 `docs/135-faq-cover.md`에 적었다. 분류는 고치지 않았다
+- `Citation.name`은 분류가 따른 앞 법령 이름이다(#135에서 더했다). `kind`를 정하는 값이 아니라 리포트가 이름별로 세려고 남긴 것이다
+
 ## 용어
 
 plan·리포트·PR 본문·판단 로그에서 쓰는 말이다. 「쓰지 말 말」은 같은 것을 가리키는 다른 이름이라 쓰지 않는다.
