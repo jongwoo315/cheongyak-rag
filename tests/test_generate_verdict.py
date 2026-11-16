@@ -654,7 +654,7 @@ def test_eligible_rule_does_not_apply_when_the_call_failed(engine_with_chunks):
 
 
 def test_empty_field_keeps_the_eligible_guard(engine_with_chunks):
-    v = _call(FakeChat([_reply("ELIGIBLE")]), engine=engine_with_chunks)  # homeless_now 빈 칸
+    v = _call(FakeChat([_reply("ELIGIBLE")]), engine=engine_with_chunks)  # homeless_now가 비어 있다
     assert (v.verdict, v.guarded, v.ruled, v.original_verdict) == (
         "NEED_INFO",
         True,
@@ -662,7 +662,7 @@ def test_empty_field_keeps_the_eligible_guard(engine_with_chunks):
         "ELIGIBLE",
     )
     v = _call(FakeChat([_reply("NEED_INFO")]), engine=engine_with_chunks)
-    assert (v.verdict, v.ruled) == ("NEED_INFO", False)  # 빈 칸이면 모델 판정 그대로다
+    assert (v.verdict, v.ruled) == ("NEED_INFO", False)  # 칸이 비어 있으면 모델 판정 그대로다
 
 
 def test_false_field_still_goes_to_the_ineligible_rule(engine_with_chunks):

@@ -241,7 +241,7 @@ ELIGIBLE_RULES: tuple[EligibleRule, ...] = (
 def rule_eligible(axis: str, query: str, profile: dict) -> tuple[str, str] | None:
     """하위 질의가 프로필 칸만으로 ELIGIBLE이면 (규칙 번호, 이유 한 문장), 아니면 None.
 
-    `profile`은 `Profile.to_dict()` 꼴이다. 칸이 true일 때만 걸린다. false·빈 칸(None)은 안 걸린다.
+    `profile`은 `Profile.to_dict()` 꼴이다. 칸이 true일 때만 걸린다. false·비어 있음(None)은 안 걸린다.
     두 규칙 모두 축 하나에 질의 하나라 `query`는 보지 않는다. 프로필 불가 규칙과 시그니처만 맞췄다.
     """
     for rule in ELIGIBLE_RULES:
