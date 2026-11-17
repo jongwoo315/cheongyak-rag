@@ -2,14 +2,14 @@
  "schema_version": 2,
  "diagram_type": "workflow",
  "meta": {
-  "title": "청약 RAG 판정 흐름 — #180 PR #24",
+  "title": "청약 RAG 판정 흐름 — #135 PR #25",
   "locale": "ko",
   "quality_profile": "standard",
-  "output": "180-flow.html",
+  "output": "flow.html",
   "repository": {
    "url": "https://github.com/jongwoo315/cheongyak-rag",
    "provider": "github",
-   "revision": "ba04e890bb7bd70650b18377ebb888e3fad7f325"
+   "revision": "17dbb8fe3c17faa0a2165e8c20e91efe14fdaf02"
   }
  },
  "lanes": [
@@ -64,6 +64,10 @@
   {
    "id": "trace",
    "label": "#83 trace 저장"
+  },
+  {
+   "id": "faqcite",
+   "label": "#69·#131·#135 FAQ 인용 커버 (흐름 밖 수집 리포트)"
   },
   {
    "id": "stop",
@@ -852,13 +856,108 @@
    "col": 5,
    "type": "backend",
    "label": "프로필 가능 규칙",
-   "sublabel": "[새로] 칸이 true면 ELIGIBLE · 이유도 코드",
-   "tag": "새로 생김",
+   "sublabel": "칸이 true면 ELIGIBLE · 이유도 코드",
+   "tag": "그대로",
    "sources": [
     {
      "path": "src/cheongyak_rag/generate/rules.py",
      "line": 229,
      "label": "ELIGIBLE_RULES"
+    }
+   ]
+  },
+  {
+   "id": "fpdf",
+   "lane": "faqcite",
+   "col": 1,
+   "type": "database",
+   "label": "FAQ 480쌍",
+   "sublabel": "청약 FAQ PDF(2024-05-29)를 쌍으로 자름",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/faq.py",
+     "line": 214,
+     "label": "parse_body"
+    }
+   ]
+  },
+  {
+   "id": "flaw",
+   "lane": "faqcite",
+   "col": 0,
+   "type": "database",
+   "label": "현행 규칙 조문",
+   "sublabel": "법제처 본문을 조로 파싱 · 88조",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/law.py",
+     "line": 249,
+     "label": "parse_articles"
+    }
+   ]
+  },
+  {
+   "id": "fcite",
+   "lane": "faqcite",
+   "col": 2,
+   "type": "backend",
+   "label": "인용 법령 분류",
+   "sublabel": "규칙 인용·다른 법령 인용 · #131에서 옮김",
+   "tag": "그대로",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/citations.py",
+     "line": 72,
+     "label": "extract_citations"
+    }
+   ]
+  },
+  {
+   "id": "fcover",
+   "lane": "faqcite",
+   "col": 3,
+   "type": "backend",
+   "label": "FAQ 인용 커버",
+   "sublabel": "[바뀜] 조 번호가 아니라 법령 이름으로 센다",
+   "tag": "조건 바뀜",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/law_report.py",
+     "line": 391,
+     "label": "faq_cross"
+    }
+   ]
+  },
+  {
+   "id": "fname",
+   "lane": "faqcite",
+   "col": 4,
+   "type": "external",
+   "label": "법령 이름 라벨",
+   "sublabel": "[새로] 하위 에이전트가 415자리를 읽음",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "runs/135/law-names.jsonl",
+     "line": 1
+    }
+   ]
+  },
+  {
+   "id": "frep",
+   "lane": "faqcite",
+   "col": 5,
+   "type": "backend",
+   "label": "커버 리포트",
+   "sublabel": "[새로] 분류와 라벨 맞대기 · docs/135-faq-cover.md",
+   "tag": "새로 생김",
+   "sources": [
+    {
+     "path": "src/cheongyak_rag/ingest/faq_cover_report.py",
+     "line": 380,
+     "label": "build_report"
     }
    ]
   }
@@ -1180,6 +1279,42 @@
    "id": "x10",
    "from": "elig",
    "to": "out"
+  },
+  {
+   "id": "f1",
+   "from": "fpdf",
+   "to": "fcite",
+   "label": "답변 원문"
+  },
+  {
+   "id": "f2",
+   "from": "fcite",
+   "to": "fcover",
+   "label": "규칙 인용"
+  },
+  {
+   "id": "f3",
+   "from": "flaw",
+   "to": "fcover",
+   "label": "현행 조"
+  },
+  {
+   "id": "f4",
+   "from": "fpdf",
+   "to": "fname",
+   "label": "답변 원문"
+  },
+  {
+   "id": "f5",
+   "from": "fcover",
+   "to": "frep",
+   "label": "커버 수"
+  },
+  {
+   "id": "f6",
+   "from": "fname",
+   "to": "frep",
+   "label": "라벨"
   }
  ],
  "cards": [
@@ -1187,8 +1322,9 @@
    "dot": "amber",
    "title": "읽는 법",
    "items": [
-    "[새로]는 main(#82 머지 뒤) 대비 이번 PR #24가 더한 단계다",
-    "프로필 가능 규칙은 LLM 호출이 성공하고 인용이 모두 기각되지 않았을 때만 건다"
+    "[바뀜]·[새로]는 main(#180 머지 뒤) 대비 이번 PR #25가 바꾸거나 더한 단계다",
+    "FAQ 인용 커버 줄은 판정 흐름 밖이다. 판정·검색은 바뀌지 않았다",
+    "#131 정답 라벨(runs/golden.jsonl)은 분류 함수를 옮긴 뒤에도 글자 그대로 같다"
    ]
   }
  ]

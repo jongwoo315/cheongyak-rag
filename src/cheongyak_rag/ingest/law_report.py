@@ -9,6 +9,8 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
+from .citations import extract_citations
+
 TEXT_KEYS = ("조문내용", "항내용", "호내용", "목내용")
 COUNT_LEVELS = ("조문", "장절", "항", "호", "목")
 
@@ -331,7 +333,7 @@ def appendix_summary(law_json: dict) -> Appendix:
     )
 
 
-# ── 실패 징후 4: #70 FAQ 인용 커버 ────────────────────────────────────────
+# ── FAQ 인용 커버 (#70에서 만들고 #135에서 법령 이름으로 다시 정의) ────────────────
 
 ARTICLE_REF = re.compile(r"제(\d+)조(?:의(\d+))?")
 CONTEXT_CHARS = 20  # 커버 안 된 조 앞에서 가져오는 글자 수. 법령 이름이 보이게 한다
@@ -340,26 +342,38 @@ CONTEXT_CHARS = 20  # 커버 안 된 조 앞에서 가져오는 글자 수. 법�
 @dataclass
 class Uncovered:
     q_no: int
-    label: str  # 현행에 없는 조
-    before: str  # 답변(없으면 질문)에서 그 조 앞 CONTEXT_CHARS자. 없거나 조가 맨 앞이면 빈 문자열
+    label: str  # 현행에 없는 규칙 인용 조
+    before: str  # 답변에서 그 조 앞 CONTEXT_CHARS자. 조가 맨 앞이면 빈 문자열
 
 
 @dataclass
 class FaqCross:
     pair_count: int
     cutoff: str  # FAQ 기준일. 이보다 늦은 날짜가 붙은 개정만 참고로 센다
-    cited_pairs: int  # 인용이 하나라도 있는 쌍. 커버 비율의 분모
-    covered_pairs: int  # 인용한 조가 전부 현행에 있는 쌍
-    uncovered: list[Uncovered]  # 쌍 × 없는 조. 법령 이름 때문에 조마다 한 줄이다
-    cited_labels: int  # 인용된 조(가지 포함)의 종류 수
+    # 법령 이름으로 센 커버. 규칙 인용 = 분류 rule·none (`ingest/citations.py`)
+    rule_pairs: int  # 규칙 인용이 하나 이상 있는 쌍. 커버 비율의 분모
+    covered_pairs: int  # 규칙 인용 조가 전부 현행에 있는 쌍
+    uncovered: list[Uncovered]  # 쌍 × 없는 규칙 인용 조. 법령 이름 때문에 조마다 한 줄이다
+    other_only_pairs: int  # 인용이 전부 다른 법령인 쌍. 분모에서 뺀다
+    other_places: int  # 다른 법령 인용 자리 수 (쌍 가리지 않고 전부)
+    other_by_name: dict[str, int]  # 다른 법령 인용 자리를 앞 법령 이름별로
+    cited_labels: int  # 규칙 인용 조(가지 포함)의 종류 수
     current_labels: int  # 그중 현행에 있는 것
     covered_pairs_amended: int  # 참고용. 커버된 쌍 중 cutoff 뒤 개정일이 붙은 조를 인용한 쌍
     amended_labels: list[str]
     latest_amendment: dict[str, str]  # 인용된 현행 조의 최근 개정일. 참고용
+    # 번호로만 센 커버: #70 파서의 `cited_articles`를 법령 이름 없이 센 예전 값.
+    # 새 커버와 섞지 않는다
+    by_number_cited: int = 0
+    by_number_covered: int = 0
 
     @property
     def uncovered_pairs(self) -> int:
-        return self.cited_pairs - self.covered_pairs
+        return self.rule_pairs - self.covered_pairs
+
+    @property
+    def by_number_uncovered(self) -> int:
+        return self.by_number_cited - self.by_number_covered
 
 
 def _label_key(label: str) -> tuple[int, int]:
@@ -374,15 +388,6 @@ def _cited_labels(pair: dict) -> list[str]:
     return list(dict.fromkeys(found))
 
 
-def _text_before(pair: dict, label: str) -> str:
-    # `제7조`가 `제7조의2`에 걸리지 않게 뒤를 막는다. `제17조`는 `제7조`로 시작하지 않는다
-    ref = re.compile(re.escape(label) + r"(?!\d|의\d)")
-    for text in (pair.get("answer", ""), pair.get("question", "")):
-        if m := ref.search(text):
-            return " ".join(text[max(0, m.start() - CONTEXT_CHARS) : m.start()].split())
-    return ""
-
-
 def faq_cross(rows: list[dict], faq_rows: list[dict]) -> FaqCross:
     # 삭제된 조문은 행이 남아 있어도 현행 조문이 아니다
     amendments = {r["label"]: r["amendments"] for r in rows if not r["deleted"]}
@@ -390,15 +395,29 @@ def faq_cross(rows: list[dict], faq_rows: list[dict]) -> FaqCross:
     cited: set[str] = set()
     uncovered: list[Uncovered] = []
     amended: set[str] = set()
-    cited_pairs = covered = covered_amended = 0
+    other_names: Counter[str] = Counter()
+    rule_pairs = covered = covered_amended = other_only = 0
+    by_number_cited = by_number_covered = 0
     for pair in faq_rows:
-        labels = _cited_labels(pair)
-        if not labels:
+        old = _cited_labels(pair)
+        if old:
+            by_number_cited += 1
+            by_number_covered += all(lb in amendments for lb in old)
+        cites = extract_citations(pair["answer"])
+        for c in cites:
+            if c.kind == "other":
+                other_names[c.name or "이름 불명"] += 1
+        rule = [c for c in cites if c.kind != "other"]
+        if not rule:
+            other_only += bool(cites)
             continue
-        cited_pairs += 1
+        rule_pairs += 1
+        labels = list(dict.fromkeys(c.label for c in rule))
         cited.update(labels)
         gone = [lb for lb in labels if lb not in amendments]
-        uncovered += [Uncovered(pair["q_no"], lb, _text_before(pair, lb)) for lb in gone]
+        for lb in gone:
+            first = next(c for c in rule if c.label == lb)
+            uncovered.append(Uncovered(pair["q_no"], lb, first.before[-CONTEXT_CHARS:].strip()))
         if gone:
             continue
         covered += 1
@@ -409,14 +428,19 @@ def faq_cross(rows: list[dict], faq_rows: list[dict]) -> FaqCross:
     return FaqCross(
         pair_count=len(faq_rows),
         cutoff=cutoff,
-        cited_pairs=cited_pairs,
+        rule_pairs=rule_pairs,
         covered_pairs=covered,
         uncovered=uncovered,
+        other_only_pairs=other_only,
+        other_places=sum(other_names.values()),
+        other_by_name=dict(other_names.most_common()),
         cited_labels=len(cited),
         current_labels=len(current),
         covered_pairs_amended=covered_amended,
         amended_labels=sorted(amended, key=_label_key),
         latest_amendment={lb: max(amendments[lb], default="") for lb in current},
+        by_number_cited=by_number_cited,
+        by_number_covered=by_number_covered,
     )
 
 
@@ -488,20 +512,29 @@ def format_report(
     if cross is None:
         out.append(f"FAQ 인용 커버: {FAQ_HINT}")
     else:
-        pct = 100 * cross.covered_pairs / cross.cited_pairs if cross.cited_pairs else 0
+        pct = 100 * cross.covered_pairs / cross.rule_pairs if cross.rule_pairs else 0
+        names = " · ".join(f"{name} {n}" for name, n in cross.other_by_name.items())
         out += [
             f"FAQ 인용 커버 (값만, 판정은 PR 게이트에서): FAQ {cross.pair_count}쌍 중"
-            f" 인용 있는 쌍 {cross.cited_pairs} · 커버 {cross.covered_pairs} ({pct:.0f}%)"
+            f" 규칙 인용 있는 쌍 {cross.rule_pairs} · 커버 {cross.covered_pairs} ({pct:.0f}%)"
             f" · 커버 안 됨 {cross.uncovered_pairs}",
-            f"  인용된 조 {cross.cited_labels}종 중 현행에 있는 것 {cross.current_labels}종"
+            f"  다른 법령 인용만 있는 쌍 {cross.other_only_pairs} (분모에서 뺐다)",
+            f"  다른 법령 인용 자리 {cross.other_places} (앞 법령 이름별: {names or '없음'})",
+            f"  규칙 인용 조 {cross.cited_labels}종 중 현행에 있는 것 {cross.current_labels}종"
             " (삭제된 조는 현행에 없는 것으로 센다)",
-            "  커버 = 쌍이 인용한 조(항·호는 뗀다)가 전부 현행 규칙에 있다. 개정 여부는 안 본다.",
-            "  FAQ의 `제N조`는 규칙·법·시행령 중 어느 것인지 갈라져 있지 않다."
-            " 다른 법령 인용도 분모에서 빼지 않았다. 다른 법령 조가 규칙에 없으면 커버 안 됨으로,"
-            " 번호가 우연히 같으면 커버로 센다",
+            "  커버 = 쌍의 규칙 인용 조(항·호는 뗀다)가 전부 현행 규칙에 있다."
+            " 개정 여부는 안 본다.",
+            "  규칙 인용 = 답변의 `제N조` 한 자리 앞, 같은 문장에서 가장 가까운 법령 이름이"
+            " 주택공급에 관한 규칙이거나 법령 이름이 없는 것. 부칙 조문은 이름과 상관없이 다른 법령"
+            " 인용이다(`ingest/citations.py`의 분류).",
+            "  번호로만 센 커버 (참고, 법령 이름을 안 본 예전 셈): 인용 있는 쌍"
+            f" {cross.by_number_cited} · 커버 {cross.by_number_covered}"
+            f" · 커버 안 됨 {cross.by_number_uncovered}",
         ]
         if cross.uncovered:
-            out.append(f"  커버 안 된 쌍 (Q번호 · 현행에 없는 조: 그 조 앞 {CONTEXT_CHARS}자):")
+            out.append(
+                f"  커버 안 된 쌍 (Q번호 · 현행에 없는 규칙 인용 조: 그 조 앞 {CONTEXT_CHARS}자):"
+            )
         out += [f"    Q{u.q_no} {u.label}: {u.before!r}" for u in cross.uncovered]
         recent = [f"{lb}({cross.latest_amendment[lb]})" for lb in cross.amended_labels]
         out.append(

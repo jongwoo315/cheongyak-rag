@@ -188,17 +188,21 @@ def test_appendix_summary_accepts_single_dict_and_missing_keys():
 # ── 실패 징후 4: FAQ 인용 커버 ────────────────────────────────────────────
 
 
-def _faq(q_no, *cited, answer=""):
+RULE = "「주택공급에 관한 규칙」"
+
+
+def _faq(q_no, *cited, answer=None):
+    # 답변을 안 주면 인용한 조를 이름 없이 늘어놓는다. 이름 없음은 규칙 인용으로 센다
     return {
         "q_no": q_no,
         "as_of": "2024-05-29",
         "cited_articles": list(cited),
         "question": "",
-        "answer": answer,
+        "answer": " ".join(cited) if answer is None else answer,
     }
 
 
-def test_faq_cross_covers_a_pair_only_when_every_cited_article_exists(rows):
+def test_faq_cross_covers_a_pair_only_when_every_rule_citation_exists(rows):
     faq = [
         _faq(1, "제1조"),  # 있다 → 커버
         _faq(2, "제1조", "제999조"),  # 하나라도 없으면 커버 안 됨
@@ -209,10 +213,80 @@ def test_faq_cross_covers_a_pair_only_when_every_cited_article_exists(rows):
     cross = law_report.faq_cross(rows, faq)
 
     assert cross.pair_count == 4
-    assert cross.cited_pairs == 3
+    assert cross.rule_pairs == 3
     assert cross.covered_pairs == 1
     assert cross.uncovered_pairs == 2
     assert [(u.q_no, u.label) for u in cross.uncovered] == [(2, "제999조"), (3, "제999조")]
+
+
+def test_faq_cross_rule_name_with_a_current_article_is_covered(rows):
+    cross = law_report.faq_cross(rows, [_faq(1, answer=f"{RULE} 제1조에 따른다.")])
+
+    assert (cross.rule_pairs, cross.covered_pairs) == (1, 1)
+
+
+def test_faq_cross_rule_name_with_a_missing_article_is_not_covered(rows):
+    cross = law_report.faq_cross(rows, [_faq(1, answer=f"{RULE} 제999조에 따른다.")])
+
+    assert (cross.rule_pairs, cross.covered_pairs) == (1, 0)
+    assert [(u.q_no, u.label) for u in cross.uncovered] == [(1, "제999조")]
+
+
+def test_faq_cross_citation_without_a_law_name_counts_as_a_rule_citation(rows):
+    cross = law_report.faq_cross(rows, [_faq(1, answer="제999조에 따른다."), _faq(2, "제1조")])
+
+    assert (cross.rule_pairs, cross.covered_pairs) == (2, 1)
+    assert cross.other_only_pairs == 0
+
+
+def test_faq_cross_pair_with_only_other_law_citations_leaves_the_denominator(rows):
+    faq = [
+        _faq(1, answer="「주택법」 제2조와 「민법」 제3조를 본다."),
+        _faq(2, answer="「주택법」 제1조를 본다. 도시및주거환경정비법 제5조도 본다."),
+        _faq(3, "제1조"),
+    ]
+
+    cross = law_report.faq_cross(rows, faq)
+
+    assert cross.rule_pairs == 1  # Q3만
+    assert cross.other_only_pairs == 2
+    assert cross.uncovered == []
+    assert cross.other_places == 4
+    assert cross.other_by_name == {"주택법": 2, "민법": 1, "도시및주거환경정비법": 1}
+
+
+def test_faq_cross_other_law_article_with_a_rule_number_does_not_count_as_covered(rows):
+    # 제1조는 규칙에 있다. 그러나 「주택법」 제1조는 규칙 제1조가 아니다
+    cross = law_report.faq_cross(rows, [_faq(1, "제1조", answer="「주택법」 제1조를 본다.")])
+
+    assert cross.rule_pairs == 0
+    assert cross.covered_pairs == 0
+    assert cross.other_only_pairs == 1
+
+
+def test_faq_cross_other_law_citation_does_not_make_a_covered_pair_uncovered(rows):
+    answer = f"{RULE} 제1조를 본다. 「주택법」 제999조도 본다."
+
+    cross = law_report.faq_cross(rows, [_faq(1, answer=answer)])
+
+    assert (cross.rule_pairs, cross.covered_pairs) == (1, 1)
+    assert cross.uncovered == []
+    assert cross.other_places == 1
+
+
+def test_faq_cross_by_number_cover_is_the_old_count_from_cited_articles(rows):
+    # 번호로만 센 커버는 `cited_articles`의 조 번호만 본다. 법령 이름을 안 본다
+    faq = [
+        _faq(1, "제1조", answer="「주택법」 제1조를 본다."),  # 번호로는 커버, 이름으로는 분모 밖
+        _faq(2, "제999조", answer="「주택법」 제999조를 본다."),  # 번호로는 커버 안 됨
+        _faq(3, "제1조"),
+        _faq(4),
+    ]
+
+    cross = law_report.faq_cross(rows, faq)
+
+    assert (cross.by_number_cited, cross.by_number_covered, cross.by_number_uncovered) == (3, 2, 1)
+    assert (cross.rule_pairs, cross.covered_pairs, cross.other_only_pairs) == (1, 1, 2)
 
 
 def test_faq_cross_amendment_date_does_not_decide_coverage(rows):
@@ -251,34 +325,15 @@ def test_faq_cross_folds_clause_and_item_citations_into_the_article(rows):
 
 
 def test_faq_cross_keeps_the_text_before_the_missing_article_to_show_the_law_name(rows):
-    answer = "참고로 조세특례제한법 제87조에 따르면 …"
-    faq = [_faq(1, "제87조", answer=answer)]
+    answer = f"참고로 {RULE} 제999조에 따르면 …"
 
-    cross = law_report.faq_cross(rows, faq)
+    cross = law_report.faq_cross(rows, [_faq(1, answer=answer)])
 
-    assert cross.uncovered[0].before == "참고로 조세특례제한법"  # 20자 이내, 조 바로 앞까지
-
-
-def test_faq_cross_context_does_not_match_inside_a_longer_article_number(rows):
-    # 제7조를 찾을 때 제7조의2나 제17조에 걸리면 엉뚱한 법령 이름이 붙는다
-    answer = "「A법」 제7조의2와 「B법」 제17조 그리고 「C법」 제7조"
-    cross = law_report.faq_cross(rows, [_faq(1, "제7조", answer=answer)])
-
-    assert cross.uncovered[0].before.endswith("「C법」")
+    assert cross.uncovered[0].before == "참고로 「주택공급에 관한 규칙」"[-20:]  # 조 바로 앞 20자
 
 
-def test_faq_cross_context_falls_back_to_the_question_when_the_answer_lacks_the_article(rows):
-    # 답변에는 제17조만 있어 제7조에 안 걸린다 → 질문에서 찾는다
-    pair = _faq(1, "제7조", answer="제17조만 나온다")
-    pair["question"] = "「Z법」 제7조는 무엇인가"
-
-    cross = law_report.faq_cross(rows, [pair])
-
-    assert cross.uncovered[0].before.endswith("「Z법」")
-
-
-def test_faq_cross_context_is_empty_when_the_text_does_not_contain_the_article(rows):
-    cross = law_report.faq_cross(rows, [_faq(1, "제999조", answer="본문에 없다")])
+def test_faq_cross_context_is_empty_when_the_article_is_first_in_the_answer(rows):
+    cross = law_report.faq_cross(rows, [_faq(1, answer="제999조는 없다")])
 
     assert cross.uncovered[0].before == ""
 
@@ -476,17 +531,26 @@ def test_report_says_when_counts_equal_the_reference_values(law_json, rows, monk
 
 def test_report_shows_faq_cross_values(law_json, rows):
     cross = law_report.faq_cross(
-        rows, [_faq(1, "제3조제1항"), _faq(2, "제999조", answer="「다른법」 제999조")]
+        rows,
+        [
+            _faq(1, "제3조제1항"),
+            _faq(2, "제999조", answer=f"{RULE} 제999조"),
+            _faq(3, "제1조", answer="「주택법」 제1조와 「민법」 제2조를 본다."),
+        ],
     )
 
     out = _report(law_json, rows, cross)
 
-    assert "인용 있는 쌍 2 · 커버 1 (50%) · 커버 안 됨 1" in out
-    assert "인용된 조 2종 중 현행에 있는 것 1종" in out
-    assert "Q2 제999조: '「다른법」'" in out
+    assert "규칙 인용 있는 쌍 2 · 커버 1 (50%) · 커버 안 됨 1" in out
+    assert "규칙 인용 조 2종 중 현행에 있는 것 1종" in out
+    assert "다른 법령 인용만 있는 쌍 1 (분모에서 뺐다)" in out
+    assert "다른 법령 인용 자리 2 (앞 법령 이름별: 주택법 1 · 민법 1)" in out
+    assert "번호로만 센 커버 (참고, 법령 이름을 안 본 예전 셈): 인용 있는 쌍 3 · 커버 2" in out
+    assert "커버 안 됨 1" in out
+    assert "Q2 제999조: '「주택공급에 관한 규칙」'" in out
     assert "참고 (커버 판정에 안 씀)" in out
     assert "인용한 쌍 1 (조 1종: 제3조(2026-06-15))" in out
-    assert "다른 법령 인용도 분모에서 빼지 않았다" in out
+    assert "다른 법령 인용도 분모에서 빼지 않았다" not in out
 
 
 def test_appendix_counts_tables_and_forms_separately():
